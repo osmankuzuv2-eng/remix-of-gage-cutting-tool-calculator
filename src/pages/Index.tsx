@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
-import { Calculator, Clock, Database, Code, DollarSign, History, Plus, GitCompare, Wrench, Circle, LayoutDashboard } from "lucide-react";
+import { Calculator, Clock, Database, Code, DollarSign, History, Plus, GitCompare, Wrench, Circle, LayoutDashboard, FileImage } from "lucide-react";
 import Header from "@/components/Header";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
@@ -15,9 +15,10 @@ import ParameterComparison from "@/components/ParameterComparison";
 import ThreadingCalculator from "@/components/ThreadingCalculator";
 import DrillTapCalculator from "@/components/DrillTapCalculator";
 import Dashboard from "@/components/Dashboard";
+import DrawingAnalyzer from "@/components/DrawingAnalyzer";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 
-type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "gcode" | "cost" | "history";
+type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "gcode" | "cost" | "history" | "drawing";
 
 const tabs = [
   { id: "dashboard" as TabId, label: "Dashboard", icon: LayoutDashboard },
@@ -29,6 +30,7 @@ const tabs = [
   { id: "materials" as TabId, label: "Malzemeler", icon: Database },
   { id: "gcode" as TabId, label: "G-Code", icon: Code },
   { id: "cost" as TabId, label: "Maliyet", icon: DollarSign },
+  { id: "drawing" as TabId, label: "Teknik Resim", icon: FileImage },
   { id: "history" as TabId, label: "Geçmiş", icon: History },
 ];
 
@@ -110,6 +112,7 @@ const Index = () => {
           )}
           {activeTab === "gcode" && <GCodeGenerator />}
           {activeTab === "cost" && <CostAnalyzer />}
+          {activeTab === "drawing" && <DrawingAnalyzer />}
           {activeTab === "history" && <CalculationHistory />}
         </div>
 
