@@ -76,8 +76,11 @@ const DrawingAnalyzer = () => {
 
     setIsAnalyzing(true);
     try {
-      // Upload file to storage
-      const filePath = `${user.id}/${Date.now()}_${selectedFile.name}`;
+      // Sanitize filename: remove non-ASCII chars, replace spaces
+      const safeName = selectedFile.name
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]/g, "_");
+      const filePath = `${user.id}/${Date.now()}_${safeName}`;
       const { error: uploadError } = await supabase.storage
         .from("technical-drawings")
         .upload(filePath, selectedFile);
