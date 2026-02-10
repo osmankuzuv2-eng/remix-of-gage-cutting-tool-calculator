@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
-import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info } from "lucide-react";
+import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { exportAnalysisPdf } from "@/lib/exportAnalysisPdf";
 
 interface Operation {
   step: number;
@@ -226,6 +227,20 @@ const DrawingAnalyzer = () => {
       {/* Analysis Results */}
       {analysis && (
         <div className="space-y-4">
+          {/* Export Button */}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                exportAnalysisPdf(analysis);
+                toast.success("PDF rapor indirildi!");
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              PDF Rapor İndir
+            </Button>
+          </div>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="bg-card border-border">
