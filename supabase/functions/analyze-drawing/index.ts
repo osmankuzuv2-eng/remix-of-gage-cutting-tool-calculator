@@ -52,18 +52,21 @@ serve(async (req) => {
 
 Resimdeki TUM kritik olculeri, toleranslari ve yuzey puruzluluk isaretlerini dikkatlice oku. Olculeri mm cinsinden belirt.
 
-SURE HESAPLAMA KURALLARI (COK ONEMLI):
+SURE HESAPLAMA KURALLARI (COK ONEMLI - KESINLIKLE UYULMALI):
 - Isleme suresi = Isleme uzunlugu / (Devir * Ilerleme) formulu ile hesapla
 - Devir (n) = (1000 * Vc) / (PI * D) formulunu kullan
-- Kaba tornalama: Tipik olarak kucuk parcalar icin 1-5 dk, orta parcalar 5-15 dk, buyuk parcalar 15-30 dk
-- Ince tornalama: Kaba tornalamanin yaklasik %30-50'si kadar sure
-- Delme islemi: Kucuk delikler 0.5-2 dk, buyuk delikler 2-5 dk
-- Frezeleme: Yuzey alani ve talaş derinligine gore 2-15 dk
-- Taslama: Toleransa gore 3-10 dk
-- Dis acma: Genellikle 1-3 dk
-- Hazirlik suresi: Basit parcalar 10-20 dk, orta 20-40 dk, karmasik 40-60 dk
-- ABARTILI sureler VERME! Gercekci CNC atolye surelerini baz al.
-- Toplam isleme suresi basit parcalar icin 10-30 dk, orta parcalar 30-90 dk, karmasik parcalar 90-180 dk araliginda olmalidir.
+- HER ADIM ICIN FORMUL UYGULA, tahmin yapma!
+- Kaba tornalama: 0.5-3 dk (kucuk parca), 3-8 dk (orta), 8-15 dk (buyuk)
+- Ince tornalama: Kaba tornalamanin %25-40'i kadar
+- Delme: 0.2-1 dk (kucuk delik), 1-3 dk (buyuk delik)
+- Frezeleme: 1-5 dk (kucuk yuzey), 5-10 dk (buyuk yuzey)
+- Taslama: 1-5 dk
+- Dis acma: 0.5-2 dk
+- Pah kirma / kanal acma: 0.2-1 dk
+- Hazirlik suresi: Basit 10-15 dk, orta 15-25 dk, karmasik 25-40 dk
+- TOPLAM ISLEME SURESI (hazirlik haric): Basit parcalar 5-15 dk, orta parcalar 15-35 dk, karmasik parcalar 35-60 dk
+- 60 dk'yi ASLA gecme (hazirlik haric)! Gercek CNC atolye kosullarini baz al.
+- Modern CNC tezgahlar cok hizlidir, sureleri DUSUK tut.
 
 Verilen teknik resmi analiz et ve asagidaki bilgileri JSON formatinda dondur:
 
