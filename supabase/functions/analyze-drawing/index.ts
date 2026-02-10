@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,14 +28,36 @@ serve(async (req) => {
       throw new Error("Server configuration error");
     }
 
+    // Determine if file is PDF based on URL or fileName
+    const isPdf = imageUrl.toLowerCase().endsWith(".pdf") || fileName?.toLowerCase().endsWith(".pdf");
+
+    // Download the file and convert to base64 data URL
+    // This is required because the AI gateway doesn't support PDF URLs directly
+    const fileResponse = await fetch(imageUrl);
+    if (!fileResponse.ok) {
+      throw new Error(`Dosya indirilemedi: ${fileResponse.status}`);
+    }
+    const fileBytes = new Uint8Array(await fileResponse.arrayBuffer());
+    const base64Data = base64Encode(fileBytes);
+    
+    const mimeType = isPdf ? "application/pdf" : (
+      imageUrl.toLowerCase().endsWith(".png") ? "image/png" :
+      imageUrl.toLowerCase().endsWith(".webp") ? "image/webp" :
+      imageUrl.toLowerCase().endsWith(".gif") ? "image/gif" :
+      "image/jpeg"
+    );
+    const dataUrl = `data:${mimeType};base64,${base64Data}`;
+
     const systemPrompt = `Sen uzman bir CNC makine mühendisisin. Teknik resimleri analiz edip detaylı işleme planı oluşturuyorsun.
+
+Resimdeki TÜM kritik ölçüleri, toleransları ve yüzey pürüzlülük işaretlerini dikkatlice oku. Ölçüleri mm cinsinden belirt.
 
 Verilen teknik resmi analiz et ve aşağıdaki bilgileri JSON formatında döndür:
 
 {
   "partName": "Parça adı (tahmini)",
   "material": "Önerilen malzeme",
-  "overallDimensions": "Genel boyutlar (mm)",
+  "overallDimensions": "Genel boyutlar (mm) - resimdeki ölçülerden oku",
   "complexity": "Düşük/Orta/Yüksek/Çok Yüksek",
   "operations": [
     {
@@ -53,8 +75,8 @@ Verilen teknik resmi analiz et ve aşağıdaki bilgileri JSON formatında dönd�
   "totalEstimatedTime": "Toplam tahmini süre (dakika)",
   "setupTime": "Hazırlık süresi (dakika)",
   "recommendations": ["Öneri 1", "Öneri 2"],
-  "tolerances": "Tespit edilen toleranslar",
-  "surfaceFinish": "Yüzey kalitesi gereksinimleri",
+  "tolerances": "Tespit edilen toleranslar - resimdeki tolerans işaretlerini oku",
+  "surfaceFinish": "Yüzey kalitesi gereksinimleri - Ra değerlerini belirt",
   "machinesRequired": ["Gereken tezgahlar listesi"],
   "difficultyNotes": "Zorluk ve dikkat edilmesi gerekenler"
 }
@@ -62,8 +84,8 @@ Verilen teknik resmi analiz et ve aşağıdaki bilgileri JSON formatında dönd�
 Sadece JSON döndür, başka metin ekleme.`;
 
     const userMessage = additionalInfo 
-      ? `Bu teknik resmi analiz et. Ek bilgiler: ${additionalInfo}`
-      : "Bu teknik resmi analiz et ve detaylı işleme planı oluştur.";
+      ? `Bu teknik resmi analiz et. Tüm kritik ölçüleri ve toleransları dikkatlice oku. Ek bilgiler: ${additionalInfo}`
+      : "Bu teknik resmi analiz et. Tüm kritik ölçüleri, toleransları ve yüzey pürüzlülük değerlerini dikkatlice oku ve detaylı işleme planı oluştur.";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -79,7 +101,7 @@ Sadece JSON döndür, başka metin ekleme.`;
             role: "user",
             content: [
               { type: "text", text: userMessage },
-              { type: "image_url", image_url: { url: imageUrl } },
+              { type: "image_url", image_url: { url: dataUrl } },
             ],
           },
         ],
@@ -109,7 +131,8 @@ Sadece JSON döndür, başka metin ekleme.`;
     // Parse JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("Could not parse AI response as JSON");
+      console.error("Could not parse response:", content.substring(0, 500));
+      throw new Error("AI yanıtı işlenemedi");
     }
 
     const analysis = JSON.parse(jsonMatch[0]);
