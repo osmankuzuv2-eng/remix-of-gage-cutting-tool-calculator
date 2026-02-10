@@ -227,6 +227,20 @@ const DrawingAnalyzer = () => {
       {/* Analysis Results */}
       {analysis && (
         <div className="space-y-4">
+          {/* Export Button */}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                exportAnalysisPdf(analysis);
+                toast.success("PDF rapor indirildi!");
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              PDF Rapor İndir
+            </Button>
+          </div>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="bg-card border-border">
