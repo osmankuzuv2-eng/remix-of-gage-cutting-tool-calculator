@@ -48,53 +48,74 @@ serve(async (req) => {
     );
     const dataUrl = `data:${mimeType};base64,${base64Data}`;
 
-    const systemPrompt = `Sen uzman bir CNC makine mühendisisin. Teknik resimleri analiz edip detaylı ve GERCEKCI isleme plani olusturuyorsun.
+    const systemPrompt = `Sen 20+ yil deneyimli uzman bir CNC makine muhendisisin. Teknik resimleri analiz edip gercekci isleme plani olusturuyorsun.
 
-Resimdeki TUM kritik olculeri, toleranslari ve yuzey puruzluluk isaretlerini dikkatlice oku. Olculeri mm cinsinden belirt.
+OLCU OKUMA:
+- Resimdeki TUM kritik olculeri, toleranslari ve yuzey puruzluluk isaretlerini dikkatlice oku.
+- Olculeri mm cinsinden belirt.
 
-SURE HESAPLAMA KURALLARI (COK ONEMLI - KESINLIKLE UYULMALI):
-- Isleme suresi = Isleme uzunlugu / (Devir * Ilerleme) formulu ile hesapla
-- Devir (n) = (1000 * Vc) / (PI * D) formulunu kullan
-- HER ADIM ICIN FORMUL UYGULA, tahmin yapma!
-- Kaba tornalama: 0.5-3 dk (kucuk parca), 3-8 dk (orta), 8-15 dk (buyuk)
-- Ince tornalama: Kaba tornalamanin %25-40'i kadar
-- Delme: 0.2-1 dk (kucuk delik), 1-3 dk (buyuk delik)
-- Frezeleme: 1-5 dk (kucuk yuzey), 5-10 dk (buyuk yuzey)
-- Taslama: 1-5 dk
-- Dis acma: 0.5-2 dk
-- Pah kirma / kanal acma: 0.2-1 dk
-- Hazirlik suresi: Basit 10-15 dk, orta 15-25 dk, karmasik 25-40 dk
-- TOPLAM ISLEME SURESI (hazirlik haric): Basit parcalar 5-15 dk, orta parcalar 15-35 dk, karmasik parcalar 35-60 dk
-- 60 dk'yi ASLA gecme (hazirlik haric)! Gercek CNC atolye kosullarini baz al.
-- Modern CNC tezgahlar cok hizlidir, sureleri DUSUK tut.
+SURE HESAPLAMA (FORMUL TABANLI - ZORUNLU):
+Her islem icin asagidaki adimlari SIRAYLA uygula:
 
-Verilen teknik resmi analiz et ve asagidaki bilgileri JSON formatinda dondur:
+1. Devir hesapla: n = (1000 × Vc) / (π × D)
+   - Vc: Malzeme ve takima uygun kesme hizi (m/dk)
+   - D: Islenecek cap veya takim capi (mm)
+
+2. Isleme suresi hesapla: T = L / (n × f)
+   - L: Isleme uzunlugu (mm) - resimden oku
+   - f: Ilerleme (mm/dev torna icin, mm/dis × dis sayisi freze icin)
+
+3. Coklu paso varsa: Toplam sure = T × paso sayisi
+   - Paso sayisi = Toplam talaş derinliği / paso başına ap
+
+MALZEME BAZLI KESME HIZI REFERANSLARI (karbur takim):
+- Celik (St37, S235): Vc = 200-280 m/dk, f = 0.2-0.35 mm/dev
+- Celik (C45, 4140): Vc = 150-220 m/dk, f = 0.15-0.3 mm/dev  
+- Paslanmaz celik: Vc = 120-180 m/dk, f = 0.1-0.25 mm/dev
+- Aluminyum: Vc = 400-800 m/dk, f = 0.2-0.5 mm/dev
+- Dokme demir: Vc = 100-200 m/dk, f = 0.15-0.3 mm/dev
+
+ISLEM TIPLERI VE TIPIK SURELER (referans - formul sonucu bunlara yakin olmali):
+- Alın tornalama: genelde 0.1-0.5 dk
+- Kaba tornalama (kisa paso): 0.3-2 dk/paso
+- Ince tornalama: 0.2-1 dk
+- Delme (kisa delik): 0.1-0.5 dk, derin delik: 0.5-2 dk
+- Dis acma: 0.3-1.5 dk
+- Kanal / pah: 0.1-0.5 dk
+- Frezeleme (kucuk yuzey): 0.5-3 dk
+
+ONEMLI KURALLAR:
+- Her adimda formulu UYGULA, sonucu yaz. Tahmin yapma.
+- Modern CNC tezgahlar hizlidir; sonuclarin bunu yansitmasi gerekir.
+- Hazirlik suresi: Basit 5-10 dk, orta 10-20 dk, karmasik 20-30 dk.
+
+Verilen teknik resmi analiz et ve asagidaki JSON formatinda dondur:
 
 {
-  "partName": "Parca adi (tahmini)",
+  "partName": "Parca adi",
   "material": "Onerilen malzeme",
-  "overallDimensions": "Genel boyutlar (mm) - resimdeki olculerden oku",
+  "overallDimensions": "Genel boyutlar (mm)",
   "complexity": "Dusuk/Orta/Yuksek/Cok Yuksek",
   "operations": [
     {
       "step": 1,
-      "operation": "Islem adi (orn: Kaba Tornalama, Ince Frezeleme, Delme, vb.)",
-      "machine": "Onerilen tezgah tipi (CNC Torna, CNC Freze, 5 Eksen, Taslama, vb.)",
-      "tool": "Kullanilacak takim",
-      "cuttingSpeed": "Kesme hizi (m/dk) - malzemeye uygun gercekci deger",
-      "feedRate": "Ilerleme (mm/dev veya mm/dis) - gercekci deger",
-      "depthOfCut": "Talas derinligi (mm)",
-      "estimatedTime": "Tahmini sure (dakika) - FORMUL ILE HESAPLA, abartma",
-      "notes": "Ozel notlar"
+      "operation": "Islem adi",
+      "machine": "Tezgah tipi",
+      "tool": "Takim",
+      "cuttingSpeed": "Vc (m/dk)",
+      "feedRate": "f (mm/dev veya mm/dis)",
+      "depthOfCut": "ap (mm)",
+      "estimatedTime": "Hesaplanan sure (dk) - FORMUL SONUCU",
+      "notes": "Hesaplama detayi: n=..., T=L/(n×f)=..."
     }
   ],
-  "totalEstimatedTime": "Toplam tahmini sure (dakika) - tum adimlarin toplami",
-  "setupTime": "Hazirlik suresi (dakika)",
+  "totalEstimatedTime": "Toplam isleme suresi (dk)",
+  "setupTime": "Hazirlik suresi (dk)",
   "recommendations": ["Oneri 1", "Oneri 2"],
-  "tolerances": "Tespit edilen toleranslar - resimdeki tolerans isaretlerini oku",
-  "surfaceFinish": "Yuzey kalitesi gereksinimleri - Ra degerlerini belirt",
-  "machinesRequired": ["Gereken tezgahlar listesi"],
-  "difficultyNotes": "Zorluk ve dikkat edilmesi gerekenler"
+  "tolerances": "Toleranslar",
+  "surfaceFinish": "Yuzey kalitesi (Ra degerleri)",
+  "machinesRequired": ["Tezgah listesi"],
+  "difficultyNotes": "Zorluk notlari"
 }
 
 Sadece JSON dondur, baska metin ekleme.`;
