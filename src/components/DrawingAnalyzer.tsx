@@ -16,6 +16,7 @@ interface Operation {
   cuttingSpeed: string;
   feedRate: string;
   depthOfCut: string;
+  spindleSpeed?: string;
   estimatedTime: string;
   notes: string;
 }
@@ -25,6 +26,7 @@ interface AnalysisResult {
   material: string;
   overallDimensions: string;
   complexity: string;
+  clampingStrategy?: string;
   operations: Operation[];
   totalEstimatedTime: string;
   setupTime: string;
@@ -289,6 +291,7 @@ const DrawingAnalyzer = () => {
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">Tezgah</th>
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">Takım</th>
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">Vc</th>
+                      <th className="text-left py-2 px-3 text-muted-foreground font-medium">n</th>
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">f</th>
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">ap</th>
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">Süre</th>
@@ -296,12 +299,13 @@ const DrawingAnalyzer = () => {
                   </thead>
                   <tbody>
                     {analysis.operations.map((op, i) => (
-                      <tr key={i} className="border-b border-border/50 hover:bg-secondary/30">
+                      <tr key={i} className="border-b border-border/50 hover:bg-secondary/30" title={op.notes}>
                         <td className="py-2.5 px-3 text-primary font-mono font-bold">{op.step}</td>
                         <td className="py-2.5 px-3 text-foreground font-medium">{op.operation}</td>
                         <td className="py-2.5 px-3 text-foreground">{op.machine}</td>
                         <td className="py-2.5 px-3 text-muted-foreground">{op.tool}</td>
                         <td className="py-2.5 px-3 text-muted-foreground font-mono">{op.cuttingSpeed}</td>
+                        <td className="py-2.5 px-3 text-muted-foreground font-mono">{op.spindleSpeed || "-"}</td>
                         <td className="py-2.5 px-3 text-muted-foreground font-mono">{op.feedRate}</td>
                         <td className="py-2.5 px-3 text-muted-foreground font-mono">{op.depthOfCut}</td>
                         <td className="py-2.5 px-3 text-primary font-mono font-semibold">{op.estimatedTime} dk</td>
@@ -387,6 +391,12 @@ const DrawingAnalyzer = () => {
                   <p className="text-xs text-muted-foreground">Hazırlık Süresi</p>
                   <p className="text-sm text-primary font-semibold">{analysis.setupTime} dakika</p>
                 </div>
+                {analysis.clampingStrategy && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Bağlama Stratejisi</p>
+                    <p className="text-sm text-foreground">{analysis.clampingStrategy}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">Zorluk Notları</p>
                   <p className="text-sm text-foreground">{analysis.difficultyNotes}</p>
