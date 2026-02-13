@@ -22,6 +22,7 @@ type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "
 
 const tabs = [
   { id: "dashboard" as TabId, label: "Dashboard", icon: LayoutDashboard },
+  { id: "drawing" as TabId, label: "Teknik Resim Analizi", icon: FileImage },
   { id: "cutting" as TabId, label: "Kesme", icon: Calculator },
   { id: "toollife" as TabId, label: "Takım Ömrü", icon: Clock },
   { id: "threading" as TabId, label: "Diş Açma", icon: Wrench },
@@ -30,7 +31,6 @@ const tabs = [
   { id: "materials" as TabId, label: "Malzemeler", icon: Database },
   { id: "gcode" as TabId, label: "G-Code", icon: Code },
   { id: "cost" as TabId, label: "Maliyet", icon: DollarSign },
-  { id: "drawing" as TabId, label: "Teknik Resim", icon: FileImage },
   { id: "history" as TabId, label: "Geçmiş", icon: History },
 ];
 
