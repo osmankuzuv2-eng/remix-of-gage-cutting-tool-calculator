@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { machinePark, Machine } from "@/data/machinePark";
+import { machinePark } from "@/data/machinePark";
 import { materials } from "@/data/materials";
 import {
   Popover,
@@ -22,9 +21,13 @@ const CostCalculation = () => {
   const [customerOpen, setCustomerOpen] = useState(false);
   const [laborRate, setLaborRate] = useState(100);
 
-  // Machine tab
-  const [machineTab, setMachineTab] = useState<"turning" | "milling-4axis" | "milling-5axis">("turning");
-  const [selectedMachine, setSelectedMachine] = useState(machinePark[0].id);
+  // Machines - separate selections with per-minute rates
+  const [selectedTurning, setSelectedTurning] = useState(machinePark.find(m => m.type === "turning")?.id ?? "");
+  const [turningRate, setTurningRate] = useState(0);
+  const [selectedMilling, setSelectedMilling] = useState(machinePark.find(m => m.type === "milling-4axis")?.id ?? "");
+  const [millingRate, setMillingRate] = useState(0);
+  const [selected5Axis, setSelected5Axis] = useState(machinePark.find(m => m.type === "milling-5axis")?.id ?? "");
+  const [fiveAxisRate, setFiveAxisRate] = useState(0);
 
   // Times & quantity
   const [setupTime, setSetupTime] = useState(30);
@@ -41,23 +44,14 @@ const CostCalculation = () => {
   const [scrapRate, setScrapRate] = useState(3);
   const [profitMargin, setProfitMargin] = useState(20);
 
-  const filteredMachines = machinePark.filter((m) => m.type === machineTab);
-
-  // Auto-select first machine when tab changes
-  const handleMachineTabChange = (tab: string) => {
-    const newTab = tab as "turning" | "milling-4axis" | "milling-5axis";
-    setMachineTab(newTab);
-    const first = machinePark.find((m) => m.type === newTab);
-    if (first) setSelectedMachine(first.id);
-  };
-
   const calculations = useMemo(() => {
+    const machineCost = (turningRate + millingRate + fiveAxisRate) * machiningTime * orderQuantity;
     const totalMachiningMinutes = setupTime + machiningTime * orderQuantity;
     const totalMachiningHours = totalMachiningMinutes / 60;
     const laborCost = totalMachiningHours * laborRate;
 
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
-    const subtotal = laborCost + additionalCosts;
+    const subtotal = laborCost + machineCost + additionalCosts;
 
     const scrapCost = subtotal * (scrapRate / 100);
     const totalBeforeProfit = subtotal + scrapCost;
@@ -69,13 +63,14 @@ const CostCalculation = () => {
     return {
       totalMachiningHours: totalMachiningHours.toFixed(1),
       laborCost: laborCost.toFixed(2),
+      machineCost: machineCost.toFixed(2),
       additionalCosts: additionalCosts.toFixed(2),
       scrapCost: scrapCost.toFixed(2),
       profit: profit.toFixed(2),
       grandTotal: grandTotal.toFixed(2),
       costPerPart: costPerPart.toFixed(2),
     };
-  }, [setupTime, machiningTime, orderQuantity, laborRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin]);
+  }, [setupTime, machiningTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin]);
 
   return (
     <div className="industrial-card p-6 animate-fade-in">
@@ -158,29 +153,37 @@ const CostCalculation = () => {
             />
           </div>
 
-          {/* Machine Selection with Tabs */}
-          <div>
-            <label className="label-industrial block mb-2">Tezgah Seçimi</label>
-            <Tabs value={machineTab} onValueChange={handleMachineTabChange}>
-              <TabsList className="w-full bg-secondary/50">
-                <TabsTrigger value="turning" className="flex-1 text-xs">Torna</TabsTrigger>
-                <TabsTrigger value="milling-4axis" className="flex-1 text-xs">Freze</TabsTrigger>
-                <TabsTrigger value="milling-5axis" className="flex-1 text-xs">5 Eksen</TabsTrigger>
-              </TabsList>
-              {["turning", "milling-4axis", "milling-5axis"].map((type) => (
-                <TabsContent key={type} value={type}>
-                  <select
-                    value={selectedMachine}
-                    onChange={(e) => setSelectedMachine(e.target.value)}
-                    className="input-industrial w-full mt-2"
-                  >
-                    {machinePark.filter((m) => m.type === type).map((m) => (
-                      <option key={m.id} value={m.id}>{m.label}</option>
-                    ))}
-                  </select>
-                </TabsContent>
-              ))}
-            </Tabs>
+          {/* Machine Selections */}
+          <div className="space-y-3">
+            <label className="label-industrial block">Tezgah Seçimi & dk Fiyatları</label>
+            {([
+              { label: "Torna", type: "turning" as const, value: selectedTurning, setValue: setSelectedTurning, rate: turningRate, setRate: setTurningRate },
+              { label: "Freze", type: "milling-4axis" as const, value: selectedMilling, setValue: setSelectedMilling, rate: millingRate, setRate: setMillingRate },
+              { label: "5 Eksen", type: "milling-5axis" as const, value: selected5Axis, setValue: setSelected5Axis, rate: fiveAxisRate, setRate: setFiveAxisRate },
+            ]).map((machine) => (
+              <div key={machine.type} className="p-3 rounded-lg bg-secondary/20 border border-border space-y-2">
+                <span className="text-xs font-medium text-muted-foreground">{machine.label}</span>
+                <select
+                  value={machine.value}
+                  onChange={(e) => machine.setValue(e.target.value)}
+                  className="input-industrial w-full text-sm"
+                >
+                  {machinePark.filter((m) => m.type === machine.type).map((m) => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={machine.rate}
+                    onChange={(e) => machine.setRate(Number(e.target.value))}
+                    className="input-industrial w-full text-sm"
+                    placeholder="0"
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">₺/dk</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -317,6 +320,7 @@ const CostCalculation = () => {
           <div className="space-y-2">
             <ResultRow label="Toplam İşleme Süresi" value={`${calculations.totalMachiningHours} saat`} />
             <ResultRow label="İşçilik Maliyeti" value={`₺${calculations.laborCost}`} />
+            <ResultRow label="Tezgah Maliyeti" value={`₺${calculations.machineCost}`} />
             <ResultRow label="Ek Giderler Toplamı" value={`₺${calculations.additionalCosts}`} />
             <ResultRow label={`Fire Maliyeti (%${scrapRate})`} value={`₺${calculations.scrapCost}`} />
             <ResultRow label={`Kâr (%${profitMargin})`} value={`₺${calculations.profit}`} highlight />
