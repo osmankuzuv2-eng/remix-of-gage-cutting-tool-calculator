@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { exportAnalysisPdf } from "@/lib/exportAnalysisPdf";
+import * as UTIF from "utif2";
 
 interface Operation {
   step: number;
@@ -37,6 +38,38 @@ interface AnalysisResult {
   difficultyNotes: string;
 }
 
+const convertTifToJpg = async (file: File): Promise<File> => {
+  const buffer = await file.arrayBuffer();
+  const uint8 = new Uint8Array(buffer);
+  const ifds = UTIF.decode(buffer);
+  if (ifds.length === 0) throw new Error("TIF dosyası okunamadı");
+  
+  UTIF.decodeImage(buffer, ifds[0]);
+  const rgba = UTIF.toRGBA8(ifds[0]);
+  const width = ifds[0].width;
+  const height = ifds[0].height;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+  const imageData = ctx.createImageData(width, height);
+  imageData.data.set(new Uint8ClampedArray(rgba.buffer));
+  ctx.putImageData(imageData, 0, 0);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return reject(new Error("Dönüştürme başarısız"));
+        const newName = file.name.replace(/\.tiff?$/i, ".jpg");
+        resolve(new File([blob], newName, { type: "image/jpeg" }));
+      },
+      "image/jpeg",
+      0.92
+    );
+  });
+};
+
 const DrawingAnalyzer = () => {
   const { user, loading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,15 +78,37 @@ const DrawingAnalyzer = () => {
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    let file = e.target.files?.[0];
     if (!file) return;
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
     const ext = file.name.split(".").pop()?.toLowerCase();
+
+    // Auto-convert TIF/TIFF to JPG
+    if (ext === "tif" || ext === "tiff" || file.type === "image/tiff") {
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("TIF dosyası çok büyük (maks 50MB). Lütfen daha küçük bir dosya seçin.");
+        return;
+      }
+      setIsConverting(true);
+      try {
+        toast.info("TIF dosyası JPG'ye dönüştürülüyor...");
+        file = await convertTifToJpg(file);
+        toast.success("TIF → JPG dönüştürme başarılı!");
+      } catch (err: any) {
+        console.error("TIF conversion error:", err);
+        toast.error(`TIF dönüştürme hatası: ${err.message}`);
+        setIsConverting(false);
+        return;
+      }
+      setIsConverting(false);
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
     if (!allowedTypes.includes(file.type) && !["jpg", "jpeg", "png", "webp", "gif", "pdf"].includes(ext || "")) {
-      toast.error("Desteklenen formatlar: JPG, PNG, WebP, GIF, PDF. TIF dosyalarını lütfen JPG/PNG'ye dönüştürün.");
+      toast.error("Desteklenen formatlar: JPG, PNG, WebP, GIF, PDF, TIF/TIFF");
       return;
     }
 
@@ -173,7 +228,7 @@ const DrawingAnalyzer = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,.pdf"
+            accept="image/jpeg,image/png,image/webp,image/gif,.pdf,.tif,.tiff"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -185,7 +240,7 @@ const DrawingAnalyzer = () => {
             >
               <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
               <p className="text-foreground font-medium">Teknik resim yükleyin</p>
-              <p className="text-sm text-muted-foreground mt-1">PNG, JPG, PDF - Maks 20MB</p>
+              <p className="text-sm text-muted-foreground mt-1">PNG, JPG, TIF, PDF - Maks 20MB</p>
             </button>
           ) : (
             <div className="space-y-4">
