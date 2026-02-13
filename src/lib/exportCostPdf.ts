@@ -65,7 +65,7 @@ export const exportCostPdf = (data: CostPdfData) => {
     { label: "Referans No", value: data.referenceNo || "-" },
     { label: safeText("Musteri"), value: data.customer || "-" },
     { label: "Malzeme", value: data.material },
-    { label: safeText("Iscilik (TL/saat)"), value: `${data.laborRate}` },
+    { label: safeText("Iscilik (EUR/saat)"), value: `${data.laborRate}` },
   ];
   const colW = contentWidth / 4;
   infoCols.forEach((c, i) => {
@@ -95,7 +95,7 @@ export const exportCostPdf = (data: CostPdfData) => {
   doc.setFont("helvetica", "bold");
   doc.text("Tip", margin + 3, y + 5);
   doc.text(safeText("Tezgah"), margin + 35, y + 5);
-  doc.text(safeText("dk Fiyat (TL)"), margin + contentWidth - 40, y + 5);
+  doc.text(safeText("dk Fiyat (EUR)"), margin + contentWidth - 40, y + 5);
   y += 7;
   doc.setTextColor(0);
 
@@ -147,10 +147,10 @@ export const exportCostPdf = (data: CostPdfData) => {
   y += 7;
 
   const addCosts = [
-    [safeText("Takim"), `${data.toolCost.toFixed(2)} TL`],
-    ["Nakliye", `${data.shippingCost.toFixed(2)} TL`],
-    ["Kaplama", `${data.coatingCost.toFixed(2)} TL`],
-    [safeText("Isil Islem"), `${data.heatTreatmentCost.toFixed(2)} TL`],
+    [safeText("Takim"), `${data.toolCost.toFixed(2)} EUR`],
+    ["Nakliye", `${data.shippingCost.toFixed(2)} EUR`],
+    ["Kaplama", `${data.coatingCost.toFixed(2)} EUR`],
+    [safeText("Isil Islem"), `${data.heatTreatmentCost.toFixed(2)} EUR`],
   ];
 
   addCosts.forEach((row, idx) => {
@@ -174,11 +174,11 @@ export const exportCostPdf = (data: CostPdfData) => {
   y += 8;
 
   const summaryRows = [
-    [safeText("Iscilik Maliyeti"), `${data.calculations.laborCost} TL`],
-    [safeText("Tezgah Maliyeti"), `${data.calculations.machineCost} TL`],
-    [safeText("Ek Giderler Toplami"), `${data.calculations.additionalCosts} TL`],
-    [`Fire Maliyeti (%${data.scrapRate})`, `${data.calculations.scrapCost} TL`],
-    [`Kar (%${data.profitMargin})`, `${data.calculations.profit} TL`],
+    [safeText("Iscilik Maliyeti"), `${data.calculations.laborCost} EUR`],
+    [safeText("Tezgah Maliyeti"), `${data.calculations.machineCost} EUR`],
+    [safeText("Ek Giderler Toplami"), `${data.calculations.additionalCosts} EUR`],
+    [`Fire Maliyeti (%${data.scrapRate})`, `${data.calculations.scrapCost} EUR`],
+    [`Kar (%${data.profitMargin})`, `${data.calculations.profit} EUR`],
   ];
 
   summaryRows.forEach((row, idx) => {
@@ -204,14 +204,14 @@ export const exportCostPdf = (data: CostPdfData) => {
   doc.text("Genel Toplam", margin + 5, y + 8);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text(`${data.calculations.grandTotal} TL`, margin + contentWidth - 5, y + 13, { align: "right" });
+  doc.text(`${data.calculations.grandTotal} EUR`, margin + contentWidth - 5, y + 13, { align: "right" });
   y += 22;
 
   // Per part
   doc.setTextColor(0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`${safeText("Parca Basi Maliyet")}: ${data.calculations.costPerPart} TL  (${data.orderQuantity} adet)`, margin, y);
+  doc.text(`${safeText("Parca Basi Maliyet")}: ${data.calculations.costPerPart} EUR  (${data.orderQuantity} adet)`, margin, y);
   y += 10;
 
   // Footer
