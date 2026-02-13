@@ -55,8 +55,8 @@ const DrawingAnalyzer = () => {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Dosya boyutu 10MB'dan küçük olmalıdır");
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Dosya boyutu 20MB'dan küçük olmalıdır");
       return;
     }
 
@@ -183,7 +183,7 @@ const DrawingAnalyzer = () => {
             >
               <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
               <p className="text-foreground font-medium">Teknik resim yükleyin</p>
-              <p className="text-sm text-muted-foreground mt-1">PNG, JPG, PDF - Maks 10MB</p>
+              <p className="text-sm text-muted-foreground mt-1">PNG, JPG, PDF - Maks 20MB</p>
             </button>
           ) : (
             <div className="space-y-4">
