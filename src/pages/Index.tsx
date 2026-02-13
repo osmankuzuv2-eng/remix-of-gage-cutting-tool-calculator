@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
-import { Calculator, Clock, Database, Code, DollarSign, History, Plus, GitCompare, Wrench, Circle, LayoutDashboard, FileImage } from "lucide-react";
+import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, LayoutDashboard, FileImage } from "lucide-react";
 import Header from "@/components/Header";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
 import MaterialList from "@/components/MaterialList";
-import GCodeGenerator from "@/components/GCodeGenerator";
+
 import CostAnalyzer from "@/components/CostAnalyzer";
 import CostCalculation from "@/components/CostCalculation";
 import CalculationHistory from "@/components/CalculationHistory";
@@ -19,7 +19,7 @@ import Dashboard from "@/components/Dashboard";
 import DrawingAnalyzer from "@/components/DrawingAnalyzer";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 
-type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "gcode" | "cost" | "costcalc" | "history" | "drawing";
+type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "history" | "drawing";
 
 const tabs = [
   { id: "dashboard" as TabId, label: "Dashboard", icon: LayoutDashboard },
@@ -31,8 +31,7 @@ const tabs = [
   { id: "drilling" as TabId, label: "Delme", icon: Circle },
   { id: "compare" as TabId, label: "Karşılaştır", icon: GitCompare },
   { id: "materials" as TabId, label: "Malzemeler", icon: Database },
-  { id: "gcode" as TabId, label: "G-Code", icon: Code },
-  { id: "cost" as TabId, label: "Maliyet", icon: DollarSign },
+  { id: "cost" as TabId, label: "Takım Maliyet", icon: DollarSign },
   { id: "history" as TabId, label: "Geçmiş", icon: History },
 ];
 
@@ -112,7 +111,6 @@ const Index = () => {
               onDeleteCustom={handleDeleteMaterial}
             />
           )}
-          {activeTab === "gcode" && <GCodeGenerator />}
           {activeTab === "cost" && <CostAnalyzer />}
           {activeTab === "costcalc" && <CostCalculation />}
           {activeTab === "drawing" && <DrawingAnalyzer />}
