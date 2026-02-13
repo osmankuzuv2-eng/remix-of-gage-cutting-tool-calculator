@@ -16,6 +16,9 @@ export interface CostPdfData {
   referenceNo: string;
   customer: string;
   material: string;
+  density: number;
+  weightKg: string;
+  materialPricePerKg: number;
   laborRate: number;
   machines: { label: string; name: string; rate: number }[];
   setupTime: number;
@@ -31,6 +34,7 @@ export interface CostPdfData {
     totalMachiningHours: string;
     laborCost: string;
     machineCost: string;
+    totalMaterialCost: string;
     additionalCosts: string;
     scrapCost: string;
     profit: string;
@@ -124,6 +128,9 @@ export const exportCostPdf = (data: CostPdfData) => {
     [safeText("Isleme Suresi (parca basi)"), `${data.machiningTime} dk`],
     [safeText("Siparis Adeti"), `${data.orderQuantity}`],
     [safeText("Toplam Isleme Suresi"), `${data.calculations.totalMachiningHours} saat`],
+    [safeText("Malzeme Yogunlugu"), `${data.density} g/cm3`],
+    [safeText("Parca Agirligi"), `${data.weightKg} kg`],
+    [`Malzeme Fiyati`, `${data.materialPricePerKg} EUR/kg`],
   ];
 
   prodRows.forEach((row, idx) => {
@@ -174,6 +181,7 @@ export const exportCostPdf = (data: CostPdfData) => {
   y += 8;
 
   const summaryRows = [
+    [safeText("Malzeme Maliyeti"), `${data.calculations.totalMaterialCost} EUR`],
     [safeText("Iscilik Maliyeti"), `${data.calculations.laborCost} EUR`],
     [safeText("Tezgah Maliyeti"), `${data.calculations.machineCost} EUR`],
     [safeText("Ek Giderler Toplami"), `${data.calculations.additionalCosts} EUR`],

@@ -38,6 +38,7 @@ const MaterialForm = ({ onAddMaterial, onClose }: MaterialFormProps) => {
       feedRate: { min: formData.feedRateMin, max: formData.feedRateMax, unit: "mm/dev" },
       taylorN: formData.taylorN,
       taylorC: formData.taylorC,
+      density: 7.85,
       color: selectedColor,
     };
 

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown } from "lucide-react";
+import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown, Weight, Ruler } from "lucide-react";
 import { machinePark } from "@/data/machinePark";
 import { materials } from "@/data/materials";
 import { exportCostPdf } from "@/lib/exportCostPdf";
@@ -35,6 +35,14 @@ const CostCalculation = () => {
   const [machiningTime, setMachiningTime] = useState(15);
   const [orderQuantity, setOrderQuantity] = useState(100);
 
+  // Material dimensions
+  const [shapeType, setShapeType] = useState<"round" | "rectangular">("round");
+  const [diameter, setDiameter] = useState(50); // mm
+  const [length, setLength] = useState(100); // mm
+  const [width, setWidth] = useState(50); // mm
+  const [height, setHeight] = useState(50); // mm
+  const [materialPricePerKg, setMaterialPricePerKg] = useState(5); // €/kg
+
   // Additional costs
   const [toolCost, setToolCost] = useState(0);
   const [shippingCost, setShippingCost] = useState(0);
@@ -45,14 +53,28 @@ const CostCalculation = () => {
   const [scrapRate, setScrapRate] = useState(3);
   const [profitMargin, setProfitMargin] = useState(20);
 
+  const currentMaterial = materials.find(m => m.id === selectedMaterial);
+
   const calculations = useMemo(() => {
+    // Volume calculation (cm³)
+    const density = currentMaterial?.density ?? 7.85;
+    let volumeCm3 = 0;
+    if (shapeType === "round") {
+      volumeCm3 = Math.PI * Math.pow(diameter / 20, 2) * (length / 10); // mm -> cm
+    } else {
+      volumeCm3 = (length / 10) * (width / 10) * (height / 10);
+    }
+    const weightKg = (volumeCm3 * density) / 1000;
+    const materialCostPerPart = weightKg * materialPricePerKg;
+    const totalMaterialCost = materialCostPerPart * orderQuantity;
+
     const machineCost = (turningRate + millingRate + fiveAxisRate) * machiningTime * orderQuantity;
     const totalMachiningMinutes = setupTime + machiningTime * orderQuantity;
     const totalMachiningHours = totalMachiningMinutes / 60;
     const laborCost = totalMachiningHours * laborRate;
 
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
-    const subtotal = laborCost + machineCost + additionalCosts;
+    const subtotal = laborCost + machineCost + totalMaterialCost + additionalCosts;
 
     const scrapCost = subtotal * (scrapRate / 100);
     const totalBeforeProfit = subtotal + scrapCost;
@@ -62,6 +84,10 @@ const CostCalculation = () => {
     const costPerPart = orderQuantity > 0 ? grandTotal / orderQuantity : 0;
 
     return {
+      volumeCm3: volumeCm3.toFixed(2),
+      weightKg: weightKg.toFixed(3),
+      materialCostPerPart: materialCostPerPart.toFixed(2),
+      totalMaterialCost: totalMaterialCost.toFixed(2),
       totalMachiningHours: totalMachiningHours.toFixed(1),
       laborCost: laborCost.toFixed(2),
       machineCost: machineCost.toFixed(2),
@@ -71,7 +97,7 @@ const CostCalculation = () => {
       grandTotal: grandTotal.toFixed(2),
       costPerPart: costPerPart.toFixed(2),
     };
-  }, [setupTime, machiningTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin]);
+  }, [setupTime, machiningTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, shapeType, diameter, length, width, height, materialPricePerKg, currentMaterial]);
 
   return (
     <div className="industrial-card p-6 animate-fade-in">
@@ -113,6 +139,66 @@ const CostCalculation = () => {
             </select>
           </div>
 
+          {/* Material Dimensions */}
+          <div className="pt-2 border-t border-border space-y-2">
+            <label className="label-industrial flex items-center gap-1">
+              <Ruler className="w-3 h-3" /> Malzeme Ebatları
+            </label>
+            <div className="text-xs text-muted-foreground">
+              Özgül Ağırlık: {currentMaterial?.density ?? 7.85} g/cm³
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShapeType("round")}
+                className={`flex-1 text-xs py-1.5 rounded border transition-colors ${shapeType === "round" ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground"}`}
+              >
+                ⚫ Yuvarlak
+              </button>
+              <button
+                onClick={() => setShapeType("rectangular")}
+                className={`flex-1 text-xs py-1.5 rounded border transition-colors ${shapeType === "rectangular" ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground"}`}
+              >
+                ▬ Dikdörtgen
+              </button>
+            </div>
+            {shapeType === "round" ? (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="label-industrial block mb-1 text-xs">Çap (mm)</label>
+                  <input type="number" value={diameter} onChange={(e) => setDiameter(Number(e.target.value))} className="input-industrial w-full text-sm" />
+                </div>
+                <div>
+                  <label className="label-industrial block mb-1 text-xs">Boy (mm)</label>
+                  <input type="number" value={length} onChange={(e) => setLength(Number(e.target.value))} className="input-industrial w-full text-sm" />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="label-industrial block mb-1 text-xs">En (mm)</label>
+                  <input type="number" value={width} onChange={(e) => setWidth(Number(e.target.value))} className="input-industrial w-full text-sm" />
+                </div>
+                <div>
+                  <label className="label-industrial block mb-1 text-xs">Boy (mm)</label>
+                  <input type="number" value={length} onChange={(e) => setLength(Number(e.target.value))} className="input-industrial w-full text-sm" />
+                </div>
+                <div>
+                  <label className="label-industrial block mb-1 text-xs">Yük. (mm)</label>
+                  <input type="number" value={height} onChange={(e) => setHeight(Number(e.target.value))} className="input-industrial w-full text-sm" />
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 rounded bg-secondary/20 text-center">
+                <div className="text-xs text-muted-foreground">Ağırlık</div>
+                <div className="font-mono text-sm font-medium text-foreground">{calculations.weightKg} kg</div>
+              </div>
+              <div>
+                <label className="label-industrial block mb-1 text-xs">Malzeme €/kg</label>
+                <input type="number" value={materialPricePerKg} onChange={(e) => setMaterialPricePerKg(Number(e.target.value))} className="input-industrial w-full text-sm" />
+              </div>
+            </div>
+          </div>
           <div>
             <label className="label-industrial block mb-2">Müşteri</label>
             <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
@@ -320,6 +406,7 @@ const CostCalculation = () => {
 
           <div className="space-y-2">
             <ResultRow label="Toplam İşleme Süresi" value={`${calculations.totalMachiningHours} saat`} />
+            <ResultRow label={`Malzeme (${calculations.weightKg} kg × €${materialPricePerKg})`} value={`€${calculations.totalMaterialCost}`} />
             <ResultRow label="İşçilik Maliyeti" value={`€${calculations.laborCost}`} />
             <ResultRow label="Tezgah Maliyeti" value={`€${calculations.machineCost}`} />
             <ResultRow label="Ek Giderler Toplamı" value={`€${calculations.additionalCosts}`} />
@@ -360,6 +447,9 @@ const CostCalculation = () => {
                 referenceNo,
                 customer,
                 material: materialName,
+                density: currentMaterial?.density ?? 7.85,
+                weightKg: calculations.weightKg,
+                materialPricePerKg,
                 laborRate,
                 machines: [
                   { label: "Torna", name: getMachineName(selectedTurning), rate: turningRate },
