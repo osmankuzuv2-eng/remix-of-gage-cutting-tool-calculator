@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,25 +27,9 @@ serve(async (req) => {
       throw new Error("Server configuration error");
     }
 
-    // Determine if file is PDF based on URL or fileName
-    const isPdf = imageUrl.toLowerCase().endsWith(".pdf") || fileName?.toLowerCase().endsWith(".pdf");
-
-    // Download the file and convert to base64 data URL
-    // This is required because the AI gateway doesn't support PDF URLs directly
-    const fileResponse = await fetch(imageUrl);
-    if (!fileResponse.ok) {
-      throw new Error(`Dosya indirilemedi: ${fileResponse.status}`);
-    }
-    const fileBytes = new Uint8Array(await fileResponse.arrayBuffer());
-    const base64Data = base64Encode(fileBytes);
-    
-    const mimeType = isPdf ? "application/pdf" : (
-      imageUrl.toLowerCase().endsWith(".png") ? "image/png" :
-      imageUrl.toLowerCase().endsWith(".webp") ? "image/webp" :
-      imageUrl.toLowerCase().endsWith(".gif") ? "image/gif" :
-      "image/jpeg"
-    );
-    const dataUrl = `data:${mimeType};base64,${base64Data}`;
+    // Pass the public URL directly to the AI model - no need to download
+    // This avoids memory issues with large files
+    const imageContent = { type: "image_url" as const, image_url: { url: imageUrl } };
 
     const systemPrompt = `Sen 20+ yil deneyimli, gercek bir CNC atolyesinde calisan uzman makine muhendisisin. Teknik resimleri analiz edip GERCEKCI isleme plani ve sureler olusturuyorsun.
 
@@ -183,7 +166,7 @@ Sadece JSON dondur, baska metin ekleme.`;
             role: "user",
             content: [
               { type: "text", text: userMessage },
-              { type: "image_url", image_url: { url: dataUrl } },
+              imageContent,
             ],
           },
         ],
