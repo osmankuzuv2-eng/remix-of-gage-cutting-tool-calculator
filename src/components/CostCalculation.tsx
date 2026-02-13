@@ -11,8 +11,8 @@ import {
 
 const customers = [
   "ASELSAN", "ROKETSAN", "TAI (TUSAŞ)", "TEI", "HAVELSAN",
-  "BMC", "OTOKAR", "FNSS", "MKE", "BAYKAR",
-  "Diğer",
+  "BMC", "ALSTOM", "FAİVELEY", "QURİ", "LUKAS",
+  "BAYKAR", "Diğer",
 ];
 
 const CostCalculation = () => {
