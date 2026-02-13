@@ -145,7 +145,7 @@ const CostCalculation = () => {
           </div>
 
           <div>
-            <label className="label-industrial block mb-2">İşçilik Ücreti (₺/saat)</label>
+            <label className="label-industrial block mb-2">İşçilik Ücreti (€/saat)</label>
             <input
               type="number"
               value={laborRate}
@@ -181,7 +181,7 @@ const CostCalculation = () => {
                     className="input-industrial w-full text-sm"
                     placeholder="0"
                   />
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">₺/dk</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">€/dk</span>
                 </div>
               </div>
             ))}
@@ -227,7 +227,7 @@ const CostCalculation = () => {
 
           <div className="pt-2 border-t border-border">
             <h4 className="label-industrial mb-3 flex items-center gap-2">
-              Ek Giderler (₺)
+              Ek Giderler (€)
             </h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -313,27 +313,27 @@ const CostCalculation = () => {
             <div className="text-center mb-4">
               <span className="label-industrial">Parça Başı Maliyet</span>
               <div className="font-mono text-4xl font-bold text-primary mt-2">
-                ₺{calculations.costPerPart}
+                €{calculations.costPerPart}
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
             <ResultRow label="Toplam İşleme Süresi" value={`${calculations.totalMachiningHours} saat`} />
-            <ResultRow label="İşçilik Maliyeti" value={`₺${calculations.laborCost}`} />
-            <ResultRow label="Tezgah Maliyeti" value={`₺${calculations.machineCost}`} />
-            <ResultRow label="Ek Giderler Toplamı" value={`₺${calculations.additionalCosts}`} />
-            <ResultRow label={`Fire Maliyeti (%${scrapRate})`} value={`₺${calculations.scrapCost}`} />
-            <ResultRow label={`Kâr (%${profitMargin})`} value={`₺${calculations.profit}`} highlight />
+            <ResultRow label="İşçilik Maliyeti" value={`€${calculations.laborCost}`} />
+            <ResultRow label="Tezgah Maliyeti" value={`€${calculations.machineCost}`} />
+            <ResultRow label="Ek Giderler Toplamı" value={`€${calculations.additionalCosts}`} />
+            <ResultRow label={`Fire Maliyeti (%${scrapRate})`} value={`€${calculations.scrapCost}`} />
+            <ResultRow label={`Kâr (%${profitMargin})`} value={`€${calculations.profit}`} highlight />
           </div>
 
           <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
             <div className="flex justify-between items-center">
               <span className="font-medium text-foreground">Genel Toplam</span>
-              <span className="font-mono text-2xl font-bold text-primary">₺{calculations.grandTotal}</span>
+              <span className="font-mono text-2xl font-bold text-primary">€{calculations.grandTotal}</span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {orderQuantity} adet × ₺{calculations.costPerPart}/parça
+              {orderQuantity} adet × €{calculations.costPerPart}/parça
             </div>
           </div>
 
