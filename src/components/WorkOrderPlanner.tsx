@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { ClipboardList, Plus, Trash2, Calculator, Clock, DollarSign, FileDown } from "lucide-react";
 import { materials, toolTypes, operations, Material } from "@/data/materials";
+import { machinePark } from "@/data/machinePark";
 import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 
-interface Operation {
+interface WorkOrderOperation {
   id: string;
   operationType: string;
   materialId: string;
   toolId: string;
+  machineId: string;
   diameter: number;
   depth: number;
   length: number;
@@ -23,12 +25,13 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
   const allMaterials = [...materials, ...customMaterials];
   const [orderName, setOrderName] = useState("İş Emri #1");
   const [machineRate, setMachineRate] = useState(150);
-  const [operationsList, setOperationsList] = useState<Operation[]>([
+  const [operationsList, setOperationsList] = useState<WorkOrderOperation[]>([
     {
       id: crypto.randomUUID(),
       operationType: operations[0].id,
       materialId: allMaterials[0].id,
       toolId: toolTypes[1].id,
+      machineId: machinePark[0].id,
       diameter: 20,
       depth: 2,
       length: 100,
@@ -44,6 +47,7 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
         operationType: operations[0].id,
         materialId: allMaterials[0].id,
         toolId: toolTypes[1].id,
+        machineId: machinePark[0].id,
         diameter: 20,
         depth: 2,
         length: 100,
@@ -58,7 +62,7 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
     }
   };
 
-  const updateOperation = (id: string, field: keyof Operation, value: string | number) => {
+  const updateOperation = (id: string, field: keyof WorkOrderOperation, value: string | number) => {
     setOperationsList(
       operationsList.map((op) =>
         op.id === id ? { ...op, [field]: value } : op
@@ -66,7 +70,7 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
     );
   };
 
-  const calculateOperationTime = (op: Operation) => {
+  const calculateOperationTime = (op: WorkOrderOperation) => {
     const material = allMaterials.find((m) => m.id === op.materialId)!;
     const tool = toolTypes.find((t) => t.id === op.toolId)!;
     
@@ -126,10 +130,12 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
       const times = calculateOperationTime(op);
       
       doc.setFontSize(10);
+      const machine = machinePark.find((m) => m.id === op.machineId);
       doc.text(`${index + 1}. ${opType.name}`, 14, yPos);
-      doc.text(`   Malzeme: ${material.name}`, 14, yPos + 6);
-      doc.text(`   Takım: ${tool.name} - Ø${op.diameter}mm`, 14, yPos + 12);
-      doc.text(`   Derinlik: ${op.depth}mm, Uzunluk: ${op.length}mm, Adet: ${op.quantity}`, 14, yPos + 18);
+      doc.text(`   Tezgah: ${machine?.label ?? "-"}`, 14, yPos + 6);
+      doc.text(`   Malzeme: ${material.name}`, 14, yPos + 12);
+      doc.text(`   Takım: ${tool.name} - Ø${op.diameter}mm`, 14, yPos + 18);
+      doc.text(`   Derinlik: ${op.depth}mm, Uzunluk: ${op.length}mm, Adet: ${op.quantity}`, 14, yPos + 24);
       doc.text(`   Süre: ${times.totalTime.toFixed(2)} dk`, 14, yPos + 24);
       
       yPos += 35;
@@ -230,7 +236,7 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
                 </button>
               </div>
 
-              <div className="grid md:grid-cols-4 gap-3 mb-3">
+              <div className="grid md:grid-cols-5 gap-3 mb-3">
                 <div>
                   <label className="text-xs text-muted-foreground">İşlem Tipi</label>
                   <select
@@ -241,6 +247,20 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
                     {operations.map((o) => (
                       <option key={o.id} value={o.id}>
                         {o.icon} {o.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Tezgah</label>
+                  <select
+                    value={op.machineId}
+                    onChange={(e) => updateOperation(op.id, "machineId", e.target.value)}
+                    className="input-industrial w-full text-sm"
+                  >
+                    {machinePark.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label}
                       </option>
                     ))}
                   </select>
