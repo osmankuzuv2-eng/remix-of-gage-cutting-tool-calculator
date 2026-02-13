@@ -20,7 +20,7 @@ const CostCalculation = () => {
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [customer, setCustomer] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
-  const [laborRate, setLaborRate] = useState(100);
+  const [laborRate, setLaborRate] = useState(1.67); // €/dk
 
   // Machines - separate selections with per-minute rates
   const [selectedTurning, setSelectedTurning] = useState(machinePark.find(m => m.type === "turning")?.id ?? "");
@@ -71,7 +71,7 @@ const CostCalculation = () => {
     const machineCost = (turningRate + millingRate + fiveAxisRate) * machiningTime * orderQuantity;
     const totalMachiningMinutes = setupTime + machiningTime * orderQuantity;
     const totalMachiningHours = totalMachiningMinutes / 60;
-    const laborCost = totalMachiningHours * laborRate;
+    const laborCost = totalMachiningMinutes * laborRate;
 
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
     const subtotal = laborCost + machineCost + totalMaterialCost + additionalCosts;
@@ -231,7 +231,7 @@ const CostCalculation = () => {
           </div>
 
           <div>
-            <label className="label-industrial block mb-2">İşçilik Ücreti (€/saat)</label>
+            <label className="label-industrial block mb-2">İşçilik Ücreti (€/dk)</label>
             <input
               type="number"
               value={laborRate}

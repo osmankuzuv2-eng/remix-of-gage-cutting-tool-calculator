@@ -69,7 +69,7 @@ export const exportCostPdf = (data: CostPdfData) => {
     { label: "Referans No", value: data.referenceNo || "-" },
     { label: safeText("Musteri"), value: data.customer || "-" },
     { label: "Malzeme", value: data.material },
-    { label: safeText("Iscilik (EUR/saat)"), value: `${data.laborRate}` },
+    { label: safeText("Iscilik (EUR/dk)"), value: `${data.laborRate}` },
   ];
   const colW = contentWidth / 4;
   infoCols.forEach((c, i) => {
