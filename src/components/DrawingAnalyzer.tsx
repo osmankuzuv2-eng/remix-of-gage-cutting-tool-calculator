@@ -38,7 +38,7 @@ interface AnalysisResult {
 }
 
 const DrawingAnalyzer = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -133,6 +133,17 @@ const DrawingAnalyzer = () => {
       default: return "text-muted-foreground";
     }
   };
+
+  if (loading) {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="py-12 text-center">
+          <Loader2 className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
+          <p className="text-muted-foreground">Yükleniyor...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!user) {
     return (
