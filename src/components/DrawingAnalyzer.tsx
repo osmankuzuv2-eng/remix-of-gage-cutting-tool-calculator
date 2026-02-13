@@ -50,8 +50,10 @@ const DrawingAnalyzer = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
-      toast.error("Lütfen bir resim veya PDF dosyası seçin");
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!allowedTypes.includes(file.type) && !["jpg", "jpeg", "png", "webp", "gif", "pdf"].includes(ext || "")) {
+      toast.error("Desteklenen formatlar: JPG, PNG, WebP, GIF, PDF. TIF dosyalarını lütfen JPG/PNG'ye dönüştürün.");
       return;
     }
 
@@ -171,7 +173,7 @@ const DrawingAnalyzer = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,.pdf"
+            accept="image/jpeg,image/png,image/webp,image/gif,.pdf"
             onChange={handleFileSelect}
             className="hidden"
           />
