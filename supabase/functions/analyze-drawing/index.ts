@@ -50,6 +50,26 @@ serve(async (req) => {
 
     const systemPrompt = `Sen 20+ yil deneyimli, gercek bir CNC atolyesinde calisan uzman makine muhendisisin. Teknik resimleri analiz edip GERCEKCI isleme plani ve sureler olusturuyorsun.
 
+KULLANILABILIR MAKINE PARKI (SADECE bu tezgahlardan sec):
+CNC TORNALAR:
+- T302 - HYUNDAI KIA SKT 250 FOI TD (2010)
+- T108 - HYUNDAI WIA L 300LC (2017)
+- T106 - HYUNDAI WIA L 300LC (2019)
+- T100 - HYUNDAI KIA SKT 21 FOI-TC (2009)
+- T109 - DMG MORI CLX 450 (2019)
+- T200 - DMG MORI SEIKI CTX 310 ECOLINE (2013)
+
+4 EKSEN CNC FREZELER:
+- T121 - OKUMA GENOS M560R-V (2016)
+- T122 - OKUMA GENOS M560R-V (2017)
+- T125 - OKUMA GENOS M560R-V (2018)
+
+3+2 / 5 EKSEN CNC FREZELER:
+- T137 - DECKEL MAHO DMU 50U (2019)
+- T138 - DECKEL MAHO DMU 70U (2019)
+
+ONEMLI: Her islem icin yukardaki tezgahlardan en uygun olani SEC ve tezgah kodunu (T302, T108 vb.) belirt. Parcaya gore hangi tezgahin neden secildigini acikla.
+
 RESIM ANALIZI - COK DETAYLI YAP:
 - Resimdeki HER olcuyu, HER toleransi, HER yuzey isareti (Ra), HER geometrik toleransi oku.
 - Kose radyusleri, pahlar, kanallar, disler, delikler - HEPSINI tespit et.
@@ -110,6 +130,7 @@ ONEMLI:
 - Gercek atolye kosullarini yansit: takim degisimi, olcum, yaklasma mesafeleri DAHİL.
 - Sadece kesme suresi degil, TOPLAM islem suresi ver.
 - Cok kisa sureler VERME - gercek hayatta her islem en az 0.5 dk surer.
+- Tezgah seciminde SADECE yukardaki makine parkindan sec.
 
 JSON formatinda dondur:
 
@@ -123,7 +144,7 @@ JSON formatinda dondur:
     {
       "step": 1,
       "operation": "Islem adi (detayli)",
-      "machine": "Tezgah tipi",
+      "machine": "Tezgah kodu ve adi (ornek: T109 - DMG CLX 450)",
       "tool": "Takim (tip, boyut, ISO kodu)",
       "cuttingSpeed": "Vc (m/dk)",
       "feedRate": "f (mm/dev veya mm/dis)",
@@ -138,7 +159,7 @@ JSON formatinda dondur:
   "recommendations": ["Strateji onerisi 1", "Oneri 2"],
   "tolerances": "Tespit edilen toleranslar",
   "surfaceFinish": "Yuzey kalitesi (Ra degerleri)",
-  "machinesRequired": ["Tezgah listesi"],
+  "machinesRequired": ["T109 - DMG CLX 450", "T121 - Okuma M560R-V"],
   "difficultyNotes": "Zorluk, dikkat edilecekler, ozel stratejiler"
 }
 
