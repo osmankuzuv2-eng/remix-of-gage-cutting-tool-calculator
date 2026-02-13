@@ -7,6 +7,7 @@ import ToolLifeCalculator from "@/components/ToolLifeCalculator";
 import MaterialList from "@/components/MaterialList";
 import GCodeGenerator from "@/components/GCodeGenerator";
 import CostAnalyzer from "@/components/CostAnalyzer";
+import CostCalculation from "@/components/CostCalculation";
 import CalculationHistory from "@/components/CalculationHistory";
 import MaterialForm from "@/components/MaterialForm";
 
@@ -18,11 +19,12 @@ import Dashboard from "@/components/Dashboard";
 import DrawingAnalyzer from "@/components/DrawingAnalyzer";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 
-type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "gcode" | "cost" | "history" | "drawing";
+type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "gcode" | "cost" | "costcalc" | "history" | "drawing";
 
 const tabs = [
   { id: "dashboard" as TabId, label: "Dashboard", icon: LayoutDashboard },
   { id: "drawing" as TabId, label: "Teknik Resim Analizi", icon: FileImage },
+  { id: "costcalc" as TabId, label: "Maliyet Hesaplama", icon: DollarSign },
   { id: "cutting" as TabId, label: "Kesme", icon: Calculator },
   { id: "toollife" as TabId, label: "Takım Ömrü", icon: Clock },
   { id: "threading" as TabId, label: "Diş Açma", icon: Wrench },
@@ -112,6 +114,7 @@ const Index = () => {
           )}
           {activeTab === "gcode" && <GCodeGenerator />}
           {activeTab === "cost" && <CostAnalyzer />}
+          {activeTab === "costcalc" && <CostCalculation />}
           {activeTab === "drawing" && <DrawingAnalyzer />}
           {activeTab === "history" && <CalculationHistory />}
         </div>
