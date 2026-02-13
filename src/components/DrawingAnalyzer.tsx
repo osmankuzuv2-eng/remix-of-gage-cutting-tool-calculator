@@ -147,12 +147,13 @@ const DrawingAnalyzer = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
+      // Get signed URL (bucket is private)
+      const { data: urlData, error: urlError } = await supabase.storage
         .from("technical-drawings")
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
 
-      const imageUrl = urlData.publicUrl;
+      if (urlError) throw urlError;
+      const imageUrl = urlData.signedUrl;
 
       // Call edge function
       const { data, error } = await supabase.functions.invoke("analyze-drawing", {

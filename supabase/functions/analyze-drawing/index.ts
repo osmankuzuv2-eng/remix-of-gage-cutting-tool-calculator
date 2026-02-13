@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,11 +13,45 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+    if (authError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+
     const { imageUrl, fileName, additionalInfo } = await req.json();
 
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "imageUrl is required" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate that the imageUrl belongs to this user's storage path
+    if (!imageUrl.includes(userId)) {
+      return new Response(JSON.stringify({ error: "Unauthorized access to image" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -27,8 +62,6 @@ serve(async (req) => {
       throw new Error("Server configuration error");
     }
 
-    // Pass the public URL directly to the AI model - no need to download
-    // This avoids memory issues with large files
     const imageContent = { type: "image_url" as const, image_url: { url: imageUrl } };
 
     const systemPrompt = `Sen 20+ yil deneyimli, gercek bir CNC atolyesinde calisan uzman makine muhendisisin. Teknik resimleri analiz edip GERCEKCI isleme plani ve sureler olusturuyorsun.
@@ -187,7 +220,7 @@ Sadece JSON dondur, baska metin ekleme.`;
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI analiz hatası (${response.status}): ${errorText.substring(0, 200)}`);
+      throw new Error(`AI analiz hatası (${response.status})`);
     }
 
     const data = await response.json();
@@ -207,7 +240,7 @@ Sadece JSON dondur, baska metin ekleme.`;
     });
   } catch (error) {
     console.error("Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Bir hata oluştu, lütfen tekrar deneyin." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
