@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench } from "lucide-react";
+import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown } from "lucide-react";
 import { machinePark } from "@/data/machinePark";
 import { materials } from "@/data/materials";
+import { exportCostPdf } from "@/lib/exportCostPdf";
 import {
   Popover,
   PopoverContent,
@@ -350,6 +351,38 @@ const CostCalculation = () => {
               )}
             </div>
           )}
+
+          <button
+            onClick={() => {
+              const materialName = materials.find(m => m.id === selectedMaterial)?.name ?? selectedMaterial;
+              const getMachineName = (id: string) => machinePark.find(m => m.id === id)?.label ?? id;
+              exportCostPdf({
+                referenceNo,
+                customer,
+                material: materialName,
+                laborRate,
+                machines: [
+                  { label: "Torna", name: getMachineName(selectedTurning), rate: turningRate },
+                  { label: "Freze", name: getMachineName(selectedMilling), rate: millingRate },
+                  { label: "5 Eksen", name: getMachineName(selected5Axis), rate: fiveAxisRate },
+                ],
+                setupTime,
+                machiningTime,
+                orderQuantity,
+                toolCost,
+                shippingCost,
+                coatingCost,
+                heatTreatmentCost,
+                scrapRate,
+                profitMargin,
+                calculations,
+              });
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+          >
+            <FileDown className="w-4 h-4" />
+            PDF Olarak İndir
+          </button>
         </div>
       </div>
     </div>
