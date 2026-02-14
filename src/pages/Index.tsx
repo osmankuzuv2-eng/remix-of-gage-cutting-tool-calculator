@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
-import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, LayoutDashboard, FileImage, Ruler } from "lucide-react";
+import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, FileImage, Ruler } from "lucide-react";
 import Header from "@/components/Header";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
@@ -15,15 +15,14 @@ import MaterialForm from "@/components/MaterialForm";
 import ParameterComparison from "@/components/ParameterComparison";
 import ThreadingCalculator from "@/components/ThreadingCalculator";
 import DrillTapCalculator from "@/components/DrillTapCalculator";
-import Dashboard from "@/components/Dashboard";
+
 import DrawingAnalyzer from "@/components/DrawingAnalyzer";
 import ToleranceGuide from "@/components/ToleranceGuide";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 
-type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "history" | "drawing" | "tolerance";
+type TabId = "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "history" | "drawing" | "tolerance";
 
 const tabs = [
-  { id: "dashboard" as TabId, label: "Dashboard", icon: LayoutDashboard },
   { id: "drawing" as TabId, label: "Teknik Resim Analizi", icon: FileImage },
   { id: "costcalc" as TabId, label: "Maliyet Hesaplama", icon: DollarSign },
   { id: "cutting" as TabId, label: "Kesme", icon: Calculator },
@@ -40,7 +39,7 @@ const tabs = [
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [activeTab, setActiveTab] = useState<TabId>("cutting");
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
 
@@ -101,7 +100,6 @@ const Index = () => {
 
         {/* Tab Content */}
         <div className="space-y-6">
-          {activeTab === "dashboard" && <Dashboard customMaterials={customMaterials} />}
           {activeTab === "cutting" && <CuttingCalculator customMaterials={customMaterials} />}
           {activeTab === "toollife" && <ToolLifeCalculator customMaterials={customMaterials} />}
           {activeTab === "threading" && <ThreadingCalculator />}
