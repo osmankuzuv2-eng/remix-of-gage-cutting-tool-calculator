@@ -37,19 +37,66 @@ const quickQuestions = [
   "Takım ömrünü etkileyen faktörler nelerdir?",
 ];
 
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/tiff", "application/pdf"];
+const ACCEPT_STRING = "image/jpeg,image/png,image/webp,image/gif,image/tiff,.tif,.tiff,application/pdf";
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+/* ── TIF → JPG converter ── */
+async function convertTifToJpg(file: File): Promise<File> {
+  const UTIF = await import("utif2");
+  const buf = await file.arrayBuffer();
+  const ifds = UTIF.decode(buf);
+  if (!ifds.length) throw new Error("TIF dosyası okunamadı");
+  UTIF.decodeImage(buf, ifds[0]);
+  const rgba = UTIF.toRGBA8(ifds[0]);
+  const w = ifds[0].width;
+  const h = ifds[0].height;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  const imgData = ctx.createImageData(w, h);
+  imgData.data.set(rgba);
+  ctx.putImageData(imgData, 0, 0);
+  const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/jpeg", 0.9));
+  return new File([blob], file.name.replace(/\.tiff?$/i, ".jpg"), { type: "image/jpeg" });
+}
+
+/* ── PDF first page → JPG converter ── */
+async function convertPdfToJpg(file: File): Promise<File> {
+  const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
+  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs`;
+  const buf = await file.arrayBuffer();
+  const pdf = await getDocument({ data: new Uint8Array(buf) }).promise;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({ scale: 2 });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext("2d")!;
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/jpeg", 0.9));
+  return new File([blob], file.name.replace(/\.pdf$/i, ".jpg"), { type: "image/jpeg" });
+}
 
 /* ── Upload helper ── */
 async function uploadImage(file: File): Promise<string> {
-  const sanitized = file.name
+  // Convert TIF/PDF to JPG before upload
+  let processedFile = file;
+  if (file.type === "image/tiff" || file.name.match(/\.tiff?$/i)) {
+    processedFile = await convertTifToJpg(file);
+  } else if (file.type === "application/pdf" || file.name.match(/\.pdf$/i)) {
+    processedFile = await convertPdfToJpg(file);
+  }
+
+  const sanitized = processedFile.name
     .replace(/[^a-zA-Z0-9._-]/g, "_")
     .replace(/_{2,}/g, "_");
   const path = `anonymous/ai-chat/${Date.now()}_${sanitized}`;
 
   const { error } = await supabase.storage
     .from("technical-drawings")
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .upload(path, processedFile, { contentType: processedFile.type, upsert: false });
 
   if (error) throw new Error(`Yükleme hatası: ${error.message}`);
 
@@ -177,8 +224,10 @@ const AILearningModule = () => {
     if (!file) return;
     e.target.value = ""; // reset
 
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast({ title: "Hata", description: "Yalnızca JPG, PNG, WebP ve GIF dosyaları desteklenir.", variant: "destructive" });
+    const isTif = file.name.match(/\.tiff?$/i);
+    const isPdf = file.name.match(/\.pdf$/i);
+    if (!ACCEPTED_TYPES.includes(file.type) && !isTif && !isPdf) {
+      toast({ title: "Hata", description: "JPG, PNG, WebP, GIF, PDF ve TIF dosyaları desteklenir.", variant: "destructive" });
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -347,7 +396,7 @@ const AILearningModule = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept={ACCEPT_STRING}
               onChange={handleFileSelect}
               className="hidden"
             />
