@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { History, Trash2, Download, Clock, ChevronDown, ChevronUp, Cloud, CloudOff, RefreshCw, Loader2, FileSpreadsheet } from "lucide-react";
 import jsPDF from "jspdf";
 import { useSupabaseSync, LocalCalculation } from "@/hooks/useSupabaseSync";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 export type CalculationRecord = LocalCalculation;
 
 const CalculationHistory = () => {
-  const { user } = useAuth();
+  const user = null; // Auth removed
   const {
     calculations: history,
     loading,

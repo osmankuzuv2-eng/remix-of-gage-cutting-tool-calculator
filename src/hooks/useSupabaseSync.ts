@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { toast } from "@/hooks/use-toast";
 import { safeGetItem, safeSetItem, safeRemoveItem, isValidArray } from "@/lib/safeStorage";
 import type { Json } from "@/integrations/supabase/types";
@@ -56,7 +56,7 @@ const toLocalFormat = (cloud: CloudCalculation): LocalCalculation => {
 };
 
 export const useSupabaseSync = () => {
-  const { user } = useAuth();
+  const user = null; // Auth removed
   const [calculations, setCalculations] = useState<LocalCalculation[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
