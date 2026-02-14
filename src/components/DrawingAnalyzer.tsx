@@ -3,7 +3,7 @@ import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { exportAnalysisPdf } from "@/lib/exportAnalysisPdf";
@@ -71,7 +71,7 @@ const convertTifToJpg = async (file: File): Promise<File> => {
 };
 
 const DrawingAnalyzer = () => {
-  const { user, loading } = useAuth();
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -129,8 +129,8 @@ const DrawingAnalyzer = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!selectedFile || !user) {
-      toast.error("Lütfen giriş yapın ve bir dosya seçin");
+    if (!selectedFile) {
+      toast.error("Lütfen bir dosya seçin");
       return;
     }
 
@@ -140,7 +140,7 @@ const DrawingAnalyzer = () => {
       const safeName = selectedFile.name
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-zA-Z0-9._-]/g, "_");
-      const filePath = `${user.id}/${Date.now()}_${safeName}`;
+      const filePath = `anonymous/${Date.now()}_${safeName}`;
       const { error: uploadError } = await supabase.storage
         .from("technical-drawings")
         .upload(filePath, selectedFile);
@@ -192,28 +192,6 @@ const DrawingAnalyzer = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Card className="bg-card border-border">
-        <CardContent className="py-12 text-center">
-          <Loader2 className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
-          <p className="text-muted-foreground">Yükleniyor...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Card className="bg-card border-border">
-        <CardContent className="py-12 text-center">
-          <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Giriş Yapmanız Gerekiyor</h3>
-          <p className="text-muted-foreground">Teknik resim analizi için lütfen giriş yapın.</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">

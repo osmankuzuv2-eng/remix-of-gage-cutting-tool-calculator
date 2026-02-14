@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Calculator, RotateCcw, Zap, Save, Cloud, Loader2 } from "lucide-react";
 import { materials as defaultMaterials, toolTypes, operations, Material } from "@/data/materials";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +12,7 @@ interface CuttingCalculatorProps {
 
 const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
   const allMaterials = [...defaultMaterials, ...customMaterials];
-  const { user } = useAuth();
+  const user = null; // Auth removed
   const { saveCalculation } = useSupabaseSync();
   const [saving, setSaving] = useState(false);
   
