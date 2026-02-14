@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Wrench, Calculator, AlertCircle, Droplets } from "lucide-react";
+import ThreadPitchReference from "@/components/ThreadPitchReference";
 import {
   metricCoarseThreads,
   metricFineThreads,
@@ -102,6 +103,7 @@ const ThreadingCalculator = () => {
   const results = calculateResults();
 
   return (
+    <div className="space-y-6">
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Input Panel */}
       <Card className="border-border bg-card">
@@ -302,6 +304,10 @@ const ThreadingCalculator = () => {
           )}
         </CardContent>
       </Card>
+    </div>
+
+    {/* Thread Pitch Reference Tables */}
+    <ThreadPitchReference />
     </div>
   );
 };
