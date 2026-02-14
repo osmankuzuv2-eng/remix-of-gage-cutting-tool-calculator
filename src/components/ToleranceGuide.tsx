@@ -69,6 +69,50 @@ const geoTolerances = [
   { symbol: "↺↺", name: "Toplam Salınım", category: "Salınım", desc: "Tüm yüzey boyunca toplam salınım", typical: "0.02 - 0.1 mm" },
 ];
 
+// Havacılık toleransları
+const aeroTolerances = {
+  dimensional: [
+    { part: "Türbin Kanatçığı (Airfoil)", tolerance: "±0.013 mm", it: "IT4-IT5", ra: "0.2-0.4 µm", standard: "AS9100 / PWA" },
+    { part: "Türbin Diski Fir-Tree Kök", tolerance: "±0.005 mm", it: "IT3-IT4", ra: "0.1-0.4 µm", standard: "AMS 2759" },
+    { part: "Rulman Yuvası (Havacılık)", tolerance: "±0.005 mm", it: "IT4", ra: "0.2 µm", standard: "ABEC-7 / ISO P4" },
+    { part: "Hidrolik Silindir İç Çap", tolerance: "±0.008 mm", it: "IT4-IT5", ra: "0.1-0.2 µm", standard: "MIL-H-5440" },
+    { part: "Yakıt Enjektör Nozül", tolerance: "±0.003 mm", it: "IT2-IT3", ra: "0.05-0.1 µm", standard: "OEM Spec" },
+    { part: "İniş Takımı Piston Kolu", tolerance: "±0.010 mm", it: "IT5", ra: "0.2-0.4 µm", standard: "MIL-L-8552" },
+    { part: "Kompresör Kanatçığı", tolerance: "±0.025 mm", it: "IT5-IT6", ra: "0.4-0.8 µm", standard: "AS9100" },
+    { part: "Gövde Panel Bağlantı Deliği", tolerance: "±0.05 mm", it: "IT7", ra: "1.6 µm", standard: "NASM 1312" },
+    { part: "Kontrol Yüzeyi Mafsal Pini", tolerance: "±0.008 mm", it: "IT4-IT5", ra: "0.2 µm", standard: "AN/MS Std" },
+    { part: "Motor Montaj Braketi", tolerance: "±0.05 mm", it: "IT6-IT7", ra: "1.6 µm", standard: "AS9100" },
+  ],
+  materials: [
+    { material: "Ti-6Al-4V (Grade 5)", usage: "Türbin diskleri, kompresör kanatçıkları, yapısal parçalar", hardness: "36 HRC", note: "Düşük termal iletkenlik, takım aşınması yüksek" },
+    { material: "Inconel 718", usage: "Türbin kanatçıkları, yanma odası, egzoz", hardness: "40-47 HRC", note: "İş sertleşmesi, çok düşük kesme hızı" },
+    { material: "Waspaloy", usage: "Türbin diskleri, bağlantı elemanları", hardness: "38-44 HRC", note: "Yüksek sıcaklık dayanımı, zor işlenir" },
+    { material: "Hastelloy X", usage: "Yanma odası, afterburner parçaları", hardness: "35 HRC", note: "Yüksek oksidasyona direnç" },
+    { material: "Al 7075-T6", usage: "Gövde yapısal parçaları, kanatçık yapıları", hardness: "150 HB", note: "Yüksek mukavemet/ağırlık oranı" },
+    { material: "Al 2024-T3", usage: "Gövde kaplaması, nervür, kuşak", hardness: "120 HB", note: "İyi yorulma dayanımı" },
+    { material: "CRES 15-5 PH", usage: "İniş takımı, bağlantı elemanları", hardness: "40 HRC", note: "Korozyona dirençli, yüksek mukavemet" },
+    { material: "Rene 41", usage: "Afterburner, türbin kasası", hardness: "39 HRC", note: "900°C+ çalışma sıcaklığı" },
+  ],
+  standards: [
+    { code: "AS9100D", name: "Havacılık Kalite Yönetim Sistemi", desc: "Havacılık ve uzay sanayinde ISO 9001 üzerine kurulu kalite standardı" },
+    { code: "AMS 2759", name: "Isıl İşlem Standardı", desc: "Çelik parçaların ısıl işlem gereksinimleri" },
+    { code: "NADCAP", name: "Özel Proses Akreditasyonu", desc: "Isıl işlem, kaplama, NDT gibi özel prosesler için akreditasyon" },
+    { code: "MIL-STD-1530", name: "Uçak Yapısal Bütünlük", desc: "Yapısal ömür yönetimi ve hasar toleransı" },
+    { code: "NASM 1312", name: "Bağlantı Elemanı Test Standardı", desc: "Havacılık bağlantı elemanları test prosedürleri" },
+    { code: "BAC 5673", name: "Boeing İşleme Standardı", desc: "CNC işleme yüzey kalitesi ve tolerans gereksinimleri" },
+    { code: "AMS-QQ-A-250", name: "Alüminyum Levha/Plaka", desc: "Havacılık alüminyum malzeme spesifikasyonu" },
+    { code: "AMS 5662/5663", name: "Inconel 718 Spesifikasyonu", desc: "Çubuk, dövme ve halka formu malzeme gereksinimleri" },
+  ],
+  ndtRequirements: [
+    { method: "FPI (Floresan Penetrant)", application: "Yüzey çatlakları, gözenekler", sensitivity: "Seviye 3-4", standard: "ASTM E1417" },
+    { method: "MPI (Manyetik Parçacık)", application: "Ferromanyetik parça yüzey/yüzey altı hatalar", sensitivity: "Yüksek", standard: "ASTM E1444" },
+    { method: "UT (Ultrasonik Test)", application: "İç yapı hataları, kalınlık ölçümü", sensitivity: "0.5 mm min kusur", standard: "AMS 2630" },
+    { method: "RT (Radyografik Test)", application: "Döküm/kaynak iç hataları", sensitivity: "2% duvar kalınlığı", standard: "ASTM E2104" },
+    { method: "ET (Eddy Current)", application: "Yüzey çatlakları, iletkenlik ölçümü", sensitivity: "0.25 mm min kusur", standard: "AMS 2772" },
+    { method: "CMM (Koordinat Ölçüm)", application: "Boyutsal doğrulama, GD&T kontrolü", sensitivity: "±0.001 mm", standard: "AS9102 FAI" },
+  ],
+};
+
 // Tolerans hesaplama
 const ToleranceCalculator = () => {
   const [nominalSize, setNominalSize] = useState("");
@@ -145,11 +189,12 @@ const ToleranceGuide = () => {
       <ToleranceCalculator />
 
       <Tabs defaultValue="fits" className="w-full">
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full">
           <TabsTrigger value="fits">Geçme Türleri</TabsTrigger>
           <TabsTrigger value="it">IT Dereceleri</TabsTrigger>
           <TabsTrigger value="surface">Yüzey Pürüzlülüğü</TabsTrigger>
           <TabsTrigger value="geo">Geometrik Tolerans</TabsTrigger>
+          <TabsTrigger value="aero">✈️ Havacılık</TabsTrigger>
           <TabsTrigger value="guide">Rehber</TabsTrigger>
         </TabsList>
 
@@ -289,6 +334,120 @@ const ToleranceGuide = () => {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Havacılık Toleransları */}
+        <TabsContent value="aero">
+          <div className="space-y-6">
+            {/* Boyutsal Toleranslar */}
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg text-foreground">✈️ Havacılık Parça Toleransları</CardTitle>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Parça</TableHead>
+                      <TableHead>Tolerans</TableHead>
+                      <TableHead>IT Derecesi</TableHead>
+                      <TableHead>Ra</TableHead>
+                      <TableHead>Standart</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {aeroTolerances.dimensional.map(d => (
+                      <TableRow key={d.part}>
+                        <TableCell className="font-medium">{d.part}</TableCell>
+                        <TableCell className="font-mono text-primary font-bold">{d.tolerance}</TableCell>
+                        <TableCell className="font-mono">{d.it}</TableCell>
+                        <TableCell className="font-mono text-accent">{d.ra}</TableCell>
+                        <TableCell><Badge variant="outline">{d.standard}</Badge></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Havacılık Malzemeleri */}
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg text-foreground">Havacılık Malzemeleri ve İşleme Notları</CardTitle>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Malzeme</TableHead>
+                      <TableHead>Sertlik</TableHead>
+                      <TableHead>Kullanım Alanı</TableHead>
+                      <TableHead>İşleme Notu</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {aeroTolerances.materials.map(m => (
+                      <TableRow key={m.material}>
+                        <TableCell className="font-medium text-primary">{m.material}</TableCell>
+                        <TableCell className="font-mono">{m.hardness}</TableCell>
+                        <TableCell className="text-sm">{m.usage}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{m.note}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* NDT Gereksinimleri */}
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg text-foreground">NDT (Tahribatsız Muayene) Gereksinimleri</CardTitle>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Yöntem</TableHead>
+                      <TableHead>Uygulama Alanı</TableHead>
+                      <TableHead>Hassasiyet</TableHead>
+                      <TableHead>Standart</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {aeroTolerances.ndtRequirements.map(n => (
+                      <TableRow key={n.method}>
+                        <TableCell className="font-medium">{n.method}</TableCell>
+                        <TableCell className="text-sm">{n.application}</TableCell>
+                        <TableCell className="font-mono text-primary">{n.sensitivity}</TableCell>
+                        <TableCell><Badge variant="outline">{n.standard}</Badge></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Standartlar */}
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg text-foreground">Havacılık Standartları</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {aeroTolerances.standards.map(s => (
+                    <div key={s.code} className="p-3 rounded-lg bg-accent/10 border border-accent/20">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-primary/20 text-primary border-primary/30">{s.code}</Badge>
+                        <span className="font-medium text-foreground">{s.name}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{s.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Rehber */}
