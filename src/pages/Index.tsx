@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
-import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, LayoutDashboard, FileImage } from "lucide-react";
+import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, LayoutDashboard, FileImage, Ruler } from "lucide-react";
 import Header from "@/components/Header";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
@@ -17,9 +17,10 @@ import ThreadingCalculator from "@/components/ThreadingCalculator";
 import DrillTapCalculator from "@/components/DrillTapCalculator";
 import Dashboard from "@/components/Dashboard";
 import DrawingAnalyzer from "@/components/DrawingAnalyzer";
+import ToleranceGuide from "@/components/ToleranceGuide";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 
-type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "history" | "drawing";
+type TabId = "dashboard" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "history" | "drawing" | "tolerance";
 
 const tabs = [
   { id: "dashboard" as TabId, label: "Dashboard", icon: LayoutDashboard },
@@ -29,6 +30,7 @@ const tabs = [
   { id: "toollife" as TabId, label: "Takım Ömrü", icon: Clock },
   { id: "threading" as TabId, label: "Diş Açma", icon: Wrench },
   { id: "drilling" as TabId, label: "Delme", icon: Circle },
+  { id: "tolerance" as TabId, label: "Tolerans", icon: Ruler },
   { id: "compare" as TabId, label: "Karşılaştır", icon: GitCompare },
   { id: "materials" as TabId, label: "Malzemeler", icon: Database },
   { id: "cost" as TabId, label: "Takım Maliyet", icon: DollarSign },
@@ -114,6 +116,7 @@ const Index = () => {
           {activeTab === "cost" && <CostAnalyzer />}
           {activeTab === "costcalc" && <CostCalculation />}
           {activeTab === "drawing" && <DrawingAnalyzer />}
+          {activeTab === "tolerance" && <ToleranceGuide />}
           {activeTab === "history" && <CalculationHistory />}
         </div>
 
