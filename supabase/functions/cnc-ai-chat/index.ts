@@ -23,6 +23,7 @@ Uzmanlık alanların:
 - Takım tezgahı seçimi ve bakımı
 - Maliyet hesaplamaları ve verimlilik optimizasyonu
 - Havacılık ve savunma sanayi toleransları (AS9100D, NADCAP)
+- Teknik resim okuma ve analiz etme
 
 Kurallar:
 1. Yanıtlarını Türkçe ver.
@@ -30,7 +31,8 @@ Kurallar:
 3. Mümkün olduğunca formüller, tablolar ve pratik örnekler ver.
 4. Güvenlik uyarılarını her zaman belirt.
 5. Yanıtlarını markdown formatında düzenle.
-6. Emin olmadığın konularda bunu belirt, yanlış bilgi verme.`;
+6. Emin olmadığın konularda bunu belirt, yanlış bilgi verme.
+7. Kullanıcı görsel gönderirse, görseli detaylıca analiz et - ölçüler, toleranslar, malzeme, yüzey kalitesi, işlem adımları ve takım önerileri ver.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -41,6 +43,22 @@ serve(async (req) => {
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Transform messages: if a message has imageUrl, convert to multimodal content
+    const transformedMessages = messages.map((msg: any) => {
+      if (msg.imageUrl && msg.role === "user") {
+        const content: any[] = [];
+        if (msg.content) {
+          content.push({ type: "text", text: msg.content });
+        }
+        content.push({
+          type: "image_url",
+          image_url: { url: msg.imageUrl },
+        });
+        return { role: msg.role, content };
+      }
+      return { role: msg.role, content: msg.content };
+    });
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -54,7 +72,7 @@ serve(async (req) => {
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
-            ...messages,
+            ...transformedMessages,
           ],
           stream: true,
         }),

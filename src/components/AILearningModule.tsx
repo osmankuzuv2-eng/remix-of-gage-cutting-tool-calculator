@@ -12,10 +12,19 @@ import {
   Sparkles,
   Trash2,
   Lightbulb,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-type Msg = { role: "user" | "assistant"; content: string };
+/* ── Types ── */
+type MsgContent = {
+  role: "user" | "assistant";
+  content: string;
+  imageUrl?: string;      // signed URL for display
+  imagePreview?: string;   // local object URL for instant preview
+};
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cnc-ai-chat`;
 
@@ -28,24 +37,56 @@ const quickQuestions = [
   "Takım ömrünü etkileyen faktörler nelerdir?",
 ];
 
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+/* ── Upload helper ── */
+async function uploadImage(file: File): Promise<string> {
+  const sanitized = file.name
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/_{2,}/g, "_");
+  const path = `anonymous/ai-chat/${Date.now()}_${sanitized}`;
+
+  const { error } = await supabase.storage
+    .from("technical-drawings")
+    .upload(path, file, { contentType: file.type, upsert: false });
+
+  if (error) throw new Error(`Yükleme hatası: ${error.message}`);
+
+  const { data: signedData, error: signError } = await supabase.storage
+    .from("technical-drawings")
+    .createSignedUrl(path, 3600);
+
+  if (signError || !signedData?.signedUrl) throw new Error("URL oluşturulamadı");
+  return signedData.signedUrl;
+}
+
+/* ── Stream helper ── */
 async function streamChat({
   messages,
   onDelta,
   onDone,
   onError,
 }: {
-  messages: Msg[];
+  messages: MsgContent[];
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (msg: string) => void;
 }) {
+  // Build payload: include imageUrl alongside content for multimodal
+  const payload = messages.map((m) => {
+    const obj: any = { role: m.role, content: m.content };
+    if (m.imageUrl) obj.imageUrl = m.imageUrl;
+    return obj;
+  });
+
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages: payload }),
   });
 
   if (!resp.ok) {
@@ -88,7 +129,6 @@ async function streamChat({
     }
   }
 
-  // flush
   if (buf.trim()) {
     for (let raw of buf.split("\n")) {
       if (!raw) continue;
@@ -106,12 +146,18 @@ async function streamChat({
   onDone();
 }
 
+/* ═══════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════ */
+
 const AILearningModule = () => {
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<MsgContent[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -119,10 +165,62 @@ const AILearningModule = () => {
     }
   }, [messages]);
 
+  // Cleanup object URL on unmount / change
+  useEffect(() => {
+    return () => {
+      if (pendingImage) URL.revokeObjectURL(pendingImage.preview);
+    };
+  }, [pendingImage]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ""; // reset
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast({ title: "Hata", description: "Yalnızca JPG, PNG, WebP ve GIF dosyaları desteklenir.", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast({ title: "Hata", description: "Dosya boyutu 20 MB'ı aşamaz.", variant: "destructive" });
+      return;
+    }
+
+    if (pendingImage) URL.revokeObjectURL(pendingImage.preview);
+    setPendingImage({ file, preview: URL.createObjectURL(file) });
+  };
+
+  const removePendingImage = () => {
+    if (pendingImage) {
+      URL.revokeObjectURL(pendingImage.preview);
+      setPendingImage(null);
+    }
+  };
+
   const send = useCallback(
     async (text: string) => {
-      if (!text.trim() || isLoading) return;
-      const userMsg: Msg = { role: "user", content: text.trim() };
+      if ((!text.trim() && !pendingImage) || isLoading) return;
+
+      const userText = text.trim() || (pendingImage ? "Bu teknik resmi analiz et ve detaylı bilgi ver." : "");
+      let imageUrl: string | undefined;
+      let imagePreview: string | undefined;
+
+      // Upload image if pending
+      if (pendingImage) {
+        setIsUploading(true);
+        try {
+          imageUrl = await uploadImage(pendingImage.file);
+          imagePreview = pendingImage.preview;
+        } catch (err: any) {
+          toast({ title: "Yükleme Hatası", description: err.message, variant: "destructive" });
+          setIsUploading(false);
+          return;
+        }
+        setIsUploading(false);
+        setPendingImage(null);
+      }
+
+      const userMsg: MsgContent = { role: "user", content: userText, imageUrl, imagePreview };
       const allMsgs = [...messages, userMsg];
       setMessages(allMsgs);
       setInput("");
@@ -157,7 +255,7 @@ const AILearningModule = () => {
         setIsLoading(false);
       }
     },
-    [messages, isLoading]
+    [messages, isLoading, pendingImage]
   );
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -184,7 +282,7 @@ const AILearningModule = () => {
                 </Badge>
               </h2>
               <p className="text-xs text-muted-foreground">
-                CNC talaşlı imalat hakkında her şeyi sorabilirsiniz
+                CNC talaşlı imalat hakkında sorular sorun veya teknik resim gönderin
               </p>
             </div>
           </div>
@@ -215,19 +313,56 @@ const AILearningModule = () => {
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Düşünüyor...
+                  {isUploading ? "Görsel yükleniyor..." : "Düşünüyor..."}
                 </div>
               )}
             </div>
           )}
         </ScrollArea>
 
+        {/* Pending image preview */}
+        {pendingImage && (
+          <div className="px-3 pt-2 border-t border-border bg-secondary/10">
+            <div className="relative inline-block">
+              <img
+                src={pendingImage.preview}
+                alt="Yüklenecek görsel"
+                className="h-20 w-auto rounded-lg border border-border object-cover"
+              />
+              <button
+                onClick={removePendingImage}
+                className="absolute -top-2 -right-2 p-0.5 rounded-full bg-destructive text-destructive-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 mb-1">{pendingImage.file.name}</p>
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-3 border-t border-border bg-secondary/20">
           <div className="flex gap-2">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="shrink-0 border-border"
+              title="Teknik resim yükle"
+            >
+              <ImagePlus className="w-4 h-4" />
+            </Button>
             <Input
-              ref={inputRef}
-              placeholder="Sorunuzu yazın... (ör: Alüminyum frezelemede kesme hızı nedir?)"
+              placeholder={pendingImage ? "Görsel hakkında soru yazın..." : "Sorunuzu yazın veya teknik resim yükleyin..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -236,10 +371,10 @@ const AILearningModule = () => {
             />
             <Button
               onClick={() => send(input)}
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && !pendingImage) || isLoading}
               className="shrink-0"
             >
-              {isLoading ? (
+              {isLoading || isUploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Send className="w-4 h-4" />
@@ -252,7 +387,7 @@ const AILearningModule = () => {
   );
 };
 
-/* ── Empty state with quick questions ── */
+/* ── Empty state ── */
 function EmptyState({ onSelect }: { onSelect: (q: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full py-12">
@@ -261,7 +396,7 @@ function EmptyState({ onSelect }: { onSelect: (q: string) => void }) {
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-1">GAGE AI Asistana Hoş Geldiniz</h3>
       <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
-        CNC talaşlı imalat, kesme parametreleri, takım seçimi, toleranslar ve daha fazlası hakkında sorular sorabilirsiniz.
+        CNC talaşlı imalat hakkında sorular sorabilir veya <strong className="text-foreground">teknik resim yükleyerek</strong> AI analizinden faydalanabilirsiniz.
       </p>
       <div className="w-full max-w-lg space-y-2">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
@@ -279,14 +414,22 @@ function EmptyState({ onSelect }: { onSelect: (q: string) => void }) {
             </button>
           ))}
         </div>
+        <div className="mt-4 p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 text-center">
+          <ImagePlus className="w-5 h-5 mx-auto mb-1 text-primary" />
+          <p className="text-xs text-muted-foreground">
+            Sol alttaki <span className="text-primary font-medium">📷</span> butonuyla teknik resim yükleyebilirsiniz
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
 /* ── Chat bubble ── */
-function ChatBubble({ msg }: { msg: Msg }) {
+function ChatBubble({ msg }: { msg: MsgContent }) {
   const isUser = msg.role === "user";
+  const displayImage = msg.imagePreview || msg.imageUrl;
+
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
@@ -296,6 +439,16 @@ function ChatBubble({ msg }: { msg: Msg }) {
             : "bg-secondary/50 border border-border text-foreground rounded-bl-md"
         }`}
       >
+        {/* Image thumbnail for user messages */}
+        {isUser && displayImage && (
+          <div className="mb-2">
+            <img
+              src={displayImage}
+              alt="Yüklenen teknik resim"
+              className="max-h-48 w-auto rounded-lg border border-primary-foreground/20 object-contain"
+            />
+          </div>
+        )}
         {isUser ? (
           <p>{msg.content}</p>
         ) : (
