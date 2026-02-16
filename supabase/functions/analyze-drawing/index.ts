@@ -86,14 +86,22 @@ Her islem icin SADECE kesme suresini degil, GERCEK TOPLAM SUREYI hesapla:
 
 3. ISLEM SURESI = T_kesme + takim degisimi + yaklasma/cikis + olcum + diger
 
-MALZEME BAZLI KESME PARAMETRELERI - VERIMLI STRATEJI (karbur takim, UST YARI degerler):
+MALZEME BAZLI KESME PARAMETRELERI - VERIMLI STRATEJI (karbur takim):
 - Celik (St37, S235): Vc = 250-280 m/dk, f = 0.30-0.35 mm/dev (kaba), f = 0.12-0.15 mm/dev (ince)
 - Celik (C45, 4140): Vc = 200-230 m/dk, f = 0.25-0.30 mm/dev (kaba), f = 0.10-0.14 mm/dev (ince)
 - Paslanmaz celik: Vc = 150-180 m/dk, f = 0.18-0.22 mm/dev (kaba), f = 0.08-0.12 mm/dev (ince)
 - Aluminyum: Vc = 600-800 m/dk, f = 0.35-0.45 mm/dev (kaba), f = 0.15-0.20 mm/dev (ince)
 - Dokme demir: Vc = 140-170 m/dk, f = 0.22-0.28 mm/dev (kaba), f = 0.10-0.14 mm/dev (ince)
+- Titanyum alasimi (Ti6Al4V): Vc = 40-60 m/dk, f = 0.08-0.15 mm/dev (kaba), f = 0.05-0.08 mm/dev (ince), ap = 0.5-2 mm
+- SUPER ALASIMLAR (Inconel 718, Hastelloy, Waspaloy): Vc = 15-25 m/dk, f = 0.05-0.10 mm/dev (kaba), f = 0.03-0.06 mm/dev (ince), ap = 0.3-1.5 mm
+  * DIKKAT: Super alasimlarda kesme hizi KESINLIKLE 30 m/dk yi GECMEMELI!
+  * Takim omru cok kisadir, seramik veya CBN takim kullan
+  * Sogutma SART - yuksek basinc sogutma onerılir
+  * Paso derinligi DUSUK tut, kuvvetler cok yuksek
+  * Islem sureleri normal celiklere gore 3-5 KAT DAHA UZUN olacaktir
 
 GERCEKCI ISLEM SURELERI (referans araliklar - VERIMLI strateji):
+Normal celik/aluminyum:
 - Alin tornalama: 0.3-0.8 dk (takim degisim + yaklasma dahil)
 - Kaba tornalama: 1-4 dk (buyuk ap ile az paso)
 - Ince tornalama: 0.5-1.5 dk
@@ -103,6 +111,15 @@ GERCEKCI ISLEM SURELERI (referans araliklar - VERIMLI strateji):
 - Pah kirma: 0.2-0.5 dk
 - Frezeleme: 1-5 dk (yuzey alanina gore)
 - Taslama: 2-6 dk
+
+Super alasim / Titanyum (sureler 3-5 KAT fazla):
+- Alin tornalama: 1-3 dk
+- Kaba tornalama: 4-15 dk (dusuk ap, cok paso)
+- Ince tornalama: 2-5 dk
+- Delme: 1-4 dk (kisa), 3-8 dk (derin)
+- Dis acma: 2-5 dk
+- Kanal acma: 1-4 dk
+- Frezeleme: 5-20 dk
 
 HAZIRLIK SURESI (DETAYLI):
 - Is parcasi baglama/sokmesi: 2-5 dk
