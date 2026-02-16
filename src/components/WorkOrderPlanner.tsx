@@ -3,6 +3,7 @@ import { ClipboardList, Plus, Trash2, Calculator, Clock, DollarSign, FileDown } 
 import { materials, toolTypes, operations, Material } from "@/data/materials";
 import { machinePark } from "@/data/machinePark";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import jsPDF from "jspdf";
 
 interface WorkOrderOperation {
@@ -22,8 +23,9 @@ interface WorkOrderPlannerProps {
 }
 
 const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
+  const { t } = useLanguage();
   const allMaterials = [...materials, ...customMaterials];
-  const [orderName, setOrderName] = useState("İş Emri #1");
+  const [orderName, setOrderName] = useState(`${t("workOrder", "title")} #1`);
   const [machineRate, setMachineRate] = useState(150);
   const [operationsList, setOperationsList] = useState<WorkOrderOperation[]>([
     {
@@ -84,9 +86,9 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
     const toolChangeTime = 0.5;
     
     return {
-      cuttingTime: cuttingTime,
-      setupTime: setupTime,
-      toolChangeTime: toolChangeTime,
+      cuttingTime,
+      setupTime,
+      toolChangeTime,
       totalTime: cuttingTime + setupTime + toolChangeTime,
       spindleSpeed: Math.round(spindleSpeed),
       tableFeed: Math.round(tableFeed),
@@ -108,6 +110,10 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
 
   const totalCost = (totals.totalTime / 60) * machineRate;
 
+  const getMaterialName = (id: string) => t("materialNames", id) !== id ? t("materialNames", id) : allMaterials.find(m => m.id === id)?.name || id;
+  const getToolName = (id: string) => t("toolTypeNames", id) !== id ? t("toolTypeNames", id) : toolTypes.find(tt => tt.id === id)?.name || id;
+  const getOpName = (id: string) => t("operationNames", id) !== id ? t("operationNames", id) : operations.find(o => o.id === id)?.name || id;
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -116,50 +122,44 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
     doc.text(orderName, pageWidth / 2, 20, { align: "center" });
     
     doc.setFontSize(10);
-    doc.text(`Tarih: ${new Date().toLocaleDateString("tr-TR")}`, 14, 35);
-    doc.text(`Makine Ücreti: ${machineRate} TL/saat`, 14, 42);
+    doc.text(`${t("workOrder", "date")}: ${new Date().toLocaleDateString()}`, 14, 35);
+    doc.text(`${t("workOrder", "machineRate")}: ${machineRate} TL`, 14, 42);
     
     doc.setFontSize(12);
-    doc.text("İşlem Detayları", 14, 55);
+    doc.text(t("workOrder", "operationDetails"), 14, 55);
     
     let yPos = 65;
     operationsList.forEach((op, index) => {
-      const material = allMaterials.find((m) => m.id === op.materialId)!;
-      const tool = toolTypes.find((t) => t.id === op.toolId)!;
-      const opType = operations.find((o) => o.id === op.operationType)!;
       const times = calculateOperationTime(op);
+      const machine = machinePark.find((m) => m.id === op.machineId);
       
       doc.setFontSize(10);
-      const machine = machinePark.find((m) => m.id === op.machineId);
-      doc.text(`${index + 1}. ${opType.name}`, 14, yPos);
-      doc.text(`   Tezgah: ${machine?.label ?? "-"}`, 14, yPos + 6);
-      doc.text(`   Malzeme: ${material.name}`, 14, yPos + 12);
-      doc.text(`   Takım: ${tool.name} - Ø${op.diameter}mm`, 14, yPos + 18);
-      doc.text(`   Derinlik: ${op.depth}mm, Uzunluk: ${op.length}mm, Adet: ${op.quantity}`, 14, yPos + 24);
-      doc.text(`   Süre: ${times.totalTime.toFixed(2)} dk`, 14, yPos + 24);
+      doc.text(`${index + 1}. ${getOpName(op.operationType)}`, 14, yPos);
+      doc.text(`   ${t("workOrder", "machine")}: ${machine?.label ?? "-"}`, 14, yPos + 6);
+      doc.text(`   ${t("common", "material")}: ${getMaterialName(op.materialId)}`, 14, yPos + 12);
+      doc.text(`   ${t("workOrder", "tool")}: ${getToolName(op.toolId)} - Ø${op.diameter}mm`, 14, yPos + 18);
+      doc.text(`   ${t("common", "depth")}: ${op.depth}mm, ${t("workOrder", "lengthMm")}: ${op.length}mm, ${t("workOrder", "quantity")}: ${op.quantity}`, 14, yPos + 24);
+      doc.text(`   ${t("workOrder", "duration")}: ${times.totalTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 24);
       
       yPos += 35;
-      if (yPos > 260) {
-        doc.addPage();
-        yPos = 20;
-      }
+      if (yPos > 260) { doc.addPage(); yPos = 20; }
     });
     
     yPos += 10;
     doc.setFontSize(12);
-    doc.text("Özet", 14, yPos);
+    doc.text(t("workOrder", "summary"), 14, yPos);
     doc.setFontSize(10);
-    doc.text(`Toplam Kesme Süresi: ${totals.cuttingTime.toFixed(2)} dk`, 14, yPos + 10);
-    doc.text(`Toplam Hazırlık Süresi: ${totals.setupTime.toFixed(2)} dk`, 14, yPos + 17);
-    doc.text(`Toplam Takım Değişim: ${totals.toolChangeTime.toFixed(2)} dk`, 14, yPos + 24);
-    doc.text(`TOPLAM SÜRE: ${totals.totalTime.toFixed(2)} dk`, 14, yPos + 34);
-    doc.text(`TAHMİNİ MALİYET: ${totalCost.toFixed(2)} TL`, 14, yPos + 44);
+    doc.text(`${t("workOrder", "totalCuttingTime")}: ${totals.cuttingTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 10);
+    doc.text(`${t("workOrder", "totalSetupTime")}: ${totals.setupTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 17);
+    doc.text(`${t("workOrder", "totalToolChange")}: ${totals.toolChangeTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 24);
+    doc.text(`${t("workOrder", "grandTotalTime")}: ${totals.totalTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 34);
+    doc.text(`${t("workOrder", "grandTotalCost")}: ${totalCost.toFixed(2)} TL`, 14, yPos + 44);
     
     doc.save(`${orderName.replace(/\s+/g, "_")}.pdf`);
     
     toast({
-      title: "PDF İndirildi",
-      description: "İş emri PDF olarak kaydedildi.",
+      title: t("workOrder", "pdfDownloaded"),
+      description: t("workOrder", "pdfSaved"),
     });
   };
 
@@ -171,7 +171,7 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
             <ClipboardList className="w-5 h-5 text-blue-400" />
           </div>
           <h2 className="text-lg font-semibold text-foreground">
-            İş Emri Planlama
+            {t("workOrder", "title")}
           </h2>
         </div>
         <button
@@ -179,170 +179,94 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
           className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:brightness-110 transition-all text-sm"
         >
           <FileDown className="w-4 h-4" />
-          PDF İndir
+          {t("workOrder", "downloadPdf")}
         </button>
       </div>
 
-      {/* Header Settings */}
       <div className="grid md:grid-cols-3 gap-4 mb-6 p-4 rounded-lg bg-secondary/30 border border-border">
         <div>
-          <label className="label-industrial block mb-2">İş Emri Adı</label>
-          <input
-            type="text"
-            value={orderName}
-            onChange={(e) => setOrderName(e.target.value)}
-            className="input-industrial w-full"
-          />
+          <label className="label-industrial block mb-2">{t("workOrder", "orderName")}</label>
+          <input type="text" value={orderName} onChange={(e) => setOrderName(e.target.value)} className="input-industrial w-full" />
         </div>
         <div>
-          <label className="label-industrial block mb-2">Makine Ücreti (TL/saat)</label>
-          <input
-            type="number"
-            value={machineRate}
-            onChange={(e) => setMachineRate(Number(e.target.value))}
-            className="input-industrial w-full"
-          />
+          <label className="label-industrial block mb-2">{t("workOrder", "machineRate")}</label>
+          <input type="number" value={machineRate} onChange={(e) => setMachineRate(Number(e.target.value))} className="input-industrial w-full" />
         </div>
         <div className="flex items-end">
-          <button
-            onClick={addOperation}
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-accent/20 text-accent hover:bg-accent/30 transition-colors w-full justify-center"
-          >
+          <button onClick={addOperation} className="flex items-center gap-2 px-4 py-2 rounded-md bg-accent/20 text-accent hover:bg-accent/30 transition-colors w-full justify-center">
             <Plus className="w-4 h-4" />
-            İşlem Ekle
+            {t("workOrder", "addOperation")}
           </button>
         </div>
       </div>
 
-      {/* Operations List */}
       <div className="space-y-4 mb-6">
         {operationsList.map((op, index) => {
           const times = calculateOperationTime(op);
           return (
-            <div
-              key={op.id}
-              className="p-4 rounded-lg bg-card border border-border"
-            >
+            <div key={op.id} className="p-4 rounded-lg bg-card border border-border">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-primary">
-                  İşlem #{index + 1}
+                  {t("workOrder", "operationNum")} #{index + 1}
                 </span>
-                <button
-                  onClick={() => removeOperation(op.id)}
-                  className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
-                  disabled={operationsList.length === 1}
-                >
+                <button onClick={() => removeOperation(op.id)} className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors" disabled={operationsList.length === 1}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
               <div className="grid md:grid-cols-5 gap-3 mb-3">
                 <div>
-                  <label className="text-xs text-muted-foreground">İşlem Tipi</label>
-                  <select
-                    value={op.operationType}
-                    onChange={(e) => updateOperation(op.id, "operationType", e.target.value)}
-                    className="input-industrial w-full text-sm"
-                  >
-                    {operations.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.icon} {o.name}
-                      </option>
-                    ))}
+                  <label className="text-xs text-muted-foreground">{t("workOrder", "operationType")}</label>
+                  <select value={op.operationType} onChange={(e) => updateOperation(op.id, "operationType", e.target.value)} className="input-industrial w-full text-sm">
+                    {operations.map((o) => (<option key={o.id} value={o.id}>{o.icon} {getOpName(o.id)}</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Tezgah</label>
-                  <select
-                    value={op.machineId}
-                    onChange={(e) => updateOperation(op.id, "machineId", e.target.value)}
-                    className="input-industrial w-full text-sm"
-                  >
-                    {machinePark.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
+                  <label className="text-xs text-muted-foreground">{t("workOrder", "machine")}</label>
+                  <select value={op.machineId} onChange={(e) => updateOperation(op.id, "machineId", e.target.value)} className="input-industrial w-full text-sm">
+                    {machinePark.map((m) => (<option key={m.id} value={m.id}>{m.label}</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Malzeme</label>
-                  <select
-                    value={op.materialId}
-                    onChange={(e) => updateOperation(op.id, "materialId", e.target.value)}
-                    className="input-industrial w-full text-sm"
-                  >
-                    {allMaterials.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
+                  <label className="text-xs text-muted-foreground">{t("common", "material")}</label>
+                  <select value={op.materialId} onChange={(e) => updateOperation(op.id, "materialId", e.target.value)} className="input-industrial w-full text-sm">
+                    {allMaterials.map((m) => (<option key={m.id} value={m.id}>{getMaterialName(m.id)}</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Takım</label>
-                  <select
-                    value={op.toolId}
-                    onChange={(e) => updateOperation(op.id, "toolId", e.target.value)}
-                    className="input-industrial w-full text-sm"
-                  >
-                    {toolTypes.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
+                  <label className="text-xs text-muted-foreground">{t("workOrder", "tool")}</label>
+                  <select value={op.toolId} onChange={(e) => updateOperation(op.id, "toolId", e.target.value)} className="input-industrial w-full text-sm">
+                    {toolTypes.map((tt) => (<option key={tt.id} value={tt.id}>{getToolName(tt.id)}</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Adet</label>
-                  <input
-                    type="number"
-                    value={op.quantity}
-                    onChange={(e) => updateOperation(op.id, "quantity", Number(e.target.value))}
-                    className="input-industrial w-full text-sm"
-                    min="1"
-                  />
+                  <label className="text-xs text-muted-foreground">{t("workOrder", "quantity")}</label>
+                  <input type="number" value={op.quantity} onChange={(e) => updateOperation(op.id, "quantity", Number(e.target.value))} className="input-industrial w-full text-sm" min="1" />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label className="text-xs text-muted-foreground">Çap (mm)</label>
-                  <input
-                    type="number"
-                    value={op.diameter}
-                    onChange={(e) => updateOperation(op.id, "diameter", Number(e.target.value))}
-                    className="input-industrial w-full text-sm"
-                  />
+                  <label className="text-xs text-muted-foreground">{t("workOrder", "diameterMm")}</label>
+                  <input type="number" value={op.diameter} onChange={(e) => updateOperation(op.id, "diameter", Number(e.target.value))} className="input-industrial w-full text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Derinlik (mm)</label>
-                  <input
-                    type="number"
-                    value={op.depth}
-                    onChange={(e) => updateOperation(op.id, "depth", Number(e.target.value))}
-                    className="input-industrial w-full text-sm"
-                    step="0.1"
-                  />
+                  <label className="text-xs text-muted-foreground">{t("workOrder", "depthMm")}</label>
+                  <input type="number" value={op.depth} onChange={(e) => updateOperation(op.id, "depth", Number(e.target.value))} className="input-industrial w-full text-sm" step="0.1" />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Uzunluk (mm)</label>
-                  <input
-                    type="number"
-                    value={op.length}
-                    onChange={(e) => updateOperation(op.id, "length", Number(e.target.value))}
-                    className="input-industrial w-full text-sm"
-                  />
+                  <label className="text-xs text-muted-foreground">{t("workOrder", "lengthMm")}</label>
+                  <input type="number" value={op.length} onChange={(e) => updateOperation(op.id, "length", Number(e.target.value))} className="input-industrial w-full text-sm" />
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <div className="flex gap-4 text-xs text-muted-foreground">
-                  <span>Devir: <span className="text-primary font-mono">{times.spindleSpeed}</span> dev/dk</span>
-                  <span>İlerleme: <span className="text-accent font-mono">{times.tableFeed}</span> mm/dk</span>
+                  <span>{t("workOrder", "spindle")}: <span className="text-primary font-mono">{times.spindleSpeed}</span> {t("common", "spindleSpeed") === "Devir Sayısı" ? "dev/dk" : "rpm"}</span>
+                  <span>{t("workOrder", "feed")}: <span className="text-accent font-mono">{times.tableFeed}</span> mm/{t("common", "minute")}</span>
                 </div>
                 <div className="text-sm font-medium text-foreground">
-                  Süre: <span className="text-primary font-mono">{times.totalTime.toFixed(2)}</span> dk
+                  {t("workOrder", "duration")}: <span className="text-primary font-mono">{times.totalTime.toFixed(2)}</span> {t("common", "minute")}
                 </div>
               </div>
             </div>
@@ -350,29 +274,28 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
         })}
       </div>
 
-      {/* Summary */}
       <div className="grid md:grid-cols-4 gap-4 p-4 rounded-lg metal-surface border border-border">
         <div className="text-center p-3 rounded-lg bg-card">
           <Clock className="w-5 h-5 text-primary mx-auto mb-2" />
-          <span className="text-xs text-muted-foreground block">Kesme Süresi</span>
+          <span className="text-xs text-muted-foreground block">{t("workOrder", "cuttingTime")}</span>
           <span className="font-mono text-xl text-foreground">{totals.cuttingTime.toFixed(2)}</span>
-          <span className="text-xs text-muted-foreground"> dk</span>
+          <span className="text-xs text-muted-foreground"> {t("common", "minute")}</span>
         </div>
         <div className="text-center p-3 rounded-lg bg-card">
           <Calculator className="w-5 h-5 text-accent mx-auto mb-2" />
-          <span className="text-xs text-muted-foreground block">Hazırlık</span>
+          <span className="text-xs text-muted-foreground block">{t("workOrder", "setup")}</span>
           <span className="font-mono text-xl text-foreground">{totals.setupTime.toFixed(2)}</span>
-          <span className="text-xs text-muted-foreground"> dk</span>
+          <span className="text-xs text-muted-foreground"> {t("common", "minute")}</span>
         </div>
         <div className="text-center p-3 rounded-lg bg-card">
           <Clock className="w-5 h-5 text-yellow-400 mx-auto mb-2" />
-          <span className="text-xs text-muted-foreground block">Toplam Süre</span>
+          <span className="text-xs text-muted-foreground block">{t("workOrder", "totalTime")}</span>
           <span className="font-mono text-xl text-primary">{totals.totalTime.toFixed(2)}</span>
-          <span className="text-xs text-muted-foreground"> dk</span>
+          <span className="text-xs text-muted-foreground"> {t("common", "minute")}</span>
         </div>
         <div className="text-center p-3 rounded-lg bg-primary/10 border border-primary/30">
           <DollarSign className="w-5 h-5 text-primary mx-auto mb-2" />
-          <span className="text-xs text-muted-foreground block">Tahmini Maliyet</span>
+          <span className="text-xs text-muted-foreground block">{t("workOrder", "estimatedCost")}</span>
           <span className="font-mono text-xl text-primary">{totalCost.toFixed(2)}</span>
           <span className="text-xs text-muted-foreground"> TL</span>
         </div>
