@@ -1,0 +1,30 @@
+import {
+  Calculator, Clock, Database, DollarSign, History, GitCompare, Wrench, Circle,
+  BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
+  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers,
+  type LucideIcon,
+} from "lucide-react";
+
+export const iconMap: Record<string, LucideIcon> = {
+  Calculator, Clock, Database, DollarSign, History, GitCompare, Wrench, Circle,
+  BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
+  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers,
+};
+
+export const getIcon = (name: string): LucideIcon => iconMap[name] || Sparkles;
+
+// Module-specific icons
+export const moduleIcons: Record<string, LucideIcon> = {
+  "ai-learn": BotMessageSquare,
+  "drawing": FileImage,
+  "cutting": Calculator,
+  "toollife": Clock,
+  "threading": Wrench,
+  "drilling": Circle,
+  "tolerance": Ruler,
+  "costcalc": DollarSign,
+  "cost": DollarSign,
+  "compare": GitCompare,
+  "materials": Database,
+  "history": History,
+};
