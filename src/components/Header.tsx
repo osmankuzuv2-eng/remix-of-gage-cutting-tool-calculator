@@ -144,26 +144,15 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Personel</Badge>
                 )}
                 {isAdmin && onAdminClick && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={adminActive ? "default" : "ghost"}
-                          size="icon"
-                          onClick={onAdminClick}
-                          className="relative"
-                        >
-                          <ShieldCheck className="w-4 h-4" />
-                          <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 px-1 py-0 text-[10px] leading-tight animate-pulse border-none shadow-sm">
-                            Admin
-                          </Badge>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("admin", "title")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Button
+                    variant={adminActive ? "default" : "outline"}
+                    size="sm"
+                    onClick={onAdminClick}
+                    className="gap-1.5 text-xs"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Yönetim Paneli</span>
+                  </Button>
                 )}
                 <TooltipProvider>
                   <Tooltip>
