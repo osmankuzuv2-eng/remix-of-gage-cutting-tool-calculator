@@ -25,6 +25,9 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 const GrindingCalculator = () => {
   const { t } = useLanguage();
+  const getWheelName = (id: string) => { const tr = t("grindingWheelNames", id); return tr !== id ? tr : grindingWheels.find(w => w.id === id)?.name || id; };
+  const getOperationName = (id: string) => { const tr = t("grindingOperationNames", id); return tr !== id ? tr : grindingOperations.find(o => o.id === id)?.name || id; };
+  const getGrindMaterialName = (cat: string) => { const tr = t("grindingMaterialNames", cat); return tr !== cat ? tr : cat; };
   const [operationType, setOperationType] = useState<string>("surface");
   const [wheelType, setWheelType] = useState<string>("aluminum-oxide");
   const [materialCategory, setMaterialCategory] = useState<string>("");
@@ -82,7 +85,7 @@ const GrindingCalculator = () => {
                 <SelectValue placeholder={t("grinding", "selectOperation")} />
               </SelectTrigger>
               <SelectContent>
-                {grindingOperations.map((op) => (<SelectItem key={op.id} value={op.id}>{op.name}</SelectItem>))}
+                {grindingOperations.map((op) => (<SelectItem key={op.id} value={op.id}>{getOperationName(op.id)}</SelectItem>))}
               </SelectContent>
             </Select>
             {getOperation() && <p className="text-xs text-muted-foreground">{getOperation()?.description}</p>}
@@ -95,7 +98,7 @@ const GrindingCalculator = () => {
                 <SelectValue placeholder={t("grinding", "selectWheel")} />
               </SelectTrigger>
               <SelectContent>
-                {grindingWheels.map((wheel) => (<SelectItem key={wheel.id} value={wheel.id}>{wheel.name}</SelectItem>))}
+                {grindingWheels.map((wheel) => (<SelectItem key={wheel.id} value={wheel.id}>{getWheelName(wheel.id)}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -121,7 +124,7 @@ const GrindingCalculator = () => {
                 <SelectValue placeholder={t("grinding", "selectMaterial")} />
               </SelectTrigger>
               <SelectContent>
-                {materialGrindingParams.map((param) => (<SelectItem key={param.materialCategory} value={param.materialCategory}>{param.materialCategory}</SelectItem>))}
+                {materialGrindingParams.map((param) => (<SelectItem key={param.materialCategory} value={param.materialCategory}>{getGrindMaterialName(param.materialCategory)}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>

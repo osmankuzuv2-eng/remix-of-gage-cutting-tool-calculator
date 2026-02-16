@@ -160,11 +160,14 @@ const ThreadingCalculator = () => {
                 <SelectValue placeholder={t("threading", "selectMaterial")} />
               </SelectTrigger>
               <SelectContent>
-                {threadCuttingParams.map((param) => (
-                  <SelectItem key={param.materialCategory} value={param.materialCategory}>
-                    {param.materialCategory}
-                  </SelectItem>
-                ))}
+                {threadCuttingParams.map((param) => {
+                  const catName = t("threadMaterialNames", param.materialCategory);
+                  return (
+                    <SelectItem key={param.materialCategory} value={param.materialCategory}>
+                      {catName !== param.materialCategory ? catName : param.materialCategory}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

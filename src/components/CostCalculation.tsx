@@ -13,6 +13,7 @@ const customers = ["ASELSAN", "ROKETSAN", "TAI (TUSAŞ)", "TEI", "HAVELSAN", "BM
 
 const CostCalculation = () => {
   const { t } = useLanguage();
+  const getMaterialName = (id: string) => { const tr = t("materialNames", id); return tr !== id ? tr : materials.find(m => m.id === id)?.name || id; };
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
   const [referenceNo, setReferenceNo] = useState("");
@@ -84,7 +85,7 @@ const CostCalculation = () => {
           <div>
             <label className="label-industrial block mb-2">{t("costCalc", "materialType")}</label>
             <select value={selectedMaterial} onChange={(e) => setSelectedMaterial(e.target.value)} className="input-industrial w-full">
-              {materials.map((mat) => (<option key={mat.id} value={mat.id}>{mat.name}</option>))}
+              {materials.map((mat) => (<option key={mat.id} value={mat.id}>{getMaterialName(mat.id)}</option>))}
             </select>
           </div>
           <div className="pt-2 border-t border-border space-y-2">
@@ -214,7 +215,7 @@ const CostCalculation = () => {
           )}
           <div className="flex gap-2">
             <button onClick={() => {
-              const materialName = materials.find(m => m.id === selectedMaterial)?.name ?? selectedMaterial;
+               const materialName = getMaterialName(selectedMaterial);
               const getMachineName = (id: string) => machinePark.find(m => m.id === id)?.label ?? id;
               exportCostPdf({ referenceNo, customer, material: materialName, density: currentMaterial?.density ?? 7.85, weightKg: calculations.weightKg, materialPricePerKg, laborRate, machines: [
                 { label: t("costCalc", "turning"), name: getMachineName(selectedTurning), rate: turningRate },
@@ -226,7 +227,7 @@ const CostCalculation = () => {
             </button>
             {user && (
               <button onClick={async () => {
-                const materialName = materials.find(m => m.id === selectedMaterial)?.name ?? selectedMaterial;
+                const materialName = getMaterialName(selectedMaterial);
                 await saveCalculation({
                   type: "cost",
                   material: materialName,

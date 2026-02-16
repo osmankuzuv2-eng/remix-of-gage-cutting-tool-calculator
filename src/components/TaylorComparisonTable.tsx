@@ -28,6 +28,7 @@ interface TaylorComparisonTableProps {
 
 const TaylorComparisonTable = ({ customMaterials, customTaylorValues = {} }: TaylorComparisonTableProps) => {
   const { t } = useLanguage();
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
 
   const comparisonData = useMemo(() => {
     return defaultMaterials.map((mat) => {
@@ -103,7 +104,7 @@ const TaylorComparisonTable = ({ customMaterials, customTaylorValues = {} }: Tay
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${row.color}`} />
-                    <span className="font-medium text-foreground">{row.name}</span>
+                    <span className="font-medium text-foreground">{getMaterialName(row)}</span>
                   </div>
                 </TableCell>
                 <TableCell className={`text-center font-mono ${getStatusColor(row.cStatus)}`}>{row.currentC}</TableCell>

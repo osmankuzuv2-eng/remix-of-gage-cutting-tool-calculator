@@ -25,7 +25,11 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
   const [depth, setDepth] = useState<number>(2);
 
   const material = allMaterials.find((m) => m.id === selectedMaterial) || allMaterials[0];
-  const tool = toolTypes.find((t) => t.id === selectedTool)!;
+  const tool = toolTypes.find((tt) => tt.id === selectedTool)!;
+
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
+  const getToolName = (id: string) => { const tr = t("toolTypeNames", id); return tr !== id ? tr : toolTypes.find(tt => tt.id === id)?.name || id; };
+  const getOperationName = (id: string) => { const tr = t("operationNames", id); return tr !== id ? tr : operations.find(o => o.id === id)?.name || id; };
 
   const calculations = useMemo(() => {
     const avgCuttingSpeed =
@@ -61,12 +65,12 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
     try {
       await saveCalculation({
         type: "cutting",
-        material: material.name,
-        tool: tool.name,
+        material: getMaterialName(material),
+        tool: getToolName(tool.id),
         parameters: {
           diameter: `${diameter} mm`,
           depth: `${depth} mm`,
-          operation: operations.find(o => o.id === selectedOperation)?.name || "",
+          operation: getOperationName(selectedOperation),
         },
         results: {
           cuttingSpeed: `${calculations.cuttingSpeed} m/${t("common", "minute")}`,
@@ -150,7 +154,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
                   }`}
                 >
                   <span className="text-xl">{op.icon}</span>
-                  <span className="block text-sm mt-1">{op.name}</span>
+                  <span className="block text-sm mt-1">{getOperationName(op.id)}</span>
                 </button>
               ))}
             </div>
@@ -165,16 +169,16 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
             >
               <optgroup label={t("cutting", "standardMaterials")}>
                 {defaultMaterials.map((mat) => (
-                  <option key={mat.id} value={mat.id}>
-                    {mat.name} ({mat.hardness})
-                  </option>
+                   <option key={mat.id} value={mat.id}>
+                     {getMaterialName(mat)} ({mat.hardness})
+                   </option>
                 ))}
               </optgroup>
               {customMaterials.length > 0 && (
                 <optgroup label={t("cutting", "customMaterials")}>
                   {customMaterials.map((mat) => (
                     <option key={mat.id} value={mat.id}>
-                      {mat.name} ({mat.hardness})
+                       {getMaterialName(mat)} ({mat.hardness})
                     </option>
                   ))}
                 </optgroup>
@@ -189,9 +193,9 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
               onChange={(e) => setSelectedTool(e.target.value)}
               className="input-industrial w-full"
             >
-              {toolTypes.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
+              {toolTypes.map((tt) => (
+                <option key={tt.id} value={tt.id}>
+                  {getToolName(tt.id)}
                 </option>
               ))}
             </select>
@@ -249,7 +253,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
           <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
             <p className="text-sm text-muted-foreground">
               <span className="text-primary font-medium">💡 {t("cutting", "suggestion")}:</span>{" "}
-              {material.name} {t("cutting", "suggestionText")}{" "}
+              {getMaterialName(material)} {t("cutting", "suggestionText")}{" "}
               {material.cuttingSpeed.min}-{material.cuttingSpeed.max} m/{t("common", "minute")}{" "}
               {t("cutting", "range")}
             </p>

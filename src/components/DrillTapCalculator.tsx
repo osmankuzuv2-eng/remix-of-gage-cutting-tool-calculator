@@ -39,6 +39,7 @@ const drillTypes = [
 
 const DrillTapCalculator = ({ customMaterials = [] }: DrillTapCalculatorProps) => {
   const { t } = useLanguage();
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
   const [mode, setMode] = useState<"drill" | "ream">("drill");
@@ -175,7 +176,7 @@ const DrillTapCalculator = ({ customMaterials = [] }: DrillTapCalculatorProps) =
                 <Select value={materialId} onValueChange={setMaterialId}>
                   <SelectTrigger className="bg-background border-border"><SelectValue placeholder={t("threading", "selectMaterial")} /></SelectTrigger>
                   <SelectContent>
-                    {allMaterials.map((material) => (<SelectItem key={material.id} value={material.id}>{material.name}</SelectItem>))}
+                    {allMaterials.map((material) => (<SelectItem key={material.id} value={material.id}>{getMaterialName(material)}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
