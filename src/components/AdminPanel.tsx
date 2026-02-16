@@ -15,7 +15,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MenuManager from "@/components/MenuManager";
 import MachineManager from "@/components/MachineManager";
 
@@ -243,62 +244,75 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="w-4 h-4" />
-          {t("admin", "createUser")}
-        </Button>
-      </div>
+      <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
-      {/* Users List */}
-      <div className="grid gap-4">
-        {users.map((user) => (
-          <Card key={user.id} className="border-border bg-card">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground truncate">{user.profile?.display_name || user.email}</span>
-                    {user.roles.includes("admin") ? (
-                      <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
-                    ) : (
-                      <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    )}
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
+          <TabsTrigger value="machines" className="gap-2"><Monitor className="w-4 h-4" /> Makine Parkı</TabsTrigger>
+          <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü Yönetimi</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4 mt-4">
+          <div className="flex justify-end">
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="w-4 h-4" />
+              {t("admin", "createUser")}
+            </Button>
+          </div>
+
+          {/* Users List */}
+          <div className="grid gap-4">
+            {users.map((user) => (
+              <Card key={user.id} className="border-border bg-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground truncate">{user.profile?.display_name || user.email}</span>
+                        {user.roles.includes("admin") ? (
+                          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                        ) : (
+                          <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {user.permissions
+                          .filter((p) => p.granted)
+                          .map((p) => (
+                            <span key={p.module_key} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                              {t("tabs", p.module_key)}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={t("admin", "editUser")}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => openPassword(user)} title={t("admin", "changePassword")}>
+                        <Key className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)} title={t("common", "delete")} className="text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {user.permissions
-                      .filter((p) => p.granted)
-                      .map((p) => (
-                        <span key={p.module_key} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                          {t("tabs", p.module_key)}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={t("admin", "editUser")}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => openPassword(user)} title={t("admin", "changePassword")}>
-                    <Key className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)} title={t("common", "delete")} className="text-destructive hover:text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
-      {/* Machine Manager */}
-      <MachineManager />
+        <TabsContent value="machines" className="mt-4">
+          <MachineManager />
+        </TabsContent>
 
-      {/* Menu Manager */}
-      <MenuManager onUpdated={onMenuUpdated} />
+        <TabsContent value="menu" className="mt-4">
+          <MenuManager onUpdated={onMenuUpdated} />
+        </TabsContent>
+      </Tabs>
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
