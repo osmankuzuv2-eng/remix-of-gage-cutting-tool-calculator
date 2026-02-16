@@ -73,6 +73,11 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
             {user && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
+                {isAdmin ? (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 animate-pulse">Admin</Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Personel</Badge>
+                )}
                 {isAdmin && onAdminClick && (
                   <TooltipProvider>
                     <Tooltip>
