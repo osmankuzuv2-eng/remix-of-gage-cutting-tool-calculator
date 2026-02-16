@@ -11,9 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Calculator, AlertCircle, Droplets } from "lucide-react";
+import { Wrench, Calculator, AlertCircle, Droplets, Save } from "lucide-react";
 import ThreadPitchReference from "@/components/ThreadPitchReference";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 import {
   metricCoarseThreads,
   metricFineThreads,
@@ -30,6 +33,8 @@ type ThreadStandard = "metric-coarse" | "metric-fine" | "unc";
 
 const ThreadingCalculator = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { saveCalculation } = useSupabaseSync();
   const [threadStandard, setThreadStandard] = useState<ThreadStandard>("metric-coarse");
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [materialCategory, setMaterialCategory] = useState<string>("");
@@ -280,6 +285,37 @@ const ThreadingCalculator = () => {
                     {t("threading", "spiralPointWarning")}
                   </p>
                 </div>
+              )}
+              {user && results && (
+                <Button
+                  onClick={async () => {
+                    await saveCalculation({
+                      type: "threading",
+                      material: materialCategory || "-",
+                      tool: tapTypes.find(tp => tp.id === tapType)?.name || tapType,
+                      parameters: {
+                        threadStandard,
+                        thread: selectedThread,
+                        tapType,
+                        holeDepth,
+                      },
+                      results: {
+                        rpm: results.rpm,
+                        feedRate: `${results.feedRate} mm/dev`,
+                        pilotDrill: `Ø${results.pilotDrill} mm`,
+                        threadDepth: `${results.threadDepth} mm`,
+                        torque: `${results.torque} Nm`,
+                        cuttingSpeed: `${results.cuttingSpeed} m/${t("common", "minute")}`,
+                      },
+                    });
+                    toast({ title: t("history", "saved"), description: t("history", "savedDesc") });
+                  }}
+                  className="w-full gap-2"
+                  variant="outline"
+                >
+                  <Save className="w-4 h-4" />
+                  {t("history", "save")}
+                </Button>
               )}
             </div>
           ) : (

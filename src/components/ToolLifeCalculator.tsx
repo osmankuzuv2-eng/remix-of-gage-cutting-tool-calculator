@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { Clock, TrendingDown, AlertTriangle, CheckCircle, Save, Info } from "lucide-react";
 import { materials as defaultMaterials, toolTypes, Material } from "@/data/materials";
-import { saveCalculation } from "./CalculationHistory";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import InfoPanelContent from "./InfoPanelContent";
@@ -15,6 +16,8 @@ type InfoPanel = 'partsPerTool' | 'efficiency' | 'economicSpeed' | 'dailyTools' 
 
 const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { saveCalculation } = useSupabaseSync();
   const [activeInfoPanel, setActiveInfoPanel] = useState<InfoPanel>(null);
   const allMaterials = [...defaultMaterials, ...customMaterials];
   
@@ -51,8 +54,8 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
     };
   }, [selectedMaterial, selectedTool, cuttingSpeed, workpieceLength, partsPerDay, material, tool]);
 
-  const saveToHistory = () => {
-    saveCalculation({
+  const saveToHistory = async () => {
+    await saveCalculation({
       type: "toollife",
       material: material.name,
       tool: tool.name,
@@ -71,8 +74,8 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
       },
     });
     toast({
-      title: t("common", "savedLocal"),
-      description: t("common", "savedLocal"),
+      title: t("history", "saved"),
+      description: t("history", "savedDesc"),
     });
   };
 
