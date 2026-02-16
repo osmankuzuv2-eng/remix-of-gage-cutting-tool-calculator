@@ -73,6 +73,7 @@ Her islem icin SADECE kesme suresini degil, GERCEK TOPLAM SUREYI hesapla:
 
 1. KESME SURESI (formul):
    n = (1000 × Vc) / (π × D)
+   ONEMLI: n ASLA 20000 dev/dk yi GECEMEZ! Eger hesaplanan n > 20000 ise n = 20000 olarak kullan ve Vc'yi buna gore dusur.
    T_kesme = L / (n × f)
    Coklu paso: T_kesme × paso_sayisi
 
