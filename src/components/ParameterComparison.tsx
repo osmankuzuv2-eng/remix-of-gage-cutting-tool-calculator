@@ -14,6 +14,9 @@ interface ParameterComparisonProps { customMaterials: Material[]; }
 const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
   const { t } = useLanguage();
   const allMaterials = [...materials, ...customMaterials];
+
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
+  const getToolName = (id: string) => { const tr = t("toolTypeNames", id); return tr !== id ? tr : toolTypes.find(tt => tt.id === id)?.name || id; };
   
   const [scenarios, setScenarios] = useState<Scenario[]>([
     { id: crypto.randomUUID(), name: `${t("comparison", "scenario")} A`, materialId: allMaterials[0].id, toolId: toolTypes[1].id, diameter: 20, depth: 2, cuttingSpeed: 180 },
@@ -107,13 +110,13 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
                 <div>
                   <label className="text-muted-foreground">{t("common", "material")}</label>
                   <select value={scenario.materialId} onChange={(e) => updateScenario(scenario.id, "materialId", e.target.value)} className="input-industrial w-full text-xs py-1">
-                    {allMaterials.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
+                    {allMaterials.map((m) => (<option key={m.id} value={m.id}>{getMaterialName(m)}</option>))}
                   </select>
                 </div>
                 <div>
                   <label className="text-muted-foreground">{t("common", "toolType")}</label>
                   <select value={scenario.toolId} onChange={(e) => updateScenario(scenario.id, "toolId", e.target.value)} className="input-industrial w-full text-xs py-1">
-                    {toolTypes.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                    {toolTypes.map((tt) => (<option key={tt.id} value={tt.id}>{getToolName(tt.id)}</option>))}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

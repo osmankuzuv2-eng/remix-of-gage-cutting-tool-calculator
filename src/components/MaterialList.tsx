@@ -12,6 +12,9 @@ interface MaterialListProps {
 const MaterialList = ({ customMaterials, onDeleteCustom }: MaterialListProps) => {
   const { t } = useLanguage();
   const allMaterials = [...defaultMaterials, ...customMaterials];
+
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
+  const getCategoryName = (cat: string) => { const tr = t("materialCategories", cat); return tr !== cat ? tr : cat; };
   
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<"name" | "category" | "hardness">("name");
@@ -19,7 +22,12 @@ const MaterialList = ({ customMaterials, onDeleteCustom }: MaterialListProps) =>
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filteredMaterials = allMaterials
-    .filter((m) => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter((m) => {
+      const name = (() => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; })().toLowerCase();
+      const cat = (() => { const tr = t("materialCategories", m.category); return tr !== m.category ? tr : m.category; })().toLowerCase();
+      const term = searchTerm.toLowerCase();
+      return name.includes(term) || cat.includes(term) || m.name.toLowerCase().includes(term);
+    })
     .sort((a, b) => {
       const comparison = a[sortField].localeCompare(b[sortField]);
       return sortAsc ? comparison : -comparison;
@@ -92,15 +100,15 @@ const MaterialList = ({ customMaterials, onDeleteCustom }: MaterialListProps) =>
                       <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${categoryStyle.gradient} flex items-center justify-center`}>
                         <CategoryIcon className="w-4 h-4 text-white" />
                       </div>
-                      <span className="font-medium text-foreground">{material.name}</span>
+                      <span className="font-medium text-foreground">{getMaterialName(material)}</span>
                       {isCustom(material.id) && <span className="px-1.5 py-0.5 rounded text-[10px] bg-success/20 text-success">{t("common", "custom")}</span>}
                     </div>
                   </td>
-                  <td className="py-3 px-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border ${categoryStyle.badgeClass}`}>
-                      <CategoryIcon className="w-3 h-3" />{material.category}
-                    </span>
-                  </td>
+                   <td className="py-3 px-2">
+                     <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border ${categoryStyle.badgeClass}`}>
+                       <CategoryIcon className="w-3 h-3" />{getCategoryName(material.category)}
+                     </span>
+                   </td>
                   <td className="py-3 px-2"><span className="font-mono text-sm text-accent">{material.hardness}</span></td>
                   <td className="py-3 px-2">
                     <span className="font-mono text-sm text-foreground">{material.cuttingSpeed.min}-{material.cuttingSpeed.max}</span>

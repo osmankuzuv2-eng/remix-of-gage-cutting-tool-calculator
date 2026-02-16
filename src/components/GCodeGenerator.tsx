@@ -1,8 +1,12 @@
 import { useState, useMemo } from "react";
 import { Code, Copy, Download, Check, Settings2 } from "lucide-react";
 import { materials, toolTypes } from "@/data/materials";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const GCodeGenerator = () => {
+  const { t } = useLanguage();
+  const getMaterialName = (id: string) => { const tr = t("materialNames", id); return tr !== id ? tr : materials.find(m => m.id === id)?.name || id; };
+  const getToolName = (id: string) => { const tr = t("toolTypeNames", id); return tr !== id ? tr : toolTypes.find(tt => tt.id === id)?.name || id; };
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [selectedTool, setSelectedTool] = useState(toolTypes[1].id);
   const [diameter, setDiameter] = useState(20);
@@ -137,7 +141,7 @@ const GCodeGenerator = () => {
                 className="input-industrial w-full"
               >
                 {materials.map((mat) => (
-                  <option key={mat.id} value={mat.id}>{mat.name}</option>
+                  <option key={mat.id} value={mat.id}>{getMaterialName(mat.id)}</option>
                 ))}
               </select>
             </div>
@@ -148,8 +152,8 @@ const GCodeGenerator = () => {
                 onChange={(e) => setSelectedTool(e.target.value)}
                 className="input-industrial w-full"
               >
-                {toolTypes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                {toolTypes.map((tt) => (
+                  <option key={tt.id} value={tt.id}>{getToolName(tt.id)}</option>
                 ))}
               </select>
             </div>

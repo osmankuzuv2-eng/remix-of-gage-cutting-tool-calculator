@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from "recharts";
 import { TrendingUp, Info, X, ChevronDown, ChevronUp } from "lucide-react";
 import { materials, toolTypes, Material } from "@/data/materials";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import InfoPanelContent from "@/components/InfoPanelContent";
 import TaylorSettingsPanel from "@/components/TaylorSettingsPanel";
@@ -22,8 +23,10 @@ interface ToolLifeChartProps {
 const TAYLOR_STORAGE_KEY = "taylorCustomValues";
 
 const ToolLifeChart = ({ customMaterials }: ToolLifeChartProps) => {
+  const { t } = useLanguage();
   const [activeInfoPanel, setActiveInfoPanel] = useState<string | null>(null);
   const [customTaylorValues, setCustomTaylorValues] = useState<TaylorValues>({});
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
 
   // Load custom Taylor values from localStorage on mount
   useEffect(() => {
@@ -52,9 +55,10 @@ const ToolLifeChart = ({ customMaterials }: ToolLifeChartProps) => {
       const baseSpeed = (mat.cuttingSpeed.min + mat.cuttingSpeed.max) / 2;
       const toolLife = Math.pow(mat.taylorC / baseSpeed, 1 / mat.taylorN);
       
-      return {
-        name: mat.name.length > 12 ? mat.name.substring(0, 12) + "..." : mat.name,
-        fullName: mat.name,
+        const matName = getMaterialName(mat);
+        return {
+          name: matName.length > 12 ? matName.substring(0, 12) + "..." : matName,
+          fullName: matName,
         toolLife: Math.round(toolLife),
         cuttingSpeed: Math.round(baseSpeed),
         taylorN: mat.taylorN,
@@ -160,7 +164,7 @@ const ToolLifeChart = ({ customMaterials }: ToolLifeChartProps) => {
                   "Yeni malzeme işleme parametresi belirleme",
                   "Takım stok optimizasyonu",
                 ]}
-                tip={`Örnek: ${exampleMaterial.name} için V=${exampleSpeed} m/dk'da T≈${exampleLife} dk`}
+                tip={`${getMaterialName(exampleMaterial)}: V=${exampleSpeed} m/min → T≈${exampleLife} min`}
               />
             </CollapsibleContent>
           </Collapsible>

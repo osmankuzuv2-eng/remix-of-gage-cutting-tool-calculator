@@ -580,6 +580,35 @@ export const translations = {
     "Süper Alaşım": { tr: "Süper Alaşım", en: "Super Alloy", fr: "Super alliage" },
   },
 
+  // ─── Grinding Wheel Names ───
+  grindingWheelNames: {
+    "aluminum-oxide": { tr: "Alüminyum Oksit (Al₂O₃)", en: "Aluminum Oxide (Al₂O₃)", fr: "Oxyde d'aluminium (Al₂O₃)" },
+    "silicon-carbide": { tr: "Silisyum Karbür (SiC)", en: "Silicon Carbide (SiC)", fr: "Carbure de silicium (SiC)" },
+    "cbn": { tr: "Kübik Bor Nitrür (CBN)", en: "Cubic Boron Nitride (CBN)", fr: "Nitrure de bore cubique (CBN)" },
+    "diamond": { tr: "Elmas", en: "Diamond", fr: "Diamant" },
+  },
+
+  // ─── Grinding Operation Names ───
+  grindingOperationNames: {
+    "surface": { tr: "Düzlem Taşlama", en: "Surface Grinding", fr: "Rectification plane" },
+    "cylindrical-external": { tr: "Silindirik Taşlama (Dış)", en: "Cylindrical Grinding (External)", fr: "Rectification cylindrique (Externe)" },
+    "cylindrical-internal": { tr: "Silindirik Taşlama (İç)", en: "Cylindrical Grinding (Internal)", fr: "Rectification cylindrique (Interne)" },
+    "centerless": { tr: "Puntasız Taşlama", en: "Centerless Grinding", fr: "Rectification sans centre" },
+    "creep-feed": { tr: "Yavaş İlerlemeli Taşlama", en: "Creep Feed Grinding", fr: "Rectification à avance lente" },
+  },
+
+  // ─── Grinding Material Categories ───
+  grindingMaterialNames: {
+    "Çelik (Yumuşak)": { tr: "Çelik (Yumuşak)", en: "Steel (Soft)", fr: "Acier (Tendre)" },
+    "Çelik (Sertleştirilmiş)": { tr: "Çelik (Sertleştirilmiş)", en: "Steel (Hardened)", fr: "Acier (Trempé)" },
+    "Paslanmaz Çelik": { tr: "Paslanmaz Çelik", en: "Stainless Steel", fr: "Acier inoxydable" },
+    "Dökme Demir": { tr: "Dökme Demir", en: "Cast Iron", fr: "Fonte" },
+    "Alüminyum": { tr: "Alüminyum", en: "Aluminum", fr: "Aluminium" },
+    "Karbür": { tr: "Karbür", en: "Carbide", fr: "Carbure" },
+    "Seramik": { tr: "Seramik", en: "Ceramic", fr: "Céramique" },
+    "Titanyum": { tr: "Titanyum", en: "Titanium", fr: "Titane" },
+  },
+
   // ─── Tool Types ───
   toolTypeNames: {
     "hss": { tr: "HSS (Yüksek Hız Çeliği)", en: "HSS (High Speed Steel)", fr: "HSS (Acier rapide)" },
@@ -596,6 +625,20 @@ export const translations = {
     "milling": { tr: "Frezeleme", en: "Milling", fr: "Fraisage" },
     "drilling": { tr: "Delme", en: "Drilling", fr: "Perçage" },
     "boring": { tr: "Raybalama", en: "Boring", fr: "Alésage" },
+  },
+
+  // ─── Threading Material Categories ───
+  threadMaterialNames: {
+    "Çelik (Düşük Karbonlu)": { tr: "Çelik (Düşük Karbonlu)", en: "Steel (Low Carbon)", fr: "Acier (Bas carbone)" },
+    "Çelik (Orta Karbonlu)": { tr: "Çelik (Orta Karbonlu)", en: "Steel (Medium Carbon)", fr: "Acier (Moyen carbone)" },
+    "Çelik (Yüksek Karbonlu)": { tr: "Çelik (Yüksek Karbonlu)", en: "Steel (High Carbon)", fr: "Acier (Haut carbone)" },
+    "Paslanmaz Çelik": { tr: "Paslanmaz Çelik", en: "Stainless Steel", fr: "Acier inoxydable" },
+    "Dökme Demir": { tr: "Dökme Demir", en: "Cast Iron", fr: "Fonte" },
+    "Alüminyum": { tr: "Alüminyum", en: "Aluminum", fr: "Aluminium" },
+    "Bronz": { tr: "Bronz", en: "Bronze", fr: "Bronze" },
+    "Pirinç": { tr: "Pirinç", en: "Brass", fr: "Laiton" },
+    "Bakır": { tr: "Bakır", en: "Copper", fr: "Cuivre" },
+    "Titanyum": { tr: "Titanyum", en: "Titanium", fr: "Titane" },
   },
 
   // ─── Work Order Planner ───

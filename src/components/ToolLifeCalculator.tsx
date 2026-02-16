@@ -28,7 +28,10 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
   const [partsPerDay, setPartsPerDay] = useState<number>(50);
 
   const material = allMaterials.find((m) => m.id === selectedMaterial) || allMaterials[0];
-  const tool = toolTypes.find((t) => t.id === selectedTool)!;
+  const tool = toolTypes.find((tt) => tt.id === selectedTool)!;
+
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
+  const getToolName = (id: string) => { const tr = t("toolTypeNames", id); return tr !== id ? tr : toolTypes.find(tt => tt.id === id)?.name || id; };
 
   const calculations = useMemo(() => {
     const C = material.taylorC * tool.multiplier;
@@ -122,15 +125,15 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
               className="input-industrial w-full"
             >
               <optgroup label={t("cutting", "standardMaterials")}>
-                {defaultMaterials.map((mat) => (
-                  <option key={mat.id} value={mat.id}>{mat.name}</option>
-                ))}
+                 {defaultMaterials.map((mat) => (
+                   <option key={mat.id} value={mat.id}>{getMaterialName(mat)}</option>
+                 ))}
               </optgroup>
               {customMaterials.length > 0 && (
                 <optgroup label={t("cutting", "customMaterials")}>
-                  {customMaterials.map((mat) => (
-                    <option key={mat.id} value={mat.id}>{mat.name}</option>
-                  ))}
+                   {customMaterials.map((mat) => (
+                     <option key={mat.id} value={mat.id}>{getMaterialName(mat)}</option>
+                   ))}
                 </optgroup>
               )}
             </select>
@@ -143,8 +146,8 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
               onChange={(e) => setSelectedTool(e.target.value)}
               className="input-industrial w-full"
             >
-              {toolTypes.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+              {toolTypes.map((tt) => (
+                <option key={tt.id} value={tt.id}>{getToolName(tt.id)}</option>
               ))}
             </select>
           </div>
