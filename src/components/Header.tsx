@@ -84,7 +84,7 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                           className="relative"
                         >
                           <ShieldCheck className="w-4 h-4" />
-                          <Badge className="absolute -top-1.5 -right-1.5 px-1 py-0 text-[10px] leading-tight">
+                          <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 px-1 py-0 text-[10px] leading-tight animate-pulse border-none shadow-sm">
                             Admin
                           </Badge>
                         </Button>
