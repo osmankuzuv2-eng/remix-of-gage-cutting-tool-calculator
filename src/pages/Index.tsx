@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
-import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, BotMessageSquare, FileImage, Ruler, Lock, ChevronDown, Cpu, BarChart3, FolderOpen } from "lucide-react";
+import { Lock, Plus, ChevronDown } from "lucide-react";
 import Header from "@/components/Header";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
@@ -20,55 +20,10 @@ import { Material, materials as defaultMaterials } from "@/data/materials";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useMenuConfig } from "@/hooks/useMenuConfig";
+import { getIcon, moduleIcons } from "@/lib/iconMap";
 
 type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "history" | "drawing" | "tolerance" | "admin";
-
-type CategoryId = "ai" | "machining" | "analysis" | "data";
-
-interface CategoryDef {
-  id: CategoryId;
-  icon: any;
-  tabs: { id: TabId; icon: any }[];
-}
-
-const categories: CategoryDef[] = [
-  {
-    id: "ai",
-    icon: Cpu,
-    tabs: [
-      { id: "ai-learn", icon: BotMessageSquare },
-      { id: "drawing", icon: FileImage },
-    ],
-  },
-  {
-    id: "machining",
-    icon: Wrench,
-    tabs: [
-      { id: "cutting", icon: Calculator },
-      { id: "toollife", icon: Clock },
-      { id: "threading", icon: Wrench },
-      { id: "drilling", icon: Circle },
-      { id: "tolerance", icon: Ruler },
-    ],
-  },
-  {
-    id: "analysis",
-    icon: BarChart3,
-    tabs: [
-      { id: "costcalc", icon: DollarSign },
-      { id: "cost", icon: DollarSign },
-      { id: "compare", icon: GitCompare },
-    ],
-  },
-  {
-    id: "data",
-    icon: FolderOpen,
-    tabs: [
-      { id: "materials", icon: Database },
-      { id: "history", icon: History },
-    ],
-  },
-];
 
 const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
@@ -76,19 +31,25 @@ const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 const Index = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { categories, reload: reloadMenu } = useMenuConfig();
   const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
-  const [openCategory, setOpenCategory] = useState<CategoryId | null>("ai");
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
+  // Open first category by default
+  useEffect(() => {
+    if (categories.length > 0 && openCategory === null) {
+      setOpenCategory(categories[0].id);
+    }
+  }, [categories]);
+
   useEffect(() => {
     const stored = safeGetItem<Material[]>(CUSTOM_MATERIALS_KEY, []);
-    if (isValidArray(stored)) {
-      setCustomMaterials(stored);
-    }
+    if (isValidArray(stored)) setCustomMaterials(stored);
   }, []);
 
   useEffect(() => {
@@ -133,12 +94,11 @@ const Index = () => {
     setActiveTab(tabId);
   };
 
-  const toggleCategory = (catId: CategoryId) => {
+  const toggleCategory = (catId: string) => {
     setOpenCategory(openCategory === catId ? null : catId);
   };
 
-  // Find which category contains the active tab
-  const activeCategoryId = categories.find((c) => c.tabs.some((tab) => tab.id === activeTab))?.id;
+  const activeCategoryId = categories.find((c) => c.modules.some((m) => m.module_key === activeTab))?.id;
 
   return (
     <div className="min-h-screen bg-background grid-pattern">
@@ -146,37 +106,36 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6">
         {/* Grouped Mega Menu */}
-        <nav className="mb-6 space-y-1">
+        <nav className="mb-6 space-y-2">
           {/* Category buttons row */}
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => {
-              const CatIcon = cat.icon;
+              const CatIcon = getIcon(cat.icon);
               const isOpen = openCategory === cat.id;
               const isActiveCat = activeCategoryId === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => toggleCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                     isActiveCat
-                      ? "bg-primary text-primary-foreground"
+                      ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
                       : isOpen
-                      ? "bg-card border border-primary/50 text-foreground"
-                      : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
+                      ? `${cat.bg_color} ${cat.text_color} ${cat.border_color} border`
+                      : `bg-card border-border text-muted-foreground hover:${cat.text_color} hover:${cat.border_color}`
                   }`}
                 >
                   <CatIcon className="w-4 h-4" />
-                  {t("categories", cat.id)}
+                  {cat.name}
                   <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                 </button>
               );
             })}
 
-            {/* Add Material button */}
             {(isAdmin || permissions["add_material"]) && (
               <button
                 onClick={() => setShowMaterialForm(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-success/10 text-success border border-success/30 hover:bg-success/20 transition-all ml-auto"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-success/10 text-success border border-success/30 hover:bg-success/20 transition-all ml-auto"
               >
                 <Plus className="w-4 h-4" />
                 {t("footer", "addMaterial")}
@@ -184,35 +143,52 @@ const Index = () => {
             )}
           </div>
 
-          {/* Expanded module items for open category */}
-          {openCategory && (
-            <div className="flex flex-wrap gap-1.5 pt-2 pl-1 animate-in fade-in slide-in-from-top-1 duration-200">
-              {categories
-                .find((c) => c.id === openCategory)
-                ?.tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const accessible = hasAccess(tab.id);
-                  const isActive = activeTab === tab.id;
+          {/* Expanded module cards for open category */}
+          {openCategory && (() => {
+            const cat = categories.find((c) => c.id === openCategory);
+            if (!cat) return null;
+            return (
+              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-200`}>
+                {cat.modules.map((mod) => {
+                  const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
+                  const accessible = hasAccess(mod.module_key);
+                  const isActive = activeTab === mod.module_key;
                   return (
                     <button
-                      key={tab.id}
-                      onClick={() => handleTabClick(tab.id)}
+                      key={mod.module_key}
+                      onClick={() => handleTabClick(mod.module_key as TabId)}
                       disabled={!accessible}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all ${
+                      className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
                         !accessible
-                          ? "text-muted-foreground/30 cursor-not-allowed"
+                          ? "bg-muted/20 border-border/30 text-muted-foreground/30 cursor-not-allowed"
                           : isActive
-                          ? "bg-primary/15 text-primary border border-primary/30 font-medium"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          ? `${cat.bg_color} ${cat.border_color} border shadow-md`
+                          : `bg-card/60 border-border hover:${cat.bg_color} hover:${cat.border_color} hover:shadow-sm`
                       }`}
                     >
-                      {accessible ? <Icon className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                      {t("tabs", tab.id)}
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                        isActive
+                          ? `bg-gradient-to-br ${cat.color} text-white`
+                          : accessible
+                          ? `${cat.bg_color} ${cat.text_color}`
+                          : "bg-muted/30 text-muted-foreground/30"
+                      }`}>
+                        {accessible ? <ModIcon className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                      </div>
+                      <span className={`text-xs font-medium text-center leading-tight ${
+                        isActive ? cat.text_color : accessible ? "text-foreground" : "text-muted-foreground/30"
+                      }`}>
+                        {t("tabs", mod.module_key)}
+                      </span>
+                      {isActive && (
+                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-gradient-to-r ${cat.color}`} />
+                      )}
                     </button>
                   );
                 })}
-            </div>
-          )}
+              </div>
+            );
+          })()}
         </nav>
 
         {/* Module Content */}
@@ -224,17 +200,14 @@ const Index = () => {
           {activeTab === "drilling" && hasAccess("drilling") && <DrillTapCalculator customMaterials={customMaterials} />}
           {activeTab === "compare" && hasAccess("compare") && <ParameterComparison customMaterials={customMaterials} />}
           {activeTab === "materials" && hasAccess("materials") && (
-            <MaterialList 
-              customMaterials={customMaterials} 
-              onDeleteCustom={handleDeleteMaterial}
-            />
+            <MaterialList customMaterials={customMaterials} onDeleteCustom={handleDeleteMaterial} />
           )}
           {activeTab === "cost" && hasAccess("cost") && <CostAnalyzer />}
           {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation />}
           {activeTab === "drawing" && hasAccess("drawing") && <DrawingAnalyzer />}
           {activeTab === "tolerance" && hasAccess("tolerance") && <ToleranceGuide />}
           {activeTab === "history" && hasAccess("history") && <CalculationHistory />}
-          {activeTab === "admin" && isAdmin && <AdminPanel />}
+          {activeTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
           
           {!hasAccess(activeTab) && !ALWAYS_ACCESSIBLE.includes(activeTab) && (
             <div className="text-center py-12">
@@ -244,7 +217,6 @@ const Index = () => {
           )}
         </div>
 
-        {/* Footer Stats */}
         <footer className="mt-8 pt-6 border-t border-border">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <FooterStat label={t("footer", "totalMaterials")} value={allMaterials.length.toString()} />
@@ -252,17 +224,12 @@ const Index = () => {
             <FooterStat label={t("footer", "processModes")} value="4" />
             <FooterStat label={t("common", "version")} value="2.0" />
           </div>
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            {t("footer", "copyright")}
-          </p>
+          <p className="text-center text-xs text-muted-foreground mt-4">{t("footer", "copyright")}</p>
         </footer>
       </main>
 
       {showMaterialForm && (
-        <MaterialForm
-          onAddMaterial={handleAddMaterial}
-          onClose={() => setShowMaterialForm(false)}
-        />
+        <MaterialForm onAddMaterial={handleAddMaterial} onClose={() => setShowMaterialForm(false)} />
       )}
     </div>
   );

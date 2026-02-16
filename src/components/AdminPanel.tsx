@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck } from "lucide-react";
+import MenuManager from "@/components/MenuManager";
 
 // All available modules (ai-learn is always accessible, not listed here)
 const ALL_MODULES = [
@@ -33,7 +34,11 @@ interface UserData {
   permissions: { module_key: string; granted: boolean }[];
 }
 
-const AdminPanel = () => {
+interface AdminPanelProps {
+  onMenuUpdated?: () => void;
+}
+
+const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const { t } = useLanguage();
   const { session } = useAuth();
   const { toast } = useToast();
@@ -287,6 +292,9 @@ const AdminPanel = () => {
           </Card>
         ))}
       </div>
+
+      {/* Menu Manager */}
+      <MenuManager onUpdated={onMenuUpdated} />
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

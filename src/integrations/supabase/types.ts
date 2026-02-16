@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      menu_categories: {
+        Row: {
+          bg_color: string
+          border_color: string
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+          text_color: string
+          updated_at: string
+        }
+        Insert: {
+          bg_color?: string
+          border_color?: string
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          sort_order?: number
+          text_color?: string
+          updated_at?: string
+        }
+        Update: {
+          bg_color?: string
+          border_color?: string
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          text_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      menu_category_modules: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          module_key: string
+          sort_order: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          module_key: string
+          sort_order?: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          module_key?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_category_modules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company: string | null
