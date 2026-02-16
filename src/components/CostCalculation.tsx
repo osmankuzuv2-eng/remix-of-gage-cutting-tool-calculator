@@ -228,10 +228,10 @@ const CostCalculation = () => {
             </div>
           )}
           <div className="flex gap-2">
-            <button onClick={() => {
+            <button onClick={async () => {
                const materialName = getMaterialName(selectedMaterial);
               const getMLbl = (id: string) => getMachineLabel(id);
-              exportCostPdf({ referenceNo, customer, material: materialName, density: currentMaterial?.density ?? 7.85, weightKg: calculations.weightKg, materialPricePerKg, laborRate, machines: [
+              await exportCostPdf({ referenceNo, customer, material: materialName, density: currentMaterial?.density ?? 7.85, weightKg: calculations.weightKg, materialPricePerKg, laborRate, machines: [
                 { label: t("costCalc", "turning"), name: getMLbl(selectedTurning), rate: turningRate },
                 { label: t("costCalc", "milling"), name: getMLbl(selectedMilling), rate: millingRate },
                 { label: t("costCalc", "fiveAxis"), name: getMLbl(selected5Axis), rate: fiveAxisRate },
