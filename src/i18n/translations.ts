@@ -286,6 +286,9 @@ export const translations = {
     confirmClear: { tr: "Tüm hesaplama geçmişi silinecek. Emin misiniz?", en: "All calculation history will be deleted. Are you sure?", fr: "Tout l'historique sera supprimé. Êtes-vous sûr ?" },
     confirmMigrate: { tr: "Yerel verileriniz buluta aktarılacak. Devam etmek istiyor musunuz?", en: "Your local data will be migrated to cloud. Continue?", fr: "Vos données locales seront migrées vers le cloud. Continuer ?" },
     downloadPdf: { tr: "PDF İndir", en: "Download PDF", fr: "Télécharger PDF" },
+    save: { tr: "Kaydet", en: "Save", fr: "Enregistrer" },
+    saved: { tr: "Kaydedildi", en: "Saved", fr: "Enregistré" },
+    savedDesc: { tr: "Hesaplama geçmişe kaydedildi.", en: "Calculation saved to history.", fr: "Calcul enregistré dans l'historique." },
     types: {
       cutting: { tr: "Kesme Hesaplama", en: "Cutting Calculation", fr: "Calcul de coupe" },
       toollife: { tr: "Takım Ömrü", en: "Tool Life", fr: "Durée d'outil" },

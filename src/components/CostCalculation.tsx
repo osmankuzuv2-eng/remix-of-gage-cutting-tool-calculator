@@ -1,15 +1,20 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown, Weight, Ruler } from "lucide-react";
+import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown, Weight, Ruler, Save } from "lucide-react";
 import { machinePark } from "@/data/machinePark";
 import { materials } from "@/data/materials";
 import { exportCostPdf } from "@/lib/exportCostPdf";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const customers = ["ASELSAN", "ROKETSAN", "TAI (TUSAŞ)", "TEI", "HAVELSAN", "BMC", "ALSTOM", "FAİVELEY", "QURİ", "LUKAS", "BAYKAR", "Diğer"];
 
 const CostCalculation = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { saveCalculation } = useSupabaseSync();
   const [referenceNo, setReferenceNo] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [customer, setCustomer] = useState("");
@@ -207,17 +212,56 @@ const CostCalculation = () => {
               {customer && (<div className="flex justify-between mt-1"><span className="text-muted-foreground">{t("costCalc", "customer")}:</span><span className="text-foreground">{customer}</span></div>)}
             </div>
           )}
-          <button onClick={() => {
-            const materialName = materials.find(m => m.id === selectedMaterial)?.name ?? selectedMaterial;
-            const getMachineName = (id: string) => machinePark.find(m => m.id === id)?.label ?? id;
-            exportCostPdf({ referenceNo, customer, material: materialName, density: currentMaterial?.density ?? 7.85, weightKg: calculations.weightKg, materialPricePerKg, laborRate, machines: [
-              { label: t("costCalc", "turning"), name: getMachineName(selectedTurning), rate: turningRate },
-              { label: t("costCalc", "milling"), name: getMachineName(selectedMilling), rate: millingRate },
-              { label: t("costCalc", "fiveAxis"), name: getMachineName(selected5Axis), rate: fiveAxisRate },
-            ], setupTime, machiningTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
-          }} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors">
-            <FileDown className="w-4 h-4" />{t("costCalc", "downloadPdf")}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => {
+              const materialName = materials.find(m => m.id === selectedMaterial)?.name ?? selectedMaterial;
+              const getMachineName = (id: string) => machinePark.find(m => m.id === id)?.label ?? id;
+              exportCostPdf({ referenceNo, customer, material: materialName, density: currentMaterial?.density ?? 7.85, weightKg: calculations.weightKg, materialPricePerKg, laborRate, machines: [
+                { label: t("costCalc", "turning"), name: getMachineName(selectedTurning), rate: turningRate },
+                { label: t("costCalc", "milling"), name: getMachineName(selectedMilling), rate: millingRate },
+                { label: t("costCalc", "fiveAxis"), name: getMachineName(selected5Axis), rate: fiveAxisRate },
+              ], setupTime, machiningTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
+            }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors">
+              <FileDown className="w-4 h-4" />{t("costCalc", "downloadPdf")}
+            </button>
+            {user && (
+              <button onClick={async () => {
+                const materialName = materials.find(m => m.id === selectedMaterial)?.name ?? selectedMaterial;
+                await saveCalculation({
+                  type: "cost",
+                  material: materialName,
+                  tool: customer || "-",
+                  parameters: {
+                    referenceNo: referenceNo || "-",
+                    customer: customer || "-",
+                    laborRate,
+                    setupTime,
+                    machiningTime,
+                    orderQuantity,
+                    materialPricePerKg,
+                    scrapRate,
+                    profitMargin,
+                    toolCost,
+                    shippingCost,
+                    coatingCost,
+                    heatTreatmentCost,
+                  },
+                  results: {
+                    weightKg: calculations.weightKg,
+                    costPerPart: `€${calculations.costPerPart}`,
+                    grandTotal: `€${calculations.grandTotal}`,
+                    laborCost: `€${calculations.laborCost}`,
+                    machineCost: `€${calculations.machineCost}`,
+                    materialCost: `€${calculations.totalMaterialCost}`,
+                    profit: `€${calculations.profit}`,
+                  },
+                });
+                toast({ title: t("history", "saved"), description: t("history", "savedDesc") });
+              }} className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent/20 text-accent-foreground font-medium text-sm hover:bg-accent/30 transition-colors border border-accent/30">
+                <Save className="w-4 h-4" />{t("history", "save")}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
