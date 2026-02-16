@@ -5,6 +5,7 @@ import { saveCalculation } from "./CalculationHistory";
 import { toast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import InfoPanelContent from "./InfoPanelContent";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface ToolLifeCalculatorProps {
   customMaterials: Material[];
@@ -13,6 +14,7 @@ interface ToolLifeCalculatorProps {
 type InfoPanel = 'partsPerTool' | 'efficiency' | 'economicSpeed' | 'dailyTools' | 'monthlyTools' | null;
 
 const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
+  const { t } = useLanguage();
   const [activeInfoPanel, setActiveInfoPanel] = useState<InfoPanel>(null);
   const allMaterials = [...defaultMaterials, ...customMaterials];
   
@@ -55,22 +57,22 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
       material: material.name,
       tool: tool.name,
       parameters: {
-        cuttingSpeed: `${cuttingSpeed} m/dk`,
+        cuttingSpeed: `${cuttingSpeed} m/${t("common", "minute")}`,
         workpieceLength: `${workpieceLength} mm`,
         partsPerDay: partsPerDay,
       },
       results: {
-        toolLife: `${calculations.toolLifeMinutes} dk`,
+        toolLife: `${calculations.toolLifeMinutes} ${t("common", "minute")}`,
         partsPerTool: calculations.partsPerTool,
         toolsPerDay: calculations.toolsPerDay,
         toolsPerMonth: calculations.toolsPerMonth,
         efficiency: `${calculations.efficiency}%`,
-        economicSpeed: `${calculations.economicSpeed} m/dk`,
+        economicSpeed: `${calculations.economicSpeed} m/${t("common", "minute")}`,
       },
     });
     toast({
-      title: "Kaydedildi",
-      description: "Hesaplama geçmişe eklendi.",
+      title: t("common", "savedLocal"),
+      description: t("common", "savedLocal"),
     });
   };
 
@@ -94,7 +96,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
             <Clock className="w-5 h-5 text-warning" />
           </div>
           <h2 className="text-lg font-semibold text-foreground">
-            Takım Ömrü Hesaplama (Taylor Denklemi)
+            {t("toolLife", "title")}
           </h2>
         </div>
         <button
@@ -102,7 +104,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
           className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:brightness-110 transition-all text-sm"
         >
           <Save className="w-4 h-4" />
-          Kaydet
+          {t("common", "save")}
         </button>
       </div>
 
@@ -110,19 +112,19 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
         {/* Input Section */}
         <div className="space-y-4">
           <div>
-            <label className="label-industrial block mb-2">Malzeme</label>
+            <label className="label-industrial block mb-2">{t("common", "material")}</label>
             <select
               value={selectedMaterial}
               onChange={(e) => setSelectedMaterial(e.target.value)}
               className="input-industrial w-full"
             >
-              <optgroup label="Standart Malzemeler">
+              <optgroup label={t("cutting", "standardMaterials")}>
                 {defaultMaterials.map((mat) => (
                   <option key={mat.id} value={mat.id}>{mat.name}</option>
                 ))}
               </optgroup>
               {customMaterials.length > 0 && (
-                <optgroup label="Özel Malzemeler">
+                <optgroup label={t("cutting", "customMaterials")}>
                   {customMaterials.map((mat) => (
                     <option key={mat.id} value={mat.id}>{mat.name}</option>
                   ))}
@@ -132,7 +134,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
           </div>
 
           <div>
-            <label className="label-industrial block mb-2">Takım Tipi</label>
+            <label className="label-industrial block mb-2">{t("common", "toolType")}</label>
             <select
               value={selectedTool}
               onChange={(e) => setSelectedTool(e.target.value)}
@@ -145,7 +147,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
           </div>
 
           <div>
-            <label className="label-industrial block mb-2">Kesme Hızı (m/dk)</label>
+            <label className="label-industrial block mb-2">{t("common", "cuttingSpeed")} (m/{t("common", "minute")})</label>
             <input
               type="number"
               value={cuttingSpeed}
@@ -165,7 +167,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>10</span>
-                <span className="text-accent">Önerilen: {calculations.economicSpeed}</span>
+                <span className="text-accent">{t("toolLife", "recommended")}: {calculations.economicSpeed}</span>
                 <span>500</span>
               </div>
             </div>
@@ -173,7 +175,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label-industrial block mb-2">Parça Uzunluğu (mm)</label>
+              <label className="label-industrial block mb-2">{t("toolLife", "workpieceLength")}</label>
               <input
                 type="number"
                 value={workpieceLength}
@@ -183,7 +185,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
               />
             </div>
             <div>
-              <label className="label-industrial block mb-2">Günlük Üretim</label>
+              <label className="label-industrial block mb-2">{t("toolLife", "dailyProduction")}</label>
               <input
                 type="number"
                 value={partsPerDay}
@@ -195,7 +197,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
           </div>
 
           <div className="p-3 rounded-lg bg-secondary/50 border border-border">
-            <span className="label-industrial text-xs">Taylor Denklemi</span>
+            <span className="label-industrial text-xs">{t("toolLife", "taylorEquation")}</span>
             <div className="font-mono text-lg text-accent mt-1">
               V × T<sup>n</sup> = C
             </div>
@@ -208,22 +210,22 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
         {/* Results Section */}
         <div className="space-y-4">
           <div className="p-6 rounded-lg metal-surface border border-border text-center">
-            <span className="label-industrial">Tahmini Takım Ömrü</span>
+            <span className="label-industrial">{t("toolLife", "estimatedToolLife")}</span>
             <div className="mt-2 flex items-center justify-center gap-2">
               {getEfficiencyIcon(Number(calculations.efficiency))}
               <span className={`font-mono text-4xl font-bold ${getEfficiencyColor(Number(calculations.efficiency))}`}>
                 {calculations.toolLifeMinutes}
               </span>
-              <span className="text-lg text-muted-foreground">dakika</span>
+              <span className="text-lg text-muted-foreground">{t("common", "minute")}</span>
             </div>
             <div className="text-sm text-muted-foreground mt-1">
-              ({calculations.toolLifeHours} saat)
+              ({calculations.toolLifeHours} {t("common", "hour")})
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <StatCard 
-              label="Takım Başına Parça" 
+              label={t("toolLife", "partsPerTool")} 
               value={calculations.partsPerTool.toString()} 
               icon="📦" 
               hasInfo 
@@ -231,7 +233,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
               onInfoClick={() => setActiveInfoPanel(activeInfoPanel === 'partsPerTool' ? null : 'partsPerTool')} 
             />
             <StatCard 
-              label="Günlük Takım" 
+              label={t("toolLife", "dailyTools")} 
               value={calculations.toolsPerDay.toString()} 
               icon="📅" 
               hasInfo
@@ -239,7 +241,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
               onInfoClick={() => setActiveInfoPanel(activeInfoPanel === 'dailyTools' ? null : 'dailyTools')}
             />
             <StatCard 
-              label="Aylık Takım" 
+              label={t("toolLife", "monthlyTools")} 
               value={calculations.toolsPerMonth.toString()} 
               icon="📊" 
               hasInfo
@@ -247,7 +249,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
               onInfoClick={() => setActiveInfoPanel(activeInfoPanel === 'monthlyTools' ? null : 'monthlyTools')}
             />
             <StatCard 
-              label="Verimlilik" 
+              label={t("toolLife", "efficiency")} 
               value={`${calculations.efficiency}%`} 
               icon="⚡" 
               highlight={Number(calculations.efficiency) >= 80}
@@ -257,74 +259,70 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
             />
           </div>
 
-          {/* Bilgi Panelleri */}
+          {/* Info Panels */}
           <div className="space-y-3">
-            {/* Takım Başına Parça */}
             <Collapsible open={activeInfoPanel === 'partsPerTool'}>
               <CollapsibleContent>
                 <InfoPanelContent
-                  title="Takım Başına Parça Nedir?"
-                  description="Bir kesici takımın aşınmadan veya değiştirilmeden önce üretebileceği ortalama parça sayısıdır."
-                  formula="Takım Başına Parça = Takım Ömrü (dk) ÷ Parça Başına Süre (dk)"
+                  title={t("toolLife", "partsPerTool")}
+                  description="Takım Başına Parça"
+                  formula="Parts/Tool = Tool Life (min) ÷ Time/Part (min)"
                   metrics={[
-                    { label: "Takım Ömrü", value: `${calculations.toolLifeMinutes} dk` },
-                    { label: "Parça Başına Süre", value: `${(Number(calculations.toolLifeMinutes) / calculations.partsPerTool).toFixed(2)} dk` }
+                    { label: t("toolLife", "estimatedToolLife"), value: `${calculations.toolLifeMinutes} ${t("common", "minute")}` },
+                    { label: "Time/Part", value: `${(Number(calculations.toolLifeMinutes) / calculations.partsPerTool).toFixed(2)} ${t("common", "minute")}` }
                   ]}
-                  useCases={["Takım maliyeti hesaplama", "Takım değişim planlaması", "Üretim verimliliği optimizasyonu", "Stok yönetimi"]}
+                  useCases={["Tool cost calculation", "Tool change planning", "Production efficiency optimization", "Stock management"]}
                 />
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Günlük Takım */}
             <Collapsible open={activeInfoPanel === 'dailyTools'}>
               <CollapsibleContent>
                 <InfoPanelContent
-                  title="Günlük Takım Tüketimi Nedir?"
-                  description="Günlük üretim hedefini karşılamak için gereken takım sayısıdır."
-                  formula="Günlük Takım = ⌈Günlük Üretim ÷ Takım Başına Parça⌉"
+                  title={t("toolLife", "dailyTools")}
+                  description="Daily tool consumption"
+                  formula="Daily Tools = ⌈Daily Production ÷ Parts/Tool⌉"
                   metrics={[
-                    { label: "Günlük Üretim", value: `${partsPerDay} adet` },
-                    { label: "Takım Başına Parça", value: `${calculations.partsPerTool} adet` }
+                    { label: t("toolLife", "dailyProduction"), value: `${partsPerDay} ${t("common", "piece")}` },
+                    { label: t("toolLife", "partsPerTool"), value: `${calculations.partsPerTool} ${t("common", "piece")}` }
                   ]}
-                  useCases={["Günlük takım stok planlaması", "Vardiya planlaması", "Takım değişim süreleri tahmini"]}
+                  useCases={["Daily stock planning", "Shift planning", "Tool change time estimation"]}
                 />
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Aylık Takım */}
             <Collapsible open={activeInfoPanel === 'monthlyTools'}>
               <CollapsibleContent>
                 <InfoPanelContent
-                  title="Aylık Takım Tüketimi Nedir?"
-                  description="Bir ay boyunca (22 iş günü) toplam takım ihtiyacıdır."
-                  formula="Aylık Takım = Günlük Takım × 22 iş günü"
+                  title={t("toolLife", "monthlyTools")}
+                  description="Monthly tool consumption"
+                  formula="Monthly Tools = Daily Tools × 22 work days"
                   metrics={[
-                    { label: "Günlük Takım", value: `${calculations.toolsPerDay} adet` },
-                    { label: "Aylık İş Günü", value: "22 gün" }
+                    { label: t("toolLife", "dailyTools"), value: `${calculations.toolsPerDay} ${t("common", "piece")}` },
+                    { label: "Work Days", value: "22" }
                   ]}
-                  useCases={["Aylık bütçe planlaması", "Tedarik siparişleri", "Maliyet tahminleri", "Stok yönetimi"]}
+                  useCases={["Monthly budget planning", "Procurement orders", "Cost estimation", "Stock management"]}
                 />
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Verimlilik */}
             <Collapsible open={activeInfoPanel === 'efficiency'}>
               <CollapsibleContent>
                 <InfoPanelContent
-                  title="Verimlilik Nedir?"
-                  description="Takım ömrünün referans değere (120 dk) oranıdır. %80 üzeri optimum, %50-80 arası dikkat gerektirir."
-                  formula="Verimlilik = (Takım Ömrü ÷ 120 dk) × 100"
+                  title={t("toolLife", "efficiency")}
+                  description="Tool life efficiency relative to 120 min reference"
+                  formula="Efficiency = (Tool Life ÷ 120 min) × 100"
                   metrics={[
-                    { label: "Mevcut Takım Ömrü", value: `${calculations.toolLifeMinutes} dk` },
-                    { label: "Referans Ömür", value: "120 dk" }
+                    { label: t("toolLife", "estimatedToolLife"), value: `${calculations.toolLifeMinutes} ${t("common", "minute")}` },
+                    { label: "Reference", value: `120 ${t("common", "minute")}` }
                   ]}
-                  useCases={["Parametre optimizasyonu", "Performans takibi", "Maliyet-verimlilik analizi"]}
+                  useCases={["Parameter optimization", "Performance tracking", "Cost-efficiency analysis"]}
                   statusInfo={{
                     value: Number(calculations.efficiency),
                     thresholds: [
                       { min: 80, label: "Optimum", color: "text-success" },
-                      { min: 50, label: "Dikkat", color: "text-warning" },
-                      { min: 0, label: "Kritik", color: "text-destructive" }
+                      { min: 50, label: "Warning", color: "text-warning" },
+                      { min: 0, label: "Critical", color: "text-destructive" }
                     ]
                   }}
                 />
@@ -332,7 +330,7 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
             </Collapsible>
           </div>
 
-          {/* Ekonomik Kesme Hızı Paneli */}
+          {/* Economic Speed Panel */}
           <div 
             className="p-4 rounded-lg bg-primary/10 border border-primary/30 cursor-pointer hover:bg-primary/15 transition-colors"
             onClick={() => setActiveInfoPanel(activeInfoPanel === 'economicSpeed' ? null : 'economicSpeed')}
@@ -340,10 +338,10 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xl">💡</span>
-                <span className="label-industrial">Ekonomik Kesme Hızı</span>
+                <span className="label-industrial">{t("toolLife", "economicSpeed")}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-2xl font-bold text-primary">{calculations.economicSpeed} m/dk</span>
+                <span className="font-mono text-2xl font-bold text-primary">{calculations.economicSpeed} m/{t("common", "minute")}</span>
                 <Info className={`w-4 h-4 transition-colors ${activeInfoPanel === 'economicSpeed' ? 'text-primary' : 'text-muted-foreground'}`} />
               </div>
             </div>
@@ -352,21 +350,16 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
           <Collapsible open={activeInfoPanel === 'economicSpeed'}>
             <CollapsibleContent>
               <InfoPanelContent
-                title="Ekonomik Kesme Hızı Nedir?"
-                description="Takım maliyetleri ve işleme süresi arasında optimal dengeyi sağlayan kesme hızıdır. Taylor denklemi kullanılarak hesaplanır."
+                title={t("toolLife", "economicSpeed")}
+                description="Optimal balance between tool cost and machining time"
                 formula="V_ek = C × (n / (1-n))^n"
                 metrics={[
-                  { label: "Taylor C Sabiti", value: `${(material.taylorC * tool.multiplier).toFixed(0)}` },
-                  { label: "Taylor n Üssü", value: `${material.taylorN}` },
-                  { label: "Mevcut Hız", value: `${cuttingSpeed} m/dk` },
-                  { label: "Fark", value: `${(Number(calculations.economicSpeed) - cuttingSpeed).toFixed(0)} m/dk` }
+                  { label: "Taylor C", value: `${(material.taylorC * tool.multiplier).toFixed(0)}` },
+                  { label: "Taylor n", value: `${material.taylorN}` },
+                  { label: t("common", "cuttingSpeed"), value: `${cuttingSpeed} m/${t("common", "minute")}` },
+                  { label: "Δ", value: `${(Number(calculations.economicSpeed) - cuttingSpeed).toFixed(0)} m/${t("common", "minute")}` }
                 ]}
-                useCases={["Maliyet optimizasyonu", "Takım ömrü maksimizasyonu", "Üretim planlaması", "Enerji tasarrufu"]}
-                tip={cuttingSpeed > Number(calculations.economicSpeed) 
-                  ? `Kesme hızını ${calculations.economicSpeed} m/dk'ya düşürerek takım ömrünü artırabilirsiniz.`
-                  : cuttingSpeed < Number(calculations.economicSpeed)
-                  ? `Kesme hızını ${calculations.economicSpeed} m/dk'ya çıkararak üretim hızını artırabilirsiniz.`
-                  : "Mevcut kesme hızı ekonomik optimum seviyede!"}
+                useCases={["Cost optimization", "Tool life maximization", "Production planning", "Energy savings"]}
               />
             </CollapsibleContent>
           </Collapsible>
@@ -380,11 +373,11 @@ const ToolLifeCalculator = ({ customMaterials }: ToolLifeCalculatorProps) => {
           }`}>
             <p className="text-sm text-muted-foreground">
               {Number(calculations.efficiency) >= 80 ? (
-                <><span className="text-success font-medium">✓ Optimum Ayarlar:</span> Mevcut parametreler verimli çalışma için uygundur.</>
+                <><span className="text-success font-medium">✓</span> {t("toolLife", "optimumSettings")}</>
               ) : Number(calculations.efficiency) >= 50 ? (
-                <><span className="text-warning font-medium">⚠ Dikkat:</span> Kesme hızını {calculations.economicSpeed} m/dk'ya düşürmeyi düşünün.</>
+                <><span className="text-warning font-medium">⚠</span> {t("toolLife", "warningSettings")} ({calculations.economicSpeed} m/{t("common", "minute")})</>
               ) : (
-                <><span className="text-destructive font-medium">✗ Uyarı:</span> Takım ömrü çok kısa. Parametreleri optimize edin.</>
+                <><span className="text-destructive font-medium">✗</span> {t("toolLife", "criticalSettings")}</>
               )}
             </p>
           </div>
@@ -419,7 +412,6 @@ const StatCard = ({ label, value, icon, highlight = false, hasInfo = false, isIn
         <button 
           onClick={onInfoClick}
           className={`p-1 rounded transition-colors ${isInfoActive ? 'bg-accent/30' : 'hover:bg-accent/20'}`}
-          title="Detaylı bilgi"
         >
           <Info className={`w-4 h-4 ${isInfoActive ? 'text-accent' : 'text-muted-foreground'}`} />
         </button>
