@@ -78,9 +78,10 @@ const CostAnalyzer = () => {
               onChange={(e) => setSelectedMaterial(e.target.value)}
               className="input-industrial w-full"
             >
-              {materials.map((mat) => (
-                <option key={mat.id} value={mat.id}>{mat.name}</option>
-              ))}
+              {materials.map((mat) => {
+                const tr = t("materialNames", mat.id);
+                return <option key={mat.id} value={mat.id}>{tr !== mat.id ? tr : mat.name}</option>;
+              })}
             </select>
           </div>
 
@@ -91,9 +92,10 @@ const CostAnalyzer = () => {
               onChange={(e) => setSelectedTool(e.target.value)}
               className="input-industrial w-full"
             >
-              {toolTypes.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+              {toolTypes.map((tt) => {
+                const tr = t("toolTypeNames", tt.id);
+                return <option key={tt.id} value={tt.id}>{tr !== tt.id ? tr : tt.name}</option>;
+              })}
             </select>
           </div>
 
