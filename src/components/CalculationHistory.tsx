@@ -3,6 +3,7 @@ import { History, Trash2, Download, Clock, ChevronDown, ChevronUp, Cloud, CloudO
 import jsPDF from "jspdf";
 import { useSupabaseSync, LocalCalculation } from "@/hooks/useSupabaseSync";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { translations } from "@/i18n/translations";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ export type CalculationRecord = LocalCalculation;
 
 const CalculationHistory = () => {
   const { t } = useLanguage();
-  const user = null;
+  const { user } = useAuth();
   const { calculations: history, loading, syncing, deleteCalculation, clearAllCalculations, migrateToCloud, refresh, isCloudEnabled } = useSupabaseSync();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
