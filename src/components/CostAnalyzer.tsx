@@ -176,7 +176,7 @@ const CostAnalyzer = () => {
                 <Info className={`w-4 h-4 ${activeInfoPanel === 'costPerPart' ? 'text-accent' : 'text-muted-foreground'}`} />
               </div>
               <div className="font-mono text-4xl font-bold text-primary mt-2">
-                ₺{calculations.costPerPart}
+                €{calculations.costPerPart}
               </div>
             </div>
 
@@ -194,10 +194,10 @@ const CostAnalyzer = () => {
                 description={t("costAnalyzer", "costPerPartDesc")}
                 formula={t("costAnalyzer", "costPerPartFormula")}
                 metrics={[
-                  { label: t("costAnalyzer", "toolCost"), value: `₺${calculations.toolCostPerPart}` },
-                  { label: t("costAnalyzer", "machineCost"), value: `₺${(Number(calculations.machineCostPerDay) / partsPerDay).toFixed(2)}` },
-                  { label: t("costAnalyzer", "laborCost"), value: `₺${(Number(calculations.laborCostPerDay) / partsPerDay).toFixed(2)}` },
-                  { label: t("costAnalyzer", "dailyCost"), value: `₺${calculations.totalCostPerDay}` }
+                  { label: t("costAnalyzer", "toolCost"), value: `€${calculations.toolCostPerPart}` },
+                  { label: t("costAnalyzer", "machineCost"), value: `€${(Number(calculations.machineCostPerDay) / partsPerDay).toFixed(2)}` },
+                  { label: t("costAnalyzer", "laborCost"), value: `€${(Number(calculations.laborCostPerDay) / partsPerDay).toFixed(2)}` },
+                  { label: t("costAnalyzer", "dailyCost"), value: `€${calculations.totalCostPerDay}` }
                 ]}
                 useCases={[t("costAnalyzer", "usePricing"), t("costAnalyzer", "useProfitability"), t("costAnalyzer", "useCostOptimization")]}
               />
@@ -207,12 +207,12 @@ const CostAnalyzer = () => {
           <div className="grid grid-cols-2 gap-3">
             <StatBox 
               label={t("costAnalyzer", "dailyCost")} 
-              value={`₺${calculations.totalCostPerDay}`}
+              value={`€${calculations.totalCostPerDay}`}
               hasInfo
               isActive={activeInfoPanel === 'toolCost'}
               onInfoClick={() => setActiveInfoPanel(activeInfoPanel === 'toolCost' ? null : 'toolCost')}
             />
-            <StatBox label={t("costAnalyzer", "monthlyCost")} value={`₺${calculations.totalMonthly}`} highlight />
+            <StatBox label={t("costAnalyzer", "monthlyCost")} value={`€${calculations.totalMonthly}`} highlight />
             <StatBox label={t("toolLife", "dailyTools")} value={calculations.toolsPerDay.toString()} />
             <StatBox label={t("toolLife", "monthlyTools")} value={calculations.toolsPerMonth.toString()} />
           </div>
@@ -225,9 +225,9 @@ const CostAnalyzer = () => {
                 formula={t("costAnalyzer", "dailyCostFormula")}
                 metrics={[
                   { label: t("common", "time"), value: `${((partsPerDay * 5) / 60).toFixed(1)} ${t("common", "hour")}` },
-                  { label: t("costAnalyzer", "machineCost"), value: `₺${calculations.machineCostPerDay}` },
-                  { label: t("costAnalyzer", "laborCost"), value: `₺${calculations.laborCostPerDay}` },
-                  { label: t("costAnalyzer", "toolCost"), value: `₺${(calculations.toolsPerDay * toolPrice)}` }
+                  { label: t("costAnalyzer", "machineCost"), value: `€${calculations.machineCostPerDay}` },
+                  { label: t("costAnalyzer", "laborCost"), value: `€${calculations.laborCostPerDay}` },
+                  { label: t("costAnalyzer", "toolCost"), value: `€${(calculations.toolsPerDay * toolPrice)}` }
                 ]}
                 useCases={[t("costAnalyzer", "useDailyBudget"), t("costAnalyzer", "useCapacity"), t("costAnalyzer", "useShiftPlanning")]}
               />
@@ -293,7 +293,7 @@ const CostAnalyzer = () => {
                 </div>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="font-mono text-3xl font-bold text-primary">
-                    ₺{calculations.savings}
+                    €{calculations.savings}
                   </span>
                   <span className="text-sm text-muted-foreground">/{t("common", "monthly").toLowerCase()}</span>
                 </div>
@@ -309,9 +309,9 @@ const CostAnalyzer = () => {
                     description={t("costAnalyzer", "savingsDesc")}
                     formula={t("costAnalyzer", "savingsFormula")}
                     metrics={[
-                      { label: t("costAnalyzer", "monthlyToolCost"), value: `₺${calculations.toolCostPerMonth}` },
-                      { label: "Optimal", value: `₺${(Number(calculations.toolCostPerMonth) - Number(calculations.savings)).toFixed(0)}` },
-                      { label: t("costAnalyzer", "potentialSavings"), value: `₺${calculations.savings}` },
+                      { label: t("costAnalyzer", "monthlyToolCost"), value: `€${calculations.toolCostPerMonth}` },
+                      { label: "Optimal", value: `€${(Number(calculations.toolCostPerMonth) - Number(calculations.savings)).toFixed(0)}` },
+                      { label: t("costAnalyzer", "potentialSavings"), value: `€${calculations.savings}` },
                       { label: "%", value: `${calculations.savingsPercent}` }
                     ]}
                     useCases={[t("costAnalyzer", "useBudgetPlanning"), t("costAnalyzer", "useROI"), t("costAnalyzer", "useCostReporting")]}
@@ -334,7 +334,7 @@ const CostAnalyzer = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("costAnalyzer", "monthlyToolCost")}:</span>
-                <span className="font-mono text-warning">₺{calculations.toolCostPerMonth}</span>
+                <span className="font-mono text-warning">€{calculations.toolCostPerMonth}</span>
               </div>
             </div>
           </div>
@@ -350,7 +350,7 @@ const CostBar = ({ label, value, max, color }: { label: string; value: number; m
     <div>
       <div className="flex justify-between text-xs mb-1">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-mono text-foreground">₺{value.toFixed(2)}</span>
+        <span className="font-mono text-foreground">€{value.toFixed(2)}</span>
       </div>
       <div className="h-2 bg-secondary rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${percent}%` }} />
