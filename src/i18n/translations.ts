@@ -227,6 +227,26 @@ export const translations = {
     partsPerTool: { tr: "Takım Başına Parça", en: "Parts Per Tool", fr: "Pièces par outil" },
     monthlyToolCost: { tr: "Aylık Takım Maliyeti", en: "Monthly Tool Cost", fr: "Coût outil mensuel" },
     workDays: { tr: "Aylık İş Günü", en: "Work Days/Month", fr: "Jours ouvrés/mois" },
+    // InfoPanel descriptions
+    costPerPartDesc: { tr: "Parça başı maliyet dağılımı", en: "Cost per part breakdown", fr: "Répartition du coût par pièce" },
+    costPerPartFormula: { tr: "Parça Maliyeti = (Takım + Makine + İşçilik) ÷ Günlük Üretim", en: "Part Cost = (Tool + Machine + Labor) ÷ Daily Production", fr: "Coût pièce = (Outil + Machine + Main d'œuvre) ÷ Production journalière" },
+    dailyCostDesc: { tr: "Günlük üretim maliyet analizi", en: "Daily production cost analysis", fr: "Analyse des coûts de production journalière" },
+    dailyCostFormula: { tr: "Günlük Maliyet = (Saat × Makine) + (Saat × İşçilik) + (Takım × Fiyat)", en: "Daily Cost = (Hours × Machine) + (Hours × Labor) + (Tools × Price)", fr: "Coût journalier = (Heures × Machine) + (Heures × Main d'œuvre) + (Outils × Prix)" },
+    economicSpeedDesc: { tr: "Maliyet verimliliği için optimal kesme hızı", en: "Optimal cutting speed for cost efficiency", fr: "Vitesse de coupe optimale pour l'efficacité des coûts" },
+    savingsDesc: { tr: "Aylık tasarruf potansiyeli", en: "Monthly savings potential", fr: "Potentiel d'économies mensuelles" },
+    savingsFormula: { tr: "Tasarruf = Mevcut Takım Maliyeti - Optimal Takım Maliyeti", en: "Savings = Current Tool Cost - Optimal Tool Cost", fr: "Économies = Coût outil actuel - Coût outil optimal" },
+    // Use cases
+    usePricing: { tr: "Fiyatlandırma", en: "Pricing", fr: "Tarification" },
+    useProfitability: { tr: "Karlılık analizi", en: "Profitability analysis", fr: "Analyse de rentabilité" },
+    useCostOptimization: { tr: "Maliyet optimizasyonu", en: "Cost optimization", fr: "Optimisation des coûts" },
+    useDailyBudget: { tr: "Günlük bütçe planlaması", en: "Daily budget planning", fr: "Planification budget quotidien" },
+    useCapacity: { tr: "Kapasite kullanımı", en: "Capacity utilization", fr: "Utilisation de la capacité" },
+    useShiftPlanning: { tr: "Vardiya planlaması", en: "Shift planning", fr: "Planification des équipes" },
+    useEfficiency: { tr: "Verimlilik artırma", en: "Efficiency improvement", fr: "Amélioration de l'efficacité" },
+    useToolLifeExtension: { tr: "Takım ömrü uzatma", en: "Tool life extension", fr: "Extension durée d'outil" },
+    useBudgetPlanning: { tr: "Bütçe planlaması", en: "Budget planning", fr: "Planification budgétaire" },
+    useROI: { tr: "Yatırım getiri analizi", en: "ROI analysis", fr: "Analyse du retour sur investissement" },
+    useCostReporting: { tr: "Maliyet raporlama", en: "Cost reporting", fr: "Rapport des coûts" },
   },
 
   // ─── Cost Calculation ───
