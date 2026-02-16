@@ -5,42 +5,40 @@ import Header from "@/components/Header";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
 import MaterialList from "@/components/MaterialList";
-
 import CostAnalyzer from "@/components/CostAnalyzer";
 import CostCalculation from "@/components/CostCalculation";
 import CalculationHistory from "@/components/CalculationHistory";
 import MaterialForm from "@/components/MaterialForm";
-
-
 import ParameterComparison from "@/components/ParameterComparison";
 import ThreadingCalculator from "@/components/ThreadingCalculator";
 import DrillTapCalculator from "@/components/DrillTapCalculator";
 import AILearningModule from "@/components/AILearningModule";
-
 import DrawingAnalyzer from "@/components/DrawingAnalyzer";
 import ToleranceGuide from "@/components/ToleranceGuide";
 import { Material, materials as defaultMaterials } from "@/data/materials";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "history" | "drawing" | "tolerance";
 
-const tabs = [
-  { id: "ai-learn" as TabId, label: "AI Asistan", icon: BotMessageSquare },
-  { id: "drawing" as TabId, label: "Teknik Resim Analizi", icon: FileImage },
-  { id: "costcalc" as TabId, label: "Maliyet Hesaplama", icon: DollarSign },
-  { id: "cutting" as TabId, label: "Kesme", icon: Calculator },
-  { id: "toollife" as TabId, label: "Takım Ömrü", icon: Clock },
-  { id: "threading" as TabId, label: "Diş Açma", icon: Wrench },
-  { id: "drilling" as TabId, label: "Delme", icon: Circle },
-  { id: "tolerance" as TabId, label: "Tolerans", icon: Ruler },
-  { id: "compare" as TabId, label: "Karşılaştır", icon: GitCompare },
-  { id: "materials" as TabId, label: "Malzemeler", icon: Database },
-  { id: "cost" as TabId, label: "Takım Maliyet", icon: DollarSign },
-  { id: "history" as TabId, label: "Geçmiş", icon: History },
+const tabDefs: { id: TabId; icon: any }[] = [
+  { id: "ai-learn", icon: BotMessageSquare },
+  { id: "drawing", icon: FileImage },
+  { id: "costcalc", icon: DollarSign },
+  { id: "cutting", icon: Calculator },
+  { id: "toollife", icon: Clock },
+  { id: "threading", icon: Wrench },
+  { id: "drilling", icon: Circle },
+  { id: "tolerance", icon: Ruler },
+  { id: "compare", icon: GitCompare },
+  { id: "materials", icon: Database },
+  { id: "cost", icon: DollarSign },
+  { id: "history", icon: History },
 ];
 
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 
 const Index = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
@@ -73,7 +71,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6">
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {tabs.map((tab) => {
+          {tabDefs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
@@ -86,7 +84,7 @@ const Index = () => {
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {tab.label}
+                {t("tabs", tab.id)}
               </button>
             );
           })}
@@ -96,7 +94,7 @@ const Index = () => {
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium bg-success/20 text-success border border-success/30 hover:bg-success/30 transition-all whitespace-nowrap ml-auto"
           >
             <Plus className="w-4 h-4" />
-            Malzeme Ekle
+            {t("footer", "addMaterial")}
           </button>
         </div>
 
@@ -124,13 +122,13 @@ const Index = () => {
         {/* Footer Stats */}
         <footer className="mt-8 pt-6 border-t border-border">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <FooterStat label="Toplam Malzeme" value={allMaterials.length.toString()} />
-            <FooterStat label="Takım Tipi" value="6" />
-            <FooterStat label="İşlem Modu" value="4" />
-            <FooterStat label="Versiyon" value="2.0" />
+            <FooterStat label={t("footer", "totalMaterials")} value={allMaterials.length.toString()} />
+            <FooterStat label={t("footer", "toolTypes")} value="6" />
+            <FooterStat label={t("footer", "processModes")} value="4" />
+            <FooterStat label={t("common", "version")} value="2.0" />
           </div>
           <p className="text-center text-xs text-muted-foreground mt-4">
-            GAGE Confidence Toolroom © 2026 | Hassas CNC Hesaplama Çözümleri
+            {t("footer", "copyright")}
           </p>
         </footer>
       </main>
