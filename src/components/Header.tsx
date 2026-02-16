@@ -13,10 +13,39 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 
-const languages: { code: Language; flag: string; label: string }[] = [
-  { code: "tr", flag: "🇹🇷", label: "Türkçe" },
-  { code: "en", flag: "🇬🇧", label: "English" },
-  { code: "fr", flag: "🇫🇷", label: "Français" },
+const FlagTR = () => (
+  <svg viewBox="0 0 1200 800" className="w-5 h-3.5 rounded-sm flex-shrink-0">
+    <rect width="1200" height="800" fill="#E30A17" />
+    <circle cx="425" cy="400" r="200" fill="#fff" />
+    <circle cx="475" cy="400" r="160" fill="#E30A17" />
+    <polygon fill="#fff" points="583,400 530,430 545,380 510,350 560,350" transform="rotate(18, 583, 400)" />
+  </svg>
+);
+
+const FlagGB = () => (
+  <svg viewBox="0 0 60 30" className="w-5 h-3.5 rounded-sm flex-shrink-0">
+    <rect width="60" height="30" fill="#012169" />
+    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6" />
+    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="2" />
+    <path d="M30,0 V30 M0,15 H60" stroke="#fff" strokeWidth="10" />
+    <path d="M30,0 V30 M0,15 H60" stroke="#C8102E" strokeWidth="6" />
+  </svg>
+);
+
+const FlagFR = () => (
+  <svg viewBox="0 0 900 600" className="w-5 h-3.5 rounded-sm flex-shrink-0">
+    <rect width="300" height="600" fill="#002395" />
+    <rect x="300" width="300" height="600" fill="#fff" />
+    <rect x="600" width="300" height="600" fill="#ED2939" />
+  </svg>
+);
+
+const flagComponents: Record<Language, React.FC> = { tr: FlagTR, en: FlagGB, fr: FlagFR };
+
+const languages: { code: Language; label: string }[] = [
+  { code: "tr", label: "Türkçe" },
+  { code: "en", label: "English" },
+  { code: "fr", label: "Français" },
 ];
 
 interface HeaderProps {
@@ -29,6 +58,7 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
   const { language, setLanguage, t } = useLanguage();
   const { user, signOut } = useAuth();
   const current = languages.find((l) => l.code === language)!;
+  const CurrentFlag = flagComponents[language];
 
   return (
     <header className="border-b border-border bg-card">
@@ -52,7 +82,7 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors text-sm">
-                  <span className="text-lg leading-none">{current.flag}</span>
+                  <CurrentFlag />
                   <span className="text-xs font-medium text-foreground hidden sm:inline">{current.label}</span>
                 </button>
               </DropdownMenuTrigger>
@@ -63,7 +93,7 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                     onClick={() => setLanguage(lang.code)}
                     className={`flex items-center gap-2 cursor-pointer ${language === lang.code ? "bg-primary/10 text-primary font-medium" : ""}`}
                   >
-                    <span className="text-lg leading-none">{lang.flag}</span>
+                    {(() => { const F = flagComponents[lang.code]; return <F />; })()}
                     <span>{lang.label}</span>
                   </DropdownMenuItem>
                 ))}
