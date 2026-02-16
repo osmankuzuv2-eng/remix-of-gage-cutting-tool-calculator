@@ -68,9 +68,9 @@ async function uploadImage(file: File): Promise<string> {
   return signedData.signedUrl;
 }
 
-async function streamChat({ messages, onDelta, onDone, onError }: { messages: MsgContent[]; onDelta: (text: string) => void; onDone: () => void; onError: (msg: string) => void; }) {
+async function streamChat({ messages, language, onDelta, onDone, onError }: { messages: MsgContent[]; language: string; onDelta: (text: string) => void; onDone: () => void; onError: (msg: string) => void; }) {
   const payload = messages.map((m) => { const obj: any = { role: m.role, content: m.content }; if (m.imageUrl) obj.imageUrl = m.imageUrl; return obj; });
-  const resp = await fetch(CHAT_URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` }, body: JSON.stringify({ messages: payload }) });
+  const resp = await fetch(CHAT_URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` }, body: JSON.stringify({ messages: payload, language }) });
   if (!resp.ok) { if (resp.status === 429) { onError("Too many requests"); return; } if (resp.status === 402) { onError("Credits exhausted"); return; } const body = await resp.json().catch(() => null); onError(body?.error || "Error"); return; }
   if (!resp.body) { onError("Stream error"); return; }
   const reader = resp.body.getReader(); const decoder = new TextDecoder(); let buf = ""; let done = false;
@@ -93,7 +93,7 @@ async function streamChat({ messages, onDelta, onDone, onError }: { messages: Ms
 }
 
 const AILearningModule = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [messages, setMessages] = useState<MsgContent[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -130,7 +130,7 @@ const AILearningModule = () => {
     const allMsgs = [...messages, userMsg]; setMessages(allMsgs); setInput(""); setIsLoading(true);
     let soFar = "";
     const upsert = (chunk: string) => { soFar += chunk; setMessages((prev) => { const last = prev[prev.length - 1]; if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: soFar } : m); return [...prev, { role: "assistant", content: soFar }]; }); };
-    try { await streamChat({ messages: allMsgs, onDelta: upsert, onDone: () => setIsLoading(false), onError: (msg) => { toast({ title: t("common", "error"), description: msg, variant: "destructive" }); setIsLoading(false); } }); }
+    try { await streamChat({ messages: allMsgs, language, onDelta: upsert, onDone: () => setIsLoading(false), onError: (msg) => { toast({ title: t("common", "error"), description: msg, variant: "destructive" }); setIsLoading(false); } }); }
     catch { toast({ title: t("common", "error"), description: t("aiAssistant", "connectionError"), variant: "destructive" }); setIsLoading(false); }
   }, [messages, isLoading, pendingImage, t]);
 
