@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -11,9 +12,12 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Circle, Calculator, AlertTriangle, Droplets } from "lucide-react";
+import { Circle, Calculator, AlertTriangle, Droplets, Save } from "lucide-react";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 interface DrillTapCalculatorProps {
   customMaterials?: Material[];
@@ -35,6 +39,8 @@ const drillTypes = [
 
 const DrillTapCalculator = ({ customMaterials = [] }: DrillTapCalculatorProps) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { saveCalculation } = useSupabaseSync();
   const [mode, setMode] = useState<"drill" | "ream">("drill");
   const [drillDiameter, setDrillDiameter] = useState<number>(10);
   const [drillType, setDrillType] = useState<string>("hss");
@@ -241,6 +247,37 @@ const DrillTapCalculator = ({ customMaterials = [] }: DrillTapCalculatorProps) =
                       <p>• {t("drilling", "thrustForce")}: ~{drillResults.thrustForce} N</p>
                     </div>
                   </div>
+                  {user && (
+                    <Button
+                      onClick={async () => {
+                        await saveCalculation({
+                          type: "drilling",
+                          material: selectedMaterial?.name || "-",
+                          tool: selectedDrillType?.name || drillType,
+                          parameters: {
+                            mode: "drill",
+                            drillDiameter: `${drillDiameter} mm`,
+                            holeDepth: `${holeDepth} mm`,
+                            holeType,
+                          },
+                          results: {
+                            rpm: drillResults.rpm,
+                            cuttingSpeed: `${drillResults.cuttingSpeed} m/${t("common", "minute")}`,
+                            feedPerRev: `${drillResults.feedPerRev} mm/dev`,
+                            machiningTime: `${drillResults.machiningTime} sn`,
+                            torque: `${drillResults.torque} Nm`,
+                            breakageRisk: drillResults.breakageRisk,
+                          },
+                        });
+                        toast({ title: t("history", "saved"), description: t("history", "savedDesc") });
+                      }}
+                      className="w-full gap-2"
+                      variant="outline"
+                    >
+                      <Save className="w-4 h-4" />
+                      {t("history", "save")}
+                    </Button>
+                  )}
                 </div>
               ) : mode === "ream" && reamResults ? (
                 <div className="space-y-4">
@@ -281,6 +318,35 @@ const DrillTapCalculator = ({ customMaterials = [] }: DrillTapCalculatorProps) =
                       </Badge>
                     </div>
                   </div>
+                  {user && (
+                    <Button
+                      onClick={async () => {
+                        await saveCalculation({
+                          type: "drilling",
+                          material: selectedMaterial?.name || "-",
+                          tool: "Reamer",
+                          parameters: {
+                            mode: "ream",
+                            finalDiameter: `${finalDiameter} mm`,
+                            holeDepth: `${holeDepth} mm`,
+                          },
+                          results: {
+                            rpm: reamResults!.rpm,
+                            cuttingSpeed: `${reamResults!.cuttingSpeed} m/${t("common", "minute")}`,
+                            preDrillSize: `Ø${reamResults!.preDrillSize} mm`,
+                            stockRemoval: `${reamResults!.stockRemoval} mm`,
+                            surfaceFinish: `Ra ${reamResults!.estimatedRa} μm`,
+                          },
+                        });
+                        toast({ title: t("history", "saved"), description: t("history", "savedDesc") });
+                      }}
+                      className="w-full gap-2"
+                      variant="outline"
+                    >
+                      <Save className="w-4 h-4" />
+                      {t("history", "save")}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
