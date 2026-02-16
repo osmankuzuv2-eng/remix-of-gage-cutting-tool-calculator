@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      machines: {
+        Row: {
+          brand: string
+          code: string
+          created_at: string
+          designation: string
+          has_c_axis: boolean | null
+          has_live_tooling: boolean | null
+          has_y_axis: boolean | null
+          id: string
+          is_active: boolean
+          label: string
+          max_diameter_mm: number | null
+          max_rpm: number | null
+          model: string
+          power_kw: number | null
+          sort_order: number
+          taper: string | null
+          travel_x_mm: number | null
+          travel_y_mm: number | null
+          travel_z_mm: number | null
+          type: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          brand: string
+          code: string
+          created_at?: string
+          designation: string
+          has_c_axis?: boolean | null
+          has_live_tooling?: boolean | null
+          has_y_axis?: boolean | null
+          id?: string
+          is_active?: boolean
+          label: string
+          max_diameter_mm?: number | null
+          max_rpm?: number | null
+          model: string
+          power_kw?: number | null
+          sort_order?: number
+          taper?: string | null
+          travel_x_mm?: number | null
+          travel_y_mm?: number | null
+          travel_z_mm?: number | null
+          type: string
+          updated_at?: string
+          year?: number
+        }
+        Update: {
+          brand?: string
+          code?: string
+          created_at?: string
+          designation?: string
+          has_c_axis?: boolean | null
+          has_live_tooling?: boolean | null
+          has_y_axis?: boolean | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          max_diameter_mm?: number | null
+          max_rpm?: number | null
+          model?: string
+          power_kw?: number | null
+          sort_order?: number
+          taper?: string | null
+          travel_x_mm?: number | null
+          travel_y_mm?: number | null
+          travel_z_mm?: number | null
+          type?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           bg_color: string
