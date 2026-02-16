@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 export interface MenuCategory {
   id: string;
   name: string;
+  name_en: string | null;
+  name_fr: string | null;
   icon: string;
   color: string;
   bg_color: string;
@@ -14,10 +16,10 @@ export interface MenuCategory {
 }
 
 const DEFAULT_CATEGORIES: MenuCategory[] = [
-  { id: "ai", name: "AI & Analiz", icon: "Cpu", color: "from-violet-500 to-purple-700", bg_color: "bg-violet-500/10", text_color: "text-violet-400", border_color: "border-violet-500/30", sort_order: 0, modules: [{ module_key: "ai-learn", sort_order: 0 }, { module_key: "drawing", sort_order: 1 }] },
-  { id: "machining", name: "İşleme", icon: "Wrench", color: "from-orange-500 to-amber-700", bg_color: "bg-orange-500/10", text_color: "text-orange-400", border_color: "border-orange-500/30", sort_order: 1, modules: [{ module_key: "cutting", sort_order: 0 }, { module_key: "toollife", sort_order: 1 }, { module_key: "threading", sort_order: 2 }, { module_key: "drilling", sort_order: 3 }, { module_key: "tolerance", sort_order: 4 }] },
-  { id: "analysis", name: "Maliyet & Karşılaştırma", icon: "BarChart3", color: "from-emerald-500 to-green-700", bg_color: "bg-emerald-500/10", text_color: "text-emerald-400", border_color: "border-emerald-500/30", sort_order: 2, modules: [{ module_key: "costcalc", sort_order: 0 }, { module_key: "cost", sort_order: 1 }, { module_key: "compare", sort_order: 2 }] },
-  { id: "data", name: "Veri", icon: "FolderOpen", color: "from-sky-500 to-blue-700", bg_color: "bg-sky-500/10", text_color: "text-sky-400", border_color: "border-sky-500/30", sort_order: 3, modules: [{ module_key: "materials", sort_order: 0 }, { module_key: "history", sort_order: 1 }] },
+  { id: "ai", name: "AI & Analiz", name_en: "AI & Analysis", name_fr: "IA & Analyse", icon: "Cpu", color: "from-violet-500 to-purple-700", bg_color: "bg-violet-500/10", text_color: "text-violet-400", border_color: "border-violet-500/30", sort_order: 0, modules: [{ module_key: "ai-learn", sort_order: 0 }, { module_key: "drawing", sort_order: 1 }] },
+  { id: "machining", name: "İşleme", name_en: "Machining", name_fr: "Usinage", icon: "Wrench", color: "from-orange-500 to-amber-700", bg_color: "bg-orange-500/10", text_color: "text-orange-400", border_color: "border-orange-500/30", sort_order: 1, modules: [{ module_key: "cutting", sort_order: 0 }, { module_key: "toollife", sort_order: 1 }, { module_key: "threading", sort_order: 2 }, { module_key: "drilling", sort_order: 3 }, { module_key: "tolerance", sort_order: 4 }] },
+  { id: "analysis", name: "Maliyet & Karşılaştırma", name_en: "Cost & Comparison", name_fr: "Coût & Comparaison", icon: "BarChart3", color: "from-emerald-500 to-green-700", bg_color: "bg-emerald-500/10", text_color: "text-emerald-400", border_color: "border-emerald-500/30", sort_order: 2, modules: [{ module_key: "costcalc", sort_order: 0 }, { module_key: "cost", sort_order: 1 }, { module_key: "compare", sort_order: 2 }] },
+  { id: "data", name: "Veri", name_en: "Data", name_fr: "Données", icon: "FolderOpen", color: "from-sky-500 to-blue-700", bg_color: "bg-sky-500/10", text_color: "text-sky-400", border_color: "border-sky-500/30", sort_order: 3, modules: [{ module_key: "materials", sort_order: 0 }, { module_key: "history", sort_order: 1 }] },
 ];
 
 export const useMenuConfig = () => {
@@ -36,6 +38,8 @@ export const useMenuConfig = () => {
         const merged: MenuCategory[] = catsRes.data.map((cat) => ({
           id: cat.id,
           name: cat.name,
+          name_en: cat.name_en,
+          name_fr: cat.name_fr,
           icon: cat.icon,
           color: cat.color,
           bg_color: cat.bg_color,

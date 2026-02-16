@@ -29,7 +29,7 @@ const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 
 const Index = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const { categories, reload: reloadMenu } = useMenuConfig();
   const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
@@ -126,7 +126,7 @@ const Index = () => {
                   }`}
                 >
                   <CatIcon className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
-                  {cat.name}
+                  {language === "en" && cat.name_en ? cat.name_en : language === "fr" && cat.name_fr ? cat.name_fr : cat.name}
                   <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isOpen ? "rotate-180" : "group-hover:translate-y-0.5"}`} />
                 </button>
               );

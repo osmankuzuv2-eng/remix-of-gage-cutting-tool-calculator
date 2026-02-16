@@ -23,6 +23,8 @@ export type Database = {
           icon: string
           id: string
           name: string
+          name_en: string | null
+          name_fr: string | null
           sort_order: number
           text_color: string
           updated_at: string
@@ -35,6 +37,8 @@ export type Database = {
           icon?: string
           id?: string
           name: string
+          name_en?: string | null
+          name_fr?: string | null
           sort_order?: number
           text_color?: string
           updated_at?: string
@@ -47,6 +51,8 @@ export type Database = {
           icon?: string
           id?: string
           name?: string
+          name_en?: string | null
+          name_fr?: string | null
           sort_order?: number
           text_color?: string
           updated_at?: string

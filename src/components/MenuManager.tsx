@@ -58,6 +58,8 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
 
   // Form state
   const [formName, setFormName] = useState("");
+  const [formNameEn, setFormNameEn] = useState("");
+  const [formNameFr, setFormNameFr] = useState("");
   const [formIcon, setFormIcon] = useState("Cpu");
   const [formColorIdx, setFormColorIdx] = useState(0);
   const [formModules, setFormModules] = useState<string[]>([]);
@@ -97,6 +99,8 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
   const openCreate = () => {
     setEditingCat(null);
     setFormName("");
+    setFormNameEn("");
+    setFormNameFr("");
     setFormIcon("Cpu");
     setFormColorIdx(0);
     setFormModules([]);
@@ -106,6 +110,8 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
   const openEdit = (cat: CategoryData) => {
     setEditingCat(cat);
     setFormName(cat.name);
+    setFormNameEn((cat as any).name_en || "");
+    setFormNameFr((cat as any).name_fr || "");
     setFormIcon(cat.icon);
     const idx = COLOR_PRESETS.findIndex((p) => p.color === cat.color);
     setFormColorIdx(idx >= 0 ? idx : 0);
@@ -123,6 +129,8 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
         // Update category
         await supabase.from("menu_categories").update({
           name: formName,
+          name_en: formNameEn || null,
+          name_fr: formNameFr || null,
           icon: formIcon,
           color: preset.color,
           bg_color: preset.bg,
@@ -142,6 +150,8 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
         const maxOrder = categories.length > 0 ? Math.max(...categories.map((c) => c.sort_order)) + 1 : 0;
         const { data: newCat } = await supabase.from("menu_categories").insert({
           name: formName,
+          name_en: formNameEn || null,
+          name_fr: formNameFr || null,
           icon: formIcon,
           color: preset.color,
           bg_color: preset.bg,
@@ -263,8 +273,18 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Kategori Adı</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Kategori adı..." />
+              <Label>Kategori Adı (TR)</Label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Türkçe ad..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>English Name</Label>
+                <Input value={formNameEn} onChange={(e) => setFormNameEn(e.target.value)} placeholder="English name..." />
+              </div>
+              <div className="space-y-2">
+                <Label>Nom Français</Label>
+                <Input value={formNameFr} onChange={(e) => setFormNameFr(e.target.value)} placeholder="Nom français..." />
+              </div>
             </div>
 
             <div className="space-y-2">

@@ -191,15 +191,15 @@ const CostAnalyzer = () => {
             <CollapsibleContent>
               <InfoPanelContent
                 title={t("costAnalyzer", "costPerPart")}
-                description="Cost per part breakdown"
-                formula="Part Cost = (Tool + Machine + Labor) ÷ Daily Production"
+                description={t("costAnalyzer", "costPerPartDesc")}
+                formula={t("costAnalyzer", "costPerPartFormula")}
                 metrics={[
                   { label: t("costAnalyzer", "toolCost"), value: `₺${calculations.toolCostPerPart}` },
                   { label: t("costAnalyzer", "machineCost"), value: `₺${(Number(calculations.machineCostPerDay) / partsPerDay).toFixed(2)}` },
                   { label: t("costAnalyzer", "laborCost"), value: `₺${(Number(calculations.laborCostPerDay) / partsPerDay).toFixed(2)}` },
                   { label: t("costAnalyzer", "dailyCost"), value: `₺${calculations.totalCostPerDay}` }
                 ]}
-                useCases={["Pricing", "Profitability analysis", "Cost optimization"]}
+                useCases={[t("costAnalyzer", "usePricing"), t("costAnalyzer", "useProfitability"), t("costAnalyzer", "useCostOptimization")]}
               />
             </CollapsibleContent>
           </Collapsible>
@@ -221,15 +221,15 @@ const CostAnalyzer = () => {
             <CollapsibleContent>
               <InfoPanelContent
                 title={t("costAnalyzer", "dailyCost")}
-                description="Daily production cost analysis"
-                formula="Daily Cost = (Hours × Machine) + (Hours × Labor) + (Tools × Price)"
+                description={t("costAnalyzer", "dailyCostDesc")}
+                formula={t("costAnalyzer", "dailyCostFormula")}
                 metrics={[
                   { label: t("common", "time"), value: `${((partsPerDay * 5) / 60).toFixed(1)} ${t("common", "hour")}` },
                   { label: t("costAnalyzer", "machineCost"), value: `₺${calculations.machineCostPerDay}` },
                   { label: t("costAnalyzer", "laborCost"), value: `₺${calculations.laborCostPerDay}` },
                   { label: t("costAnalyzer", "toolCost"), value: `₺${(calculations.toolsPerDay * toolPrice)}` }
                 ]}
-                useCases={["Daily budget planning", "Capacity utilization", "Shift planning"]}
+                useCases={[t("costAnalyzer", "useDailyBudget"), t("costAnalyzer", "useCapacity"), t("costAnalyzer", "useShiftPlanning")]}
               />
             </CollapsibleContent>
           </Collapsible>
@@ -264,7 +264,7 @@ const CostAnalyzer = () => {
             <CollapsibleContent>
               <InfoPanelContent
                 title={t("costAnalyzer", "economicCuttingSpeed")}
-                description="Optimal cutting speed for cost efficiency"
+                description={t("costAnalyzer", "economicSpeedDesc")}
                 formula="V_ek = C × (n / (1-n))^n"
                 metrics={[
                   { label: t("common", "cuttingSpeed"), value: `${cuttingSpeed} m/${t("common", "minute")}` },
@@ -272,7 +272,7 @@ const CostAnalyzer = () => {
                   { label: "Δ", value: `${Math.abs(cuttingSpeed - Number(calculations.economicSpeed))} m/${t("common", "minute")}` },
                   { label: t("costAnalyzer", "toolLifeLabel"), value: `${calculations.toolLifeMinutes} ${t("common", "minute")}` }
                 ]}
-                useCases={["Cost optimization", "Efficiency improvement", "Tool life extension"]}
+                useCases={[t("costAnalyzer", "useCostOptimization"), t("costAnalyzer", "useEfficiency"), t("costAnalyzer", "useToolLifeExtension")]}
               />
             </CollapsibleContent>
           </Collapsible>
@@ -306,15 +306,15 @@ const CostAnalyzer = () => {
                 <CollapsibleContent>
                   <InfoPanelContent
                     title={t("costAnalyzer", "potentialSavings")}
-                    description="Monthly savings potential"
-                    formula="Savings = Current Tool Cost - Optimal Tool Cost"
+                    description={t("costAnalyzer", "savingsDesc")}
+                    formula={t("costAnalyzer", "savingsFormula")}
                     metrics={[
                       { label: t("costAnalyzer", "monthlyToolCost"), value: `₺${calculations.toolCostPerMonth}` },
                       { label: "Optimal", value: `₺${(Number(calculations.toolCostPerMonth) - Number(calculations.savings)).toFixed(0)}` },
                       { label: t("costAnalyzer", "potentialSavings"), value: `₺${calculations.savings}` },
                       { label: "%", value: `${calculations.savingsPercent}` }
                     ]}
-                    useCases={["Budget planning", "ROI analysis", "Cost reporting"]}
+                    useCases={[t("costAnalyzer", "useBudgetPlanning"), t("costAnalyzer", "useROI"), t("costAnalyzer", "useCostReporting")]}
                   />
                 </CollapsibleContent>
               </Collapsible>
