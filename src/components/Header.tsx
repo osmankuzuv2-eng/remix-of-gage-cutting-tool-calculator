@@ -1,6 +1,7 @@
-import { Settings } from "lucide-react";
+import { Settings, LogOut } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Language } from "@/i18n/translations";
 import {
   DropdownMenu,
@@ -8,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const languages: { code: Language; flag: string; label: string }[] = [
   { code: "tr", flag: "🇹🇷", label: "Türkçe" },
@@ -17,6 +19,7 @@ const languages: { code: Language; flag: string; label: string }[] = [
 
 const Header = () => {
   const { language, setLanguage, t } = useLanguage();
+  const { user, signOut } = useAuth();
   const current = languages.find((l) => l.code === language)!;
 
   return (
@@ -59,13 +62,25 @@ const Header = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {user && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={signOut}
+                  title={t("auth", "logout")}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/20 border border-success/30">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
               <span className="text-xs font-medium text-success">{t("common", "active")}</span>
             </div>
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </button>
           </div>
         </div>
       </div>

@@ -453,6 +453,40 @@ export const translations = {
     formula: { tr: "Formül", en: "Formula", fr: "Formule" },
     useCases: { tr: "Kullanım Alanları", en: "Use Cases", fr: "Cas d'utilisation" },
   },
+
+  // ─── Auth ───
+  auth: {
+    login: { tr: "Giriş Yap", en: "Sign In", fr: "Se connecter" },
+    logout: { tr: "Çıkış Yap", en: "Sign Out", fr: "Se déconnecter" },
+    email: { tr: "E-posta", en: "Email", fr: "E-mail" },
+    password: { tr: "Şifre", en: "Password", fr: "Mot de passe" },
+    loginTitle: { tr: "Hesabınıza giriş yapın", en: "Sign in to your account", fr: "Connectez-vous à votre compte" },
+    loginError: { tr: "Giriş başarısız", en: "Login failed", fr: "Échec de connexion" },
+    invalidCredentials: { tr: "E-posta veya şifre hatalı", en: "Invalid email or password", fr: "E-mail ou mot de passe invalide" },
+    welcome: { tr: "Hoş geldiniz!", en: "Welcome!", fr: "Bienvenue !" },
+    loginSuccess: { tr: "Başarıyla giriş yaptınız", en: "Successfully logged in", fr: "Connexion réussie" },
+    loggingIn: { tr: "Giriş yapılıyor...", en: "Signing in...", fr: "Connexion..." },
+  },
+
+  // ─── Admin ───
+  admin: {
+    title: { tr: "Yönetici Paneli", en: "Admin Panel", fr: "Panneau admin" },
+    createUser: { tr: "Kullanıcı Oluştur", en: "Create User", fr: "Créer utilisateur" },
+    editUser: { tr: "Kullanıcı Düzenle", en: "Edit User", fr: "Modifier utilisateur" },
+    changePassword: { tr: "Şifre Değiştir", en: "Change Password", fr: "Changer mot de passe" },
+    newPassword: { tr: "Yeni Şifre", en: "New Password", fr: "Nouveau mot de passe" },
+    email: { tr: "E-posta", en: "Email", fr: "E-mail" },
+    password: { tr: "Şifre", en: "Password", fr: "Mot de passe" },
+    displayName: { tr: "Görünen Ad", en: "Display Name", fr: "Nom affiché" },
+    adminRole: { tr: "Yönetici Yetkisi", en: "Admin Role", fr: "Rôle admin" },
+    modulePermissions: { tr: "Modül İzinleri", en: "Module Permissions", fr: "Permissions modules" },
+    userCreated: { tr: "Kullanıcı oluşturuldu", en: "User created", fr: "Utilisateur créé" },
+    userUpdated: { tr: "Kullanıcı güncellendi", en: "User updated", fr: "Utilisateur mis à jour" },
+    userDeleted: { tr: "Kullanıcı silindi", en: "User deleted", fr: "Utilisateur supprimé" },
+    passwordChanged: { tr: "Şifre değiştirildi", en: "Password changed", fr: "Mot de passe changé" },
+    confirmDelete: { tr: "Bu kullanıcıyı silmek istediğinize emin misiniz?", en: "Are you sure you want to delete this user?", fr: "Êtes-vous sûr de vouloir supprimer cet utilisateur ?" },
+    noPermission: { tr: "Bu modüle erişim yetkiniz yok", en: "You don't have access to this module", fr: "Vous n'avez pas accès à ce module" },
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
