@@ -117,17 +117,17 @@ const Index = () => {
                 <button
                   key={cat.id}
                   onClick={() => toggleCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border group ${
                     isActiveCat
-                      ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
+                      ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.97]`
                       : isOpen
-                      ? `${cat.bg_color} ${cat.text_color} ${cat.border_color} border`
-                      : `bg-card border-border text-muted-foreground hover:${cat.text_color} hover:${cat.border_color}`
+                      ? `${cat.bg_color} ${cat.text_color} ${cat.border_color} border hover:scale-[1.02]`
+                      : `bg-card border-border text-muted-foreground hover:${cat.text_color} hover:${cat.border_color} hover:scale-[1.03] hover:shadow-md active:scale-[0.97]`
                   }`}
                 >
-                  <CatIcon className="w-4 h-4" />
+                  <CatIcon className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
                   {cat.name}
-                  <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isOpen ? "rotate-180" : "group-hover:translate-y-0.5"}`} />
                 </button>
               );
             })}
@@ -135,9 +135,9 @@ const Index = () => {
             {(isAdmin || permissions["add_material"]) && (
               <button
                 onClick={() => setShowMaterialForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-success/10 text-success border border-success/30 hover:bg-success/20 transition-all ml-auto"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-success/10 text-success border border-success/30 hover:bg-success/20 hover:scale-[1.03] hover:shadow-md active:scale-[0.97] transition-all duration-300 ml-auto group"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
                 {t("footer", "addMaterial")}
               </button>
             )}
@@ -149,7 +149,7 @@ const Index = () => {
             if (!cat) return null;
             return (
               <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-200`}>
-                {cat.modules.map((mod) => {
+                {cat.modules.map((mod, modIdx) => {
                   const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
                   const accessible = hasAccess(mod.module_key);
                   const isActive = activeTab === mod.module_key;
@@ -158,30 +158,31 @@ const Index = () => {
                       key={mod.module_key}
                       onClick={() => handleTabClick(mod.module_key as TabId)}
                       disabled={!accessible}
-                      className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
+                      style={{ animationDelay: `${modIdx * 50}ms` }}
+                      className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 animate-fade-in group ${
                         !accessible
                           ? "bg-muted/20 border-border/30 text-muted-foreground/30 cursor-not-allowed"
                           : isActive
-                          ? `${cat.bg_color} ${cat.border_color} border shadow-md`
-                          : `bg-card/60 border-border hover:${cat.bg_color} hover:${cat.border_color} hover:shadow-sm`
+                          ? `${cat.bg_color} ${cat.border_color} border shadow-md scale-[1.02]`
+                          : `bg-card/60 border-border hover:${cat.bg_color} hover:${cat.border_color} hover:shadow-lg hover:scale-[1.05] hover:-translate-y-1 active:scale-[0.95]`
                       }`}
                     >
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
                         isActive
-                          ? `bg-gradient-to-br ${cat.color} text-white`
+                          ? `bg-gradient-to-br ${cat.color} text-white shadow-lg`
                           : accessible
-                          ? `${cat.bg_color} ${cat.text_color}`
+                          ? `${cat.bg_color} ${cat.text_color} group-hover:scale-110 group-hover:shadow-md`
                           : "bg-muted/30 text-muted-foreground/30"
                       }`}>
-                        {accessible ? <ModIcon className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                        {accessible ? <ModIcon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" /> : <Lock className="w-4 h-4" />}
                       </div>
-                      <span className={`text-xs font-medium text-center leading-tight ${
+                      <span className={`text-xs font-medium text-center leading-tight transition-colors duration-300 ${
                         isActive ? cat.text_color : accessible ? "text-foreground" : "text-muted-foreground/30"
                       }`}>
                         {t("tabs", mod.module_key)}
                       </span>
                       {isActive && (
-                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-gradient-to-r ${cat.color}`} />
+                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-gradient-to-r ${cat.color} animate-scale-in`} />
                       )}
                     </button>
                   );
