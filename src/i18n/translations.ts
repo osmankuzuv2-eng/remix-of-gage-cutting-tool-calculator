@@ -702,6 +702,14 @@ export const translations = {
     q6: { tr: "Takım ömrünü etkileyen faktörler nelerdir?", en: "What factors affect tool life?", fr: "Quels facteurs affectent la durée d'outil ?" },
   },
 
+  // ─── Categories ───
+  categories: {
+    ai: { tr: "AI & Analiz", en: "AI & Analysis", fr: "IA & Analyse" },
+    machining: { tr: "İşleme", en: "Machining", fr: "Usinage" },
+    analysis: { tr: "Maliyet & Karşılaştırma", en: "Cost & Comparison", fr: "Coût & Comparaison" },
+    data: { tr: "Veri", en: "Data", fr: "Données" },
+  },
+
   // ─── Auth ───
   auth: {
     login: { tr: "Giriş Yap", en: "Sign In", fr: "Se connecter" },
