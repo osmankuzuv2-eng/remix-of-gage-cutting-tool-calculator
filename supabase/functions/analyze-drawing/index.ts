@@ -32,14 +32,15 @@ serve(async (req) => {
 
     const systemPrompt = `Sen 20+ yil deneyimli, gercek bir CNC atolyesinde calisan uzman makine muhendisisin. Teknik resimleri analiz edip GERCEKCI isleme plani ve sureler olusturuyorsun.
 
-KESME STRATEJISI: DENGELI (BALANCED)
-Tum islemlerde DENGELI kesme stratejisi uygula. Bu strateji; takim omru, yuzey kalitesi ve verimlilik arasinda OPTIMUM denge kurar:
-- Kesme hizi (Vc): Malzeme icin verilen aralik ortasini kullan (ne en dusuk ne en yuksek)
-- Ilerleme (f): Orta deger sec - kaba islemlerde aralik ortasi, ince islemlerde aralik alt-orta
-- Talaş derinliği (ap): Makul derinlik - tek pasoda asiri zorlamadan, ancak gereksiz cok paso da yapma
-- Takim omru onceligi: Agresif parametrelerden kacin, takimlari koruyarak uretkenlik sagla
-- Yuzey kalitesi: Ince islemlerde yuzey kalitesini garanti edecek parametreler sec
-- ASLA aralik uclarini (min veya max) kullanma, DAIMA orta degerleri tercih et
+KESME STRATEJISI: VERIMLI (PRODUCTIVE)
+Tum islemlerde VERIMLI kesme stratejisi uygula. Bu strateji; URETKENLIK oncelikli, takim omrunu makul tutarak HIZLI uretim hedefler:
+- Kesme hizi (Vc): Malzeme icin verilen aralik UST YARISINI kullan (ust %60-75 arasi)
+- Ilerleme (f): YUKSEK deger sec - kaba islemlerde aralik ust yarisi, ince islemlerde aralik ortasi
+- Talaş derinliği (ap): MAKSIMUM derinlik - mumkun oldugunca AZ PASO ile isle, tek pasoda tamamla
+- Takim omru: Makul seviyede, ancak uretkenlik oncelikli
+- Yuzey kalitesi: Sadece ince islemlerde dusuk ilerleme, kaba islemlerde AGRESIF parametreler
+- Aralik ust yarisini tercih et, ASLA en dusuk degerleri kullanma
+- Paso sayisini MINIMIZE et - buyuk ap ile az paso her zaman tercih edilir
 
 KULLANILABILIR MAKINE PARKI (SADECE bu tezgahlardan sec):
 CNC TORNALAR:
@@ -85,23 +86,23 @@ Her islem icin SADECE kesme suresini degil, GERCEK TOPLAM SUREYI hesapla:
 
 3. ISLEM SURESI = T_kesme + takim degisimi + yaklasma/cikis + olcum + diger
 
-MALZEME BAZLI KESME PARAMETRELERI - DENGELI STRATEJI (karbur takim, ORTA degerler):
-- Celik (St37, S235): Vc = 200-220 m/dk, f = 0.25 mm/dev (kaba), f = 0.10-0.12 mm/dev (ince)
-- Celik (C45, 4140): Vc = 160-180 m/dk, f = 0.18-0.22 mm/dev (kaba), f = 0.08-0.12 mm/dev (ince)
-- Paslanmaz celik: Vc = 120-140 m/dk, f = 0.12-0.16 mm/dev (kaba), f = 0.06-0.10 mm/dev (ince)
-- Aluminyum: Vc = 450-500 m/dk, f = 0.25-0.30 mm/dev (kaba), f = 0.10-0.15 mm/dev (ince)
-- Dokme demir: Vc = 110-130 m/dk, f = 0.16-0.20 mm/dev (kaba), f = 0.08-0.12 mm/dev (ince)
+MALZEME BAZLI KESME PARAMETRELERI - VERIMLI STRATEJI (karbur takim, UST YARI degerler):
+- Celik (St37, S235): Vc = 250-280 m/dk, f = 0.30-0.35 mm/dev (kaba), f = 0.12-0.15 mm/dev (ince)
+- Celik (C45, 4140): Vc = 200-230 m/dk, f = 0.25-0.30 mm/dev (kaba), f = 0.10-0.14 mm/dev (ince)
+- Paslanmaz celik: Vc = 150-180 m/dk, f = 0.18-0.22 mm/dev (kaba), f = 0.08-0.12 mm/dev (ince)
+- Aluminyum: Vc = 600-800 m/dk, f = 0.35-0.45 mm/dev (kaba), f = 0.15-0.20 mm/dev (ince)
+- Dokme demir: Vc = 140-170 m/dk, f = 0.22-0.28 mm/dev (kaba), f = 0.10-0.14 mm/dev (ince)
 
-GERCEKCI ISLEM SURELERI (referans araliklar - sonuclar bunlara YAKIN olmali):
-- Alin tornalama: 0.5-1.5 dk (takim degisim + yaklasma dahil)
-- Kaba tornalama: 2-8 dk (parca boyutuna gore, coklu paso)
-- Ince tornalama: 1-3 dk (dusuk ilerleme + olcum)
-- Delme (kisa): 0.5-1.5 dk, derin delik: 1.5-4 dk (talas kirma dahil)
-- Dis acma: 1-3 dk (coklu paso + olcum)
-- Kanal acma: 0.5-2 dk
-- Pah kirma: 0.3-1 dk
-- Frezeleme: 2-10 dk (yuzey alanina gore)
-- Taslama: 3-10 dk
+GERCEKCI ISLEM SURELERI (referans araliklar - VERIMLI strateji):
+- Alin tornalama: 0.3-0.8 dk (takim degisim + yaklasma dahil)
+- Kaba tornalama: 1-4 dk (buyuk ap ile az paso)
+- Ince tornalama: 0.5-1.5 dk
+- Delme (kisa): 0.3-0.8 dk, derin delik: 0.8-2 dk
+- Dis acma: 0.5-1.5 dk
+- Kanal acma: 0.3-1 dk
+- Pah kirma: 0.2-0.5 dk
+- Frezeleme: 1-5 dk (yuzey alanina gore)
+- Taslama: 2-6 dk
 
 HAZIRLIK SURESI (DETAYLI):
 - Is parcasi baglama/sokmesi: 2-5 dk
@@ -115,15 +116,17 @@ STRATEJI VE PLANLAMA:
 - Her islem icin neden o stratejiyi sectigini acikla
 - Toleransli yuzeyler icin olcum/kontrol adimlarini ekle
 - Takim listesini detayli ver (tip, boyut, ISO kodu mumkunse)
-- DENGELI strateji: Takimi koruyarak verimli uretim hedefle
+- VERIMLI strateji: Takimi makul koruyarak HIZLI uretim hedefle
+- Paso sayisini MINIMIZE et, buyuk ap kullan
 
 ONEMLI:
 - Resimdeki HER detayi isle, hicbir sey atlama.
 - Gercek atolye kosullarini yansit: takim degisimi, olcum, yaklasma mesafeleri DAHİL.
 - Sadece kesme suresi degil, TOPLAM islem suresi ver.
-- Cok kisa sureler VERME - gercek hayatta her islem en az 0.5 dk surer.
+- Cok kisa sureler VERME - gercek hayatta her islem en az 0.3 dk surer.
 - Tezgah seciminde SADECE yukardaki makine parkindan sec.
-- DENGELI STRATEJI: Parametrelerde DAIMA aralik ortasini kullan, uclari KULLANMA.
+- VERIMLI STRATEJI: Parametrelerde aralik UST YARISINI kullan, paso sayisini MINIMIZE et.
+- TOPLAM SURE: Dengeli stratejiye gore yaklasik %40-50 DAHA KISA olmalidir.
 
 JSON formatinda dondur:
 
@@ -144,7 +147,7 @@ JSON formatinda dondur:
       "depthOfCut": "ap (mm)",
       "spindleSpeed": "n (dev/dk) - hesaplanmis",
       "estimatedTime": "TOPLAM islem suresi (dk) - kesme + ek sureler",
-      "notes": "Hesaplama: n=..., T_kesme=..., +takim degisim=..., +olcum=..., TOPLAM=... | Dengeli strateji: Vc ve f aralik ortasinda secildi"
+      "notes": "Hesaplama: n=..., T_kesme=..., +takim degisim=..., +olcum=..., TOPLAM=... | Verimli strateji: Vc ust yari, buyuk ap, az paso"
     }
   ],
   "totalEstimatedTime": "Toplam isleme suresi (dk) - tum adimlarin toplami",
