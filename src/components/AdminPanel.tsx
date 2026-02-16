@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck } from "lucide-react";
 import MenuManager from "@/components/MenuManager";
+import MachineManager from "@/components/MachineManager";
 
 // All available modules (ai-learn is always accessible, not listed here)
 const ALL_MODULES = [
@@ -292,6 +293,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           </Card>
         ))}
       </div>
+
+      {/* Machine Manager */}
+      <MachineManager />
 
       {/* Menu Manager */}
       <MenuManager onUpdated={onMenuUpdated} />

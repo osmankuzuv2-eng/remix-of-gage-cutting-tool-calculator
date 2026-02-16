@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown, Weight, Ruler, Save } from "lucide-react";
-import { machinePark } from "@/data/machinePark";
 import { materials } from "@/data/materials";
+import { useMachines } from "@/hooks/useMachines";
 import { exportCostPdf } from "@/lib/exportCostPdf";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -16,17 +16,31 @@ const CostCalculation = () => {
   const getMaterialName = (id: string) => { const tr = t("materialNames", id); return tr !== id ? tr : materials.find(m => m.id === id)?.name || id; };
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
+  const { machines, getMachinesByType, getMachineLabel } = useMachines();
   const [referenceNo, setReferenceNo] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [customer, setCustomer] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [laborRate, setLaborRate] = useState(1.67);
-  const [selectedTurning, setSelectedTurning] = useState(machinePark.find(m => m.type === "turning")?.id ?? "");
+  const [selectedTurning, setSelectedTurning] = useState("");
   const [turningRate, setTurningRate] = useState(0);
-  const [selectedMilling, setSelectedMilling] = useState(machinePark.find(m => m.type === "milling-4axis")?.id ?? "");
+  const [selectedMilling, setSelectedMilling] = useState("");
   const [millingRate, setMillingRate] = useState(0);
-  const [selected5Axis, setSelected5Axis] = useState(machinePark.find(m => m.type === "milling-5axis")?.id ?? "");
+  const [selected5Axis, setSelected5Axis] = useState("");
   const [fiveAxisRate, setFiveAxisRate] = useState(0);
+
+  // Initialize machine selections when machines load
+  useEffect(() => {
+    if (machines.length > 0) {
+      if (!selectedTurning) setSelectedTurning(getMachinesByType("turning")[0]?.id ?? "");
+      if (!selectedMilling) {
+        const m4 = getMachinesByType("milling-4axis");
+        const m3 = getMachinesByType("milling-3axis");
+        setSelectedMilling((m4[0] || m3[0])?.id ?? "");
+      }
+      if (!selected5Axis) setSelected5Axis(getMachinesByType("milling-5axis")[0]?.id ?? "");
+    }
+  }, [machines]);
   const [setupTime, setSetupTime] = useState(30);
   const [machiningTime, setMachiningTime] = useState(15);
   const [orderQuantity, setOrderQuantity] = useState(100);
@@ -141,14 +155,14 @@ const CostCalculation = () => {
           <div className="space-y-3">
             <label className="label-industrial block">{t("costCalc", "machineSelection")}</label>
             {([
-              { label: t("costCalc", "turning"), type: "turning" as const, value: selectedTurning, setValue: setSelectedTurning, rate: turningRate, setRate: setTurningRate },
-              { label: t("costCalc", "milling"), type: "milling-4axis" as const, value: selectedMilling, setValue: setSelectedMilling, rate: millingRate, setRate: setMillingRate },
-              { label: t("costCalc", "fiveAxis"), type: "milling-5axis" as const, value: selected5Axis, setValue: setSelected5Axis, rate: fiveAxisRate, setRate: setFiveAxisRate },
+              { label: t("costCalc", "turning"), types: ["turning"], value: selectedTurning, setValue: setSelectedTurning, rate: turningRate, setRate: setTurningRate },
+              { label: t("costCalc", "milling"), types: ["milling-3axis", "milling-4axis"], value: selectedMilling, setValue: setSelectedMilling, rate: millingRate, setRate: setMillingRate },
+              { label: t("costCalc", "fiveAxis"), types: ["milling-5axis"], value: selected5Axis, setValue: setSelected5Axis, rate: fiveAxisRate, setRate: setFiveAxisRate },
             ]).map((machine) => (
-              <div key={machine.type} className="p-3 rounded-lg bg-secondary/20 border border-border space-y-2">
+              <div key={machine.types.join("-")} className="p-3 rounded-lg bg-secondary/20 border border-border space-y-2">
                 <span className="text-xs font-medium text-muted-foreground">{machine.label}</span>
                 <select value={machine.value} onChange={(e) => machine.setValue(e.target.value)} className="input-industrial w-full text-sm">
-                  {machinePark.filter((m) => m.type === machine.type).map((m) => (<option key={m.id} value={m.id}>{m.label}</option>))}
+                  {machine.types.flatMap(t => getMachinesByType(t)).map((m) => (<option key={m.id} value={m.id}>{m.label}</option>))}
                 </select>
                 <div className="flex items-center gap-2">
                   <input type="number" value={machine.rate} onChange={(e) => machine.setRate(Number(e.target.value))} className="input-industrial w-full text-sm" placeholder="0" />
@@ -216,11 +230,11 @@ const CostCalculation = () => {
           <div className="flex gap-2">
             <button onClick={() => {
                const materialName = getMaterialName(selectedMaterial);
-              const getMachineName = (id: string) => machinePark.find(m => m.id === id)?.label ?? id;
+              const getMLbl = (id: string) => getMachineLabel(id);
               exportCostPdf({ referenceNo, customer, material: materialName, density: currentMaterial?.density ?? 7.85, weightKg: calculations.weightKg, materialPricePerKg, laborRate, machines: [
-                { label: t("costCalc", "turning"), name: getMachineName(selectedTurning), rate: turningRate },
-                { label: t("costCalc", "milling"), name: getMachineName(selectedMilling), rate: millingRate },
-                { label: t("costCalc", "fiveAxis"), name: getMachineName(selected5Axis), rate: fiveAxisRate },
+                { label: t("costCalc", "turning"), name: getMLbl(selectedTurning), rate: turningRate },
+                { label: t("costCalc", "milling"), name: getMLbl(selectedMilling), rate: millingRate },
+                { label: t("costCalc", "fiveAxis"), name: getMLbl(selected5Axis), rate: fiveAxisRate },
               ], setupTime, machiningTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
             }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors">
               <FileDown className="w-4 h-4" />{t("costCalc", "downloadPdf")}

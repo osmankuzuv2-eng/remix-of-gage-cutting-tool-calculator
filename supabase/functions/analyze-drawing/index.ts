@@ -28,6 +28,51 @@ serve(async (req) => {
       throw new Error("Server configuration error");
     }
 
+    // Fetch machines from database
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    const { data: machinesData } = await supabaseClient
+      .from("machines")
+      .select("code, type, designation, brand, model, year, max_diameter_mm, power_kw, max_rpm, taper, has_live_tooling, has_y_axis, has_c_axis, travel_x_mm, travel_y_mm, travel_z_mm")
+      .eq("is_active", true)
+      .order("sort_order");
+
+    const machines = machinesData || [];
+
+    // Build machine list for prompt
+    const buildMachineSection = () => {
+      const turning = machines.filter((m: any) => m.type === "turning");
+      const milling3 = machines.filter((m: any) => m.type === "milling-3axis");
+      const milling4 = machines.filter((m: any) => m.type === "milling-4axis");
+      const milling5 = machines.filter((m: any) => m.type === "milling-5axis");
+
+      const fmt = (m: any) => {
+        let line = `- ${m.code} - ${m.brand} ${m.model}`;
+        if (m.year > 0) line += ` (${m.year})`;
+        const specs: string[] = [];
+        if (m.max_diameter_mm) specs.push(`Max Ø${m.max_diameter_mm}mm`);
+        if (m.power_kw) specs.push(`${m.power_kw}kW`);
+        if (m.max_rpm) specs.push(`${m.max_rpm}rpm`);
+        if (m.taper) specs.push(m.taper);
+        if (m.has_live_tooling) specs.push("canlı takım");
+        if (m.has_y_axis) specs.push("Y ekseni");
+        if (m.has_c_axis) specs.push("C ekseni");
+        if (m.travel_x_mm && m.travel_y_mm && m.travel_z_mm) specs.push(`${m.travel_x_mm}x${m.travel_y_mm}x${m.travel_z_mm}mm`);
+        if (specs.length) line += ` - ${specs.join(", ")}`;
+        return line;
+      };
+
+      let section = "KULLANILABILIR MAKINE PARKI (SADECE bu tezgahlardan sec):\n";
+      if (turning.length) section += `CNC TORNALAR:\n${turning.map(fmt).join("\n")}\n\n`;
+      if (milling3.length) section += `3 EKSEN CNC FREZELER:\n${milling3.map(fmt).join("\n")}\n\n`;
+      if (milling4.length) section += `4 EKSEN CNC FREZELER:\n${milling4.map(fmt).join("\n")}\n\n`;
+      if (milling5.length) section += `3+2 / 5 EKSEN CNC FREZELER:\n${milling5.map(fmt).join("\n")}\n\n`;
+      return section;
+    };
+
+    const machineSection = buildMachineSection();
+
     const imageContent = { type: "image_url" as const, image_url: { url: imageUrl } };
 
     const systemPrompt = `Sen 20+ yil deneyimli, gercek bir CNC atolyesinde calisan uzman makine muhendisisin. Teknik resimleri analiz edip GERCEKCI isleme plani ve sureler olusturuyorsun.
@@ -42,30 +87,13 @@ KESME STRATEJISI: VERIMLI (PRODUCTIVE)
 - INCE TORNALAMA icin ap = 0.2-0.5 mm
 - Paso sayisini MINIMIZE et, buyuk ap ile az paso tercih et
 
-KULLANILABILIR MAKINE PARKI (SADECE bu tezgahlardan sec):
-CNC TORNALAR:
-- T302 - HYUNDAI KIA SKT 250 FOI TD (2010) - Max Ø250mm, 15kW
-- T108 - HYUNDAI WIA L 300LC (2017) - Max Ø300mm, 18.5kW
-- T106 - HYUNDAI WIA L 300LC (2019) - Max Ø300mm, 18.5kW
-- T100 - HYUNDAI KIA SKT 21 FOI-TC (2009) - Max Ø210mm, 15kW, C ekseni
-- T109 - DMG MORI CLX 450 (2019) - Max Ø450mm, 22kW, Y ekseni, canli takim
-- T200 - DMG MORI SEIKI CTX 310 ECOLINE (2013) - Max Ø310mm, 18.5kW
-
-4 EKSEN CNC FREZELER:
-- T121 - OKUMA GENOS M560R-V (2016) - 560x460x460mm, 15kW, BT40, 15000rpm
-- T122 - OKUMA GENOS M560R-V (2017) - ayni ozellikler
-- T125 - OKUMA GENOS M560R-V (2018) - ayni ozellikler
-
-3+2 / 5 EKSEN CNC FREZELER:
-- T137 - DECKEL MAHO DMU 50U (2019) - 500x450x400mm, 25kW, HSK-A63, 18000rpm
-- T138 - DECKEL MAHO DMU 70U (2019) - 700x600x500mm, 25kW, HSK-A63, 18000rpm
-
+${machineSection}
 TEZGAH SECIM KURALLARI:
-- Tornalama isleri: Parca capina gore torna sec (Ø<210: T100, Ø<250: T302, Ø<300: T108/T106, Ø<310: T200, Ø<450: T109)
-- Canli takim / Y ekseni gereken isler: T109 veya T100
-- 3 eksen frezeleme: T121/T122/T125
-- Karmasik 3D yuzeyler, acili islemler: T137/T138
-- Buyuk parcalar: T138 (700mm tezgah)
+- Tornalama isleri: Parca capina gore uygun tornayi sec
+- Canli takim / Y ekseni gereken isler icin bu ozelliklere sahip tezgahlari sec
+- Basit frezeleme: 3 veya 4 eksen frezeler
+- Karmasik 3D yuzeyler, acili islemler: 5 eksen frezeler
+- Buyuk parcalar: En buyuk calısma alanina sahip tezgah
 
 RESIM ANALIZI - COK DETAYLI YAP:
 - Resimdeki HER olcuyu, HER toleransi, HER yuzey isareti (Ra), HER geometrik toleransi oku
