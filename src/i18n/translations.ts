@@ -713,6 +713,12 @@ export const translations = {
     welcome: { tr: "Hoş geldiniz!", en: "Welcome!", fr: "Bienvenue !" },
     loginSuccess: { tr: "Başarıyla giriş yaptınız", en: "Successfully logged in", fr: "Connexion réussie" },
     loggingIn: { tr: "Giriş yapılıyor...", en: "Signing in...", fr: "Connexion..." },
+    changePassword: { tr: "Şifre Değiştir", en: "Change Password", fr: "Changer mot de passe" },
+    newPassword: { tr: "Yeni Şifre", en: "New Password", fr: "Nouveau mot de passe" },
+    confirmPassword: { tr: "Şifre Tekrar", en: "Confirm Password", fr: "Confirmer mot de passe" },
+    passwordChanged: { tr: "Şifre başarıyla değiştirildi", en: "Password changed successfully", fr: "Mot de passe changé avec succès" },
+    passwordMismatch: { tr: "Şifreler eşleşmiyor", en: "Passwords do not match", fr: "Les mots de passe ne correspondent pas" },
+    passwordTooShort: { tr: "Şifre en az 6 karakter olmalı", en: "Password must be at least 6 characters", fr: "Le mot de passe doit comporter au moins 6 caractères" },
   },
 
   // ─── Admin ───
