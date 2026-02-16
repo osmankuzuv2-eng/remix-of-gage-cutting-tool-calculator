@@ -9,21 +9,16 @@ import {
 import { Search, BookOpen } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-/* ═══════════════════════════════════════════════
-   COMPREHENSIVE THREAD PITCH REFERENCE DATA
-   ═══════════════════════════════════════════════ */
-
 interface ThreadPitchRow {
   designation: string;
-  nominal: number;       // mm
-  pitch: number;         // mm
-  pilotDrill: number;    // mm
-  minorDia: number;      // mm
-  pitchDia: number;      // mm
-  threadDepth: number;   // mm (H = 0.6134 × P)
+  nominal: number;
+  pitch: number;
+  pilotDrill: number;
+  minorDia: number;
+  pitchDia: number;
+  threadDepth: number;
 }
 
-// ── Metrik Kaba Diş (ISO 261 / DIN 13) ──
 const metricCoarsePitches: ThreadPitchRow[] = [
   { designation: "M1", nominal: 1, pitch: 0.25, pilotDrill: 0.75, minorDia: 0.729, pitchDia: 0.838, threadDepth: 0.153 },
   { designation: "M1.2", nominal: 1.2, pitch: 0.25, pilotDrill: 0.95, minorDia: 0.929, pitchDia: 1.038, threadDepth: 0.153 },
@@ -61,7 +56,6 @@ const metricCoarsePitches: ThreadPitchRow[] = [
   { designation: "M64", nominal: 64, pitch: 6.0, pilotDrill: 58.0, minorDia: 57.505, pitchDia: 60.103, threadDepth: 3.681 },
 ];
 
-// ── Metrik İnce Diş (ISO 261 / DIN 13) ──
 const metricFinePitches: ThreadPitchRow[] = [
   { designation: "M3×0.35", nominal: 3, pitch: 0.35, pilotDrill: 2.65, minorDia: 2.621, pitchDia: 2.773, threadDepth: 0.215 },
   { designation: "M4×0.5", nominal: 4, pitch: 0.5, pilotDrill: 3.5, minorDia: 3.459, pitchDia: 3.675, threadDepth: 0.307 },
@@ -97,7 +91,6 @@ const metricFinePitches: ThreadPitchRow[] = [
   { designation: "M36×3", nominal: 36, pitch: 3.0, pilotDrill: 33.0, minorDia: 32.752, pitchDia: 34.051, threadDepth: 1.840 },
 ];
 
-// ── UNC (Unified National Coarse) ──
 interface UNCRow {
   designation: string;
   nominal_inch: string;
@@ -131,7 +124,6 @@ const uncPitches: UNCRow[] = [
   { designation: "1\"-8", nominal_inch: "1.000\"", nominal_mm: 25.400, tpi: 8, pitch_mm: 3.175, pilotDrill_inch: "7/8\"", pilotDrill_mm: 22.23, minorDia_mm: 21.971 },
 ];
 
-// ── UNF (Unified National Fine) ──
 const unfPitches: UNCRow[] = [
   { designation: "#0-80", nominal_inch: "0.060\"", nominal_mm: 1.524, tpi: 80, pitch_mm: 0.318, pilotDrill_inch: "3/64\"", pilotDrill_mm: 1.19, minorDia_mm: 1.181 },
   { designation: "#1-72", nominal_inch: "0.073\"", nominal_mm: 1.854, tpi: 72, pitch_mm: 0.353, pilotDrill_inch: "No.53", pilotDrill_mm: 1.50, minorDia_mm: 1.473 },
@@ -151,7 +143,6 @@ const unfPitches: UNCRow[] = [
   { designation: "1\"-12", nominal_inch: "1.000\"", nominal_mm: 25.400, tpi: 12, pitch_mm: 2.117, pilotDrill_inch: "59/64\"", pilotDrill_mm: 23.40, minorDia_mm: 23.098 },
 ];
 
-// ── BSP (British Standard Pipe) ──
 interface BSPRow {
   designation: string;
   od_mm: number;
@@ -174,7 +165,6 @@ const bspPitches: BSPRow[] = [
   { designation: "G2\"", od_mm: 59.614, tpi: 11, pitch_mm: 2.309, pilotDrill_mm: 56.60, minorDia_mm: 56.656 },
 ];
 
-// ── NPT (National Pipe Thread) ──
 const nptPitches: BSPRow[] = [
   { designation: "1/8\" NPT", od_mm: 10.287, tpi: 27, pitch_mm: 0.941, pilotDrill_mm: 8.70, minorDia_mm: 8.766 },
   { designation: "1/4\" NPT", od_mm: 13.716, tpi: 18, pitch_mm: 1.411, pilotDrill_mm: 11.10, minorDia_mm: 11.113 },
@@ -187,7 +177,6 @@ const nptPitches: BSPRow[] = [
   { designation: "2\" NPT", od_mm: 60.325, tpi: 11.5, pitch_mm: 2.209, pilotDrill_mm: 56.40, minorDia_mm: 56.427 },
 ];
 
-// ── Trapezoidal (Tr - DIN 103) ──
 interface TrapezoidalRow {
   designation: string;
   nominal: number;
@@ -210,10 +199,13 @@ const trapezoidalPitches: TrapezoidalRow[] = [
   { designation: "Tr 26×5", nominal: 26, pitch: 5.0, minorDia: 20.5, pitchDia: 23.5, threadDepth: 2.5 },
   { designation: "Tr 28×5", nominal: 28, pitch: 5.0, minorDia: 22.5, pitchDia: 25.5, threadDepth: 2.5 },
   { designation: "Tr 30×6", nominal: 30, pitch: 6.0, minorDia: 23.0, pitchDia: 27.0, threadDepth: 3.0 },
+  { designation: "Tr 32×6", nominal: 32, pitch: 6.0, minorDia: 25.0, pitchDia: 29.0, threadDepth: 3.0 },
   { designation: "Tr 36×6", nominal: 36, pitch: 6.0, minorDia: 29.0, pitchDia: 33.0, threadDepth: 3.0 },
   { designation: "Tr 40×7", nominal: 40, pitch: 7.0, minorDia: 32.0, pitchDia: 36.5, threadDepth: 3.5 },
   { designation: "Tr 44×7", nominal: 44, pitch: 7.0, minorDia: 36.0, pitchDia: 40.5, threadDepth: 3.5 },
   { designation: "Tr 48×8", nominal: 48, pitch: 8.0, minorDia: 39.0, pitchDia: 44.0, threadDepth: 4.0 },
+  { designation: "Tr 50×8", nominal: 50, pitch: 8.0, minorDia: 41.0, pitchDia: 46.0, threadDepth: 4.0 },
+  { designation: "Tr 60×9", nominal: 60, pitch: 9.0, minorDia: 50.0, pitchDia: 55.5, threadDepth: 4.5 },
 ];
 
 /* ═══════════════════════════════════════════════
@@ -221,6 +213,7 @@ const trapezoidalPitches: TrapezoidalRow[] = [
    ═══════════════════════════════════════════════ */
 
 const ThreadPitchReference = () => {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
 
   const filterRows = <T extends { designation: string }>(rows: T[]) =>
@@ -231,18 +224,17 @@ const ThreadPitchReference = () => {
       <CardHeader className="pb-3">
         <CardTitle className="text-foreground text-base flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-primary" />
-          Diş Adımı Referans Tabloları
+          {t("threadRef", "title")}
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          ISO Metrik, UNC, UNF, BSP, NPT ve Trapez diş standartlarının kapsamlı referansı
+          {t("threadRef", "subtitle")}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Diş boyutu ara (ör: M10, 1/2, G3/4)..."
+            placeholder={t("threadRef", "searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-background border-border"
@@ -251,76 +243,69 @@ const ThreadPitchReference = () => {
 
         <Tabs defaultValue="metric-coarse" className="w-full">
           <TabsList className="flex flex-wrap h-auto gap-1 bg-secondary/50 p-1">
-            <TabsTrigger value="metric-coarse" className="text-xs">Metrik Kaba</TabsTrigger>
-            <TabsTrigger value="metric-fine" className="text-xs">Metrik İnce</TabsTrigger>
+            <TabsTrigger value="metric-coarse" className="text-xs">{t("threadRef", "metricCoarse")}</TabsTrigger>
+            <TabsTrigger value="metric-fine" className="text-xs">{t("threadRef", "metricFine")}</TabsTrigger>
             <TabsTrigger value="unc" className="text-xs">UNC</TabsTrigger>
             <TabsTrigger value="unf" className="text-xs">UNF</TabsTrigger>
             <TabsTrigger value="bsp" className="text-xs">BSP</TabsTrigger>
             <TabsTrigger value="npt" className="text-xs">NPT</TabsTrigger>
-            <TabsTrigger value="trapezoidal" className="text-xs">Trapez</TabsTrigger>
+            <TabsTrigger value="trapezoidal" className="text-xs">{t("threadRef", "trapezoidal")}</TabsTrigger>
           </TabsList>
 
-          {/* ── Metric Coarse ── */}
           <TabsContent value="metric-coarse">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className="border-primary/40 text-primary text-xs">ISO 261 / DIN 13</Badge>
-              <span className="text-xs text-muted-foreground">{filterRows(metricCoarsePitches).length} sonuç</span>
+              <span className="text-xs text-muted-foreground">{filterRows(metricCoarsePitches).length} {t("threadRef", "results")}</span>
             </div>
-            <MetricTable rows={filterRows(metricCoarsePitches)} />
+            <MetricTable rows={filterRows(metricCoarsePitches)} t={t} />
           </TabsContent>
 
-          {/* ── Metric Fine ── */}
           <TabsContent value="metric-fine">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className="border-primary/40 text-primary text-xs">ISO 261 / DIN 13</Badge>
-              <span className="text-xs text-muted-foreground">{filterRows(metricFinePitches).length} sonuç</span>
+              <span className="text-xs text-muted-foreground">{filterRows(metricFinePitches).length} {t("threadRef", "results")}</span>
             </div>
-            <MetricTable rows={filterRows(metricFinePitches)} />
+            <MetricTable rows={filterRows(metricFinePitches)} t={t} />
           </TabsContent>
 
-          {/* ── UNC ── */}
           <TabsContent value="unc">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className="border-warning/40 text-warning text-xs">ANSI/ASME B1.1</Badge>
-              <span className="text-xs text-muted-foreground">{filterRows(uncPitches).length} sonuç</span>
+              <span className="text-xs text-muted-foreground">{filterRows(uncPitches).length} {t("threadRef", "results")}</span>
             </div>
-            <InchTable rows={filterRows(uncPitches)} title="UNC — Unified National Coarse" />
+            <InchTable rows={filterRows(uncPitches)} title="UNC — Unified National Coarse" t={t} />
           </TabsContent>
 
-          {/* ── UNF ── */}
           <TabsContent value="unf">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className="border-warning/40 text-warning text-xs">ANSI/ASME B1.1</Badge>
-              <span className="text-xs text-muted-foreground">{filterRows(unfPitches).length} sonuç</span>
+              <span className="text-xs text-muted-foreground">{filterRows(unfPitches).length} {t("threadRef", "results")}</span>
             </div>
-            <InchTable rows={filterRows(unfPitches)} title="UNF — Unified National Fine" />
+            <InchTable rows={filterRows(unfPitches)} title="UNF — Unified National Fine" t={t} />
           </TabsContent>
 
-          {/* ── BSP ── */}
           <TabsContent value="bsp">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className="border-accent/40 text-accent-foreground text-xs">BS EN ISO 228-1</Badge>
-              <span className="text-xs text-muted-foreground">{filterRows(bspPitches).length} sonuç</span>
+              <span className="text-xs text-muted-foreground">{filterRows(bspPitches).length} {t("threadRef", "results")}</span>
             </div>
-            <PipeTable rows={filterRows(bspPitches)} />
+            <PipeTable rows={filterRows(bspPitches)} t={t} />
           </TabsContent>
 
-          {/* ── NPT ── */}
           <TabsContent value="npt">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className="border-accent/40 text-accent-foreground text-xs">ANSI/ASME B1.20.1</Badge>
-              <span className="text-xs text-muted-foreground">{filterRows(nptPitches).length} sonuç</span>
+              <span className="text-xs text-muted-foreground">{filterRows(nptPitches).length} {t("threadRef", "results")}</span>
             </div>
-            <PipeTable rows={filterRows(nptPitches)} />
+            <PipeTable rows={filterRows(nptPitches)} t={t} />
           </TabsContent>
 
-          {/* ── Trapezoidal ── */}
           <TabsContent value="trapezoidal">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="outline" className="border-success/40 text-success text-xs">DIN 103</Badge>
-              <span className="text-xs text-muted-foreground">{filterRows(trapezoidalPitches).length} sonuç</span>
+              <span className="text-xs text-muted-foreground">{filterRows(trapezoidalPitches).length} {t("threadRef", "results")}</span>
             </div>
-            <TrapezoidalTable rows={filterRows(trapezoidalPitches)} />
+            <TrapezoidalTable rows={filterRows(trapezoidalPitches)} t={t} />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -328,21 +313,21 @@ const ThreadPitchReference = () => {
   );
 };
 
-/* ── Sub-tables ── */
+type TFn = (section: string, key: string) => string;
 
-function MetricTable({ rows }: { rows: ThreadPitchRow[] }) {
+function MetricTable({ rows, t }: { rows: ThreadPitchRow[]; t: TFn }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow className="bg-secondary/30">
-            <TableHead className="text-xs font-semibold">Diş</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Nominal Ø (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Adım (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Ön Delme (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">İç Ø (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Hatve Ø (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Diş Der. (mm)</TableHead>
+            <TableHead className="text-xs font-semibold">{t("threadRef", "thread")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "nominalDia")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pitch")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pilotDrill")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "minorDia")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pitchDia")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "threadDepth")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -358,7 +343,7 @@ function MetricTable({ rows }: { rows: ThreadPitchRow[] }) {
             </TableRow>
           ))}
           {rows.length === 0 && (
-            <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Sonuç bulunamadı</TableCell></TableRow>
+            <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("threadRef", "noResults")}</TableCell></TableRow>
           )}
         </TableBody>
       </Table>
@@ -366,20 +351,20 @@ function MetricTable({ rows }: { rows: ThreadPitchRow[] }) {
   );
 }
 
-function InchTable({ rows, title }: { rows: UNCRow[]; title: string }) {
+function InchTable({ rows, title, t }: { rows: UNCRow[]; title: string; t: TFn }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow className="bg-secondary/30">
-            <TableHead className="text-xs font-semibold">Diş</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Nom. (inch)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Nom. (mm)</TableHead>
+            <TableHead className="text-xs font-semibold">{t("threadRef", "thread")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "nomInch")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "nomMm")}</TableHead>
             <TableHead className="text-xs font-semibold text-right">TPI</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Adım (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Ön Delme</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Ön Delme (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">İç Ø (mm)</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pitch")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pilotDrillInch")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pilotDrill")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "minorDia")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -396,7 +381,7 @@ function InchTable({ rows, title }: { rows: UNCRow[]; title: string }) {
             </TableRow>
           ))}
           {rows.length === 0 && (
-            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">Sonuç bulunamadı</TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("threadRef", "noResults")}</TableCell></TableRow>
           )}
         </TableBody>
       </Table>
@@ -404,18 +389,18 @@ function InchTable({ rows, title }: { rows: UNCRow[]; title: string }) {
   );
 }
 
-function PipeTable({ rows }: { rows: BSPRow[] }) {
+function PipeTable({ rows, t }: { rows: BSPRow[]; t: TFn }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow className="bg-secondary/30">
-            <TableHead className="text-xs font-semibold">Diş</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Dış Ø (mm)</TableHead>
+            <TableHead className="text-xs font-semibold">{t("threadRef", "thread")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "outerDia")}</TableHead>
             <TableHead className="text-xs font-semibold text-right">TPI</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Adım (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Ön Delme (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">İç Ø (mm)</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pitch")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pilotDrill")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "minorDia")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -430,7 +415,7 @@ function PipeTable({ rows }: { rows: BSPRow[] }) {
             </TableRow>
           ))}
           {rows.length === 0 && (
-            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Sonuç bulunamadı</TableCell></TableRow>
+            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("threadRef", "noResults")}</TableCell></TableRow>
           )}
         </TableBody>
       </Table>
@@ -438,18 +423,18 @@ function PipeTable({ rows }: { rows: BSPRow[] }) {
   );
 }
 
-function TrapezoidalTable({ rows }: { rows: TrapezoidalRow[] }) {
+function TrapezoidalTable({ rows, t }: { rows: TrapezoidalRow[]; t: TFn }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow className="bg-secondary/30">
-            <TableHead className="text-xs font-semibold">Diş</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Nominal Ø (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Adım (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">İç Ø (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Hatve Ø (mm)</TableHead>
-            <TableHead className="text-xs font-semibold text-right">Diş Der. (mm)</TableHead>
+            <TableHead className="text-xs font-semibold">{t("threadRef", "thread")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "nominalDia")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pitch")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "minorDia")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "pitchDia")}</TableHead>
+            <TableHead className="text-xs font-semibold text-right">{t("threadRef", "threadDepth")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -464,7 +449,7 @@ function TrapezoidalTable({ rows }: { rows: TrapezoidalRow[] }) {
             </TableRow>
           ))}
           {rows.length === 0 && (
-            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Sonuç bulunamadı</TableCell></TableRow>
+            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("threadRef", "noResults")}</TableCell></TableRow>
           )}
         </TableBody>
       </Table>

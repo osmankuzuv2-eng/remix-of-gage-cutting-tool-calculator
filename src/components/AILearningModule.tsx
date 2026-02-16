@@ -137,12 +137,12 @@ const AILearningModule = () => {
   const handleKey = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } };
 
   const quickQuestions = [
-    "CNC'de kesme hızı nasıl hesaplanır?",
-    "Titanyum işlemede hangi takım kaplaması tercih edilir?",
-    "IT7 tolerans sınıfı hangi işlemlerde kullanılır?",
-    "M10 diş için ön delme çapı kaç mm olmalı?",
-    "Paslanmaz çelikte soğutma sıvısı nasıl seçilir?",
-    "Takım ömrünü etkileyen faktörler nelerdir?",
+    t("quickQuestions", "q1"),
+    t("quickQuestions", "q2"),
+    t("quickQuestions", "q3"),
+    t("quickQuestions", "q4"),
+    t("quickQuestions", "q5"),
+    t("quickQuestions", "q6"),
   ];
 
   return (

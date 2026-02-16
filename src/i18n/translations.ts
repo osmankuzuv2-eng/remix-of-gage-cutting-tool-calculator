@@ -553,6 +553,93 @@ export const translations = {
     useCases: { tr: "Kullanım Alanları", en: "Use Cases", fr: "Cas d'utilisation" },
   },
 
+  // ─── Material Names ───
+  materialNames: {
+    "steel-low": { tr: "Düşük Karbonlu Çelik", en: "Low Carbon Steel", fr: "Acier bas carbone" },
+    "steel-medium": { tr: "Orta Karbonlu Çelik", en: "Medium Carbon Steel", fr: "Acier moyen carbone" },
+    "steel-high": { tr: "Yüksek Karbonlu Çelik", en: "High Carbon Steel", fr: "Acier haut carbone" },
+    "stainless": { tr: "Paslanmaz Çelik", en: "Stainless Steel", fr: "Acier inoxydable" },
+    "aluminum": { tr: "Alüminyum Alaşımı", en: "Aluminum Alloy", fr: "Alliage d'aluminium" },
+    "brass": { tr: "Pirinç", en: "Brass", fr: "Laiton" },
+    "bronze": { tr: "Bronz", en: "Bronze", fr: "Bronze" },
+    "cast-iron": { tr: "Dökme Demir", en: "Cast Iron", fr: "Fonte" },
+    "titanium": { tr: "Titanyum Alaşımı", en: "Titanium Alloy", fr: "Alliage de titane" },
+    "inconel": { tr: "Inconel", en: "Inconel", fr: "Inconel" },
+  },
+
+  // ─── Material Categories ───
+  materialCategories: {
+    "Çelik": { tr: "Çelik", en: "Steel", fr: "Acier" },
+    "Hafif Metal": { tr: "Hafif Metal", en: "Light Metal", fr: "Métal léger" },
+    "Bakır Alaşımı": { tr: "Bakır Alaşımı", en: "Copper Alloy", fr: "Alliage de cuivre" },
+    "Demir": { tr: "Demir", en: "Iron", fr: "Fer" },
+    "Özel Metal": { tr: "Özel Metal", en: "Special Metal", fr: "Métal spécial" },
+    "Süper Alaşım": { tr: "Süper Alaşım", en: "Super Alloy", fr: "Super alliage" },
+  },
+
+  // ─── Tool Types ───
+  toolTypeNames: {
+    "hss": { tr: "HSS (Yüksek Hız Çeliği)", en: "HSS (High Speed Steel)", fr: "HSS (Acier rapide)" },
+    "carbide": { tr: "Karbür", en: "Carbide", fr: "Carbure" },
+    "coated-carbide": { tr: "Kaplamalı Karbür", en: "Coated Carbide", fr: "Carbure revêtu" },
+    "ceramic": { tr: "Seramik", en: "Ceramic", fr: "Céramique" },
+    "cbn": { tr: "CBN", en: "CBN", fr: "CBN" },
+    "pcd": { tr: "PCD (Elmas)", en: "PCD (Diamond)", fr: "PCD (Diamant)" },
+  },
+
+  // ─── Operations ───
+  operationNames: {
+    "turning": { tr: "Tornalama", en: "Turning", fr: "Tournage" },
+    "milling": { tr: "Frezeleme", en: "Milling", fr: "Fraisage" },
+    "drilling": { tr: "Delme", en: "Drilling", fr: "Perçage" },
+    "boring": { tr: "Raybalama", en: "Boring", fr: "Alésage" },
+  },
+
+  // ─── Work Order Planner ───
+  workOrder: {
+    title: { tr: "İş Emri Planlama", en: "Work Order Planning", fr: "Planification ordre de travail" },
+    downloadPdf: { tr: "PDF İndir", en: "Download PDF", fr: "Télécharger PDF" },
+    orderName: { tr: "İş Emri Adı", en: "Work Order Name", fr: "Nom ordre de travail" },
+    machineRate: { tr: "Makine Ücreti (TL/saat)", en: "Machine Rate (TL/hr)", fr: "Tarif machine (TL/h)" },
+    addOperation: { tr: "İşlem Ekle", en: "Add Operation", fr: "Ajouter opération" },
+    operationNum: { tr: "İşlem", en: "Operation", fr: "Opération" },
+    operationType: { tr: "İşlem Tipi", en: "Operation Type", fr: "Type d'opération" },
+    machine: { tr: "Tezgah", en: "Machine", fr: "Machine" },
+    material: { tr: "Malzeme", en: "Material", fr: "Matériau" },
+    tool: { tr: "Takım", en: "Tool", fr: "Outil" },
+    quantity: { tr: "Adet", en: "Qty", fr: "Qté" },
+    diameterMm: { tr: "Çap (mm)", en: "Diameter (mm)", fr: "Diamètre (mm)" },
+    depthMm: { tr: "Derinlik (mm)", en: "Depth (mm)", fr: "Profondeur (mm)" },
+    lengthMm: { tr: "Uzunluk (mm)", en: "Length (mm)", fr: "Longueur (mm)" },
+    spindle: { tr: "Devir", en: "Spindle", fr: "Broche" },
+    feed: { tr: "İlerleme", en: "Feed", fr: "Avance" },
+    duration: { tr: "Süre", en: "Duration", fr: "Durée" },
+    cuttingTime: { tr: "Kesme Süresi", en: "Cutting Time", fr: "Temps de coupe" },
+    setup: { tr: "Hazırlık", en: "Setup", fr: "Préparation" },
+    totalTime: { tr: "Toplam Süre", en: "Total Time", fr: "Temps total" },
+    estimatedCost: { tr: "Tahmini Maliyet", en: "Estimated Cost", fr: "Coût estimé" },
+    pdfDownloaded: { tr: "PDF İndirildi", en: "PDF Downloaded", fr: "PDF téléchargé" },
+    pdfSaved: { tr: "İş emri PDF olarak kaydedildi.", en: "Work order saved as PDF.", fr: "Ordre de travail enregistré en PDF." },
+    date: { tr: "Tarih", en: "Date", fr: "Date" },
+    operationDetails: { tr: "İşlem Detayları", en: "Operation Details", fr: "Détails d'opération" },
+    summary: { tr: "Özet", en: "Summary", fr: "Résumé" },
+    totalCuttingTime: { tr: "Toplam Kesme Süresi", en: "Total Cutting Time", fr: "Temps de coupe total" },
+    totalSetupTime: { tr: "Toplam Hazırlık Süresi", en: "Total Setup Time", fr: "Temps de préparation total" },
+    totalToolChange: { tr: "Toplam Takım Değişim", en: "Total Tool Change", fr: "Total changement outil" },
+    grandTotalTime: { tr: "TOPLAM SÜRE", en: "TOTAL TIME", fr: "TEMPS TOTAL" },
+    grandTotalCost: { tr: "TAHMİNİ MALİYET", en: "ESTIMATED COST", fr: "COÛT ESTIMÉ" },
+  },
+
+  // ─── Quick Questions (AI) ───
+  quickQuestions: {
+    q1: { tr: "CNC'de kesme hızı nasıl hesaplanır?", en: "How is cutting speed calculated in CNC?", fr: "Comment calculer la vitesse de coupe en CNC ?" },
+    q2: { tr: "Titanyum işlemede hangi takım kaplaması tercih edilir?", en: "Which tool coating is preferred for titanium machining?", fr: "Quel revêtement d'outil est préféré pour l'usinage du titane ?" },
+    q3: { tr: "IT7 tolerans sınıfı hangi işlemlerde kullanılır?", en: "Which operations use IT7 tolerance class?", fr: "Quelles opérations utilisent la classe de tolérance IT7 ?" },
+    q4: { tr: "M10 diş için ön delme çapı kaç mm olmalı?", en: "What should the pilot drill diameter be for M10 thread?", fr: "Quel doit être le diamètre d'avant-trou pour un filetage M10 ?" },
+    q5: { tr: "Paslanmaz çelikte soğutma sıvısı nasıl seçilir?", en: "How to select coolant for stainless steel?", fr: "Comment choisir le lubrifiant pour l'acier inoxydable ?" },
+    q6: { tr: "Takım ömrünü etkileyen faktörler nelerdir?", en: "What factors affect tool life?", fr: "Quels facteurs affectent la durée d'outil ?" },
+  },
+
   // ─── Auth ───
   auth: {
     login: { tr: "Giriş Yap", en: "Sign In", fr: "Se connecter" },
