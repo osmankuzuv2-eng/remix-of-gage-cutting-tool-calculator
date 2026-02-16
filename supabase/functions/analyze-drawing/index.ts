@@ -200,7 +200,9 @@ Sadece JSON dondur, baska metin ekleme.`;
             ],
           },
         ],
-        temperature: 0.1,
+        temperature: 0,
+        seed: 42,
+        top_p: 1,
       }),
     });
 
