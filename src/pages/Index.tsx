@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
-import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, BotMessageSquare, FileImage, Ruler, ShieldCheck, Lock } from "lucide-react";
+import { Calculator, Clock, Database, DollarSign, History, Plus, GitCompare, Wrench, Circle, BotMessageSquare, FileImage, Ruler, Lock } from "lucide-react";
 import Header from "@/components/Header";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
@@ -36,7 +36,6 @@ const tabDefs: { id: TabId; icon: any }[] = [
   { id: "materials", icon: Database },
   { id: "cost", icon: DollarSign },
   { id: "history", icon: History },
-  { id: "admin", icon: ShieldCheck },
 ];
 
 // Modules that don't need permission checks
@@ -91,11 +90,7 @@ const Index = () => {
     return !!permissions[tabId];
   };
 
-  // Filter visible tabs
-  const visibleTabs = tabDefs.filter((tab) => {
-    if (tab.id === "admin") return isAdmin;
-    return true;
-  });
+  const visibleTabs = tabDefs;
 
   const handleAddMaterial = (material: Material) => {
     const updated = [...customMaterials, material];
@@ -118,7 +113,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background grid-pattern">
-      <Header />
+      <Header isAdmin={isAdmin} onAdminClick={() => setActiveTab("admin")} adminActive={activeTab === "admin"} />
       
       <main className="container mx-auto px-4 py-6">
         {/* Tab Navigation */}
@@ -140,7 +135,7 @@ const Index = () => {
                 }`}
               >
                 {accessible ? <Icon className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                {tab.id === "admin" ? t("admin", "title") : t("tabs", tab.id)}
+                {t("tabs", tab.id)}
               </button>
             );
           })}

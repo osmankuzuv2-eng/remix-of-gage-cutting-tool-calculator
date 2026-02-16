@@ -1,4 +1,4 @@
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, ShieldCheck } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +17,13 @@ const languages: { code: Language; flag: string; label: string }[] = [
   { code: "fr", flag: "🇫🇷", label: "Français" },
 ];
 
-const Header = () => {
+interface HeaderProps {
+  isAdmin?: boolean;
+  onAdminClick?: () => void;
+  adminActive?: boolean;
+}
+
+const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
   const { language, setLanguage, t } = useLanguage();
   const { user, signOut } = useAuth();
   const current = languages.find((l) => l.code === language)!;
@@ -65,6 +71,16 @@ const Header = () => {
             {user && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
+                {isAdmin && onAdminClick && (
+                  <Button
+                    variant={adminActive ? "default" : "ghost"}
+                    size="icon"
+                    onClick={onAdminClick}
+                    title={t("admin", "title")}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

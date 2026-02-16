@@ -2,13 +2,26 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { Language } from "@/i18n/translations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, Loader2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo.png";
+
+const languages: { code: Language; flag: string; label: string }[] = [
+  { code: "tr", flag: "🇹🇷", label: "Türkçe" },
+  { code: "en", flag: "🇬🇧", label: "English" },
+  { code: "fr", flag: "🇫🇷", label: "Français" },
+];
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -55,8 +68,34 @@ const Auth = () => {
     );
   }
 
+  const { language, setLanguage } = useLanguage();
+  const currentLang = languages.find((l) => l.code === language)!;
+
   return (
-    <div className="min-h-screen bg-background grid-pattern flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background grid-pattern flex items-center justify-center p-4 relative">
+      {/* Language Selector */}
+      <div className="absolute top-4 right-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors text-sm">
+              <span className="text-lg leading-none">{currentLang.flag}</span>
+              <span className="text-xs font-medium text-foreground">{currentLang.label}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover border border-border z-50 min-w-[140px]">
+            {languages.map((lang) => (
+              <DropdownMenuItem
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                className={`flex items-center gap-2 cursor-pointer ${language === lang.code ? "bg-primary/10 text-primary font-medium" : ""}`}
+              >
+                <span className="text-lg leading-none">{lang.flag}</span>
+                <span>{lang.label}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
