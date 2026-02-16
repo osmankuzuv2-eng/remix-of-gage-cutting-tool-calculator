@@ -62,6 +62,7 @@ export const translations = {
     materials: { tr: "Malzemeler", en: "Materials", fr: "Matériaux" },
     cost: { tr: "Takım Maliyet", en: "Tool Cost", fr: "Coût outil" },
     history: { tr: "Geçmiş", en: "History", fr: "Historique" },
+    add_material: { tr: "Malzeme Ekle", en: "Add Material", fr: "Ajouter matériau" },
   },
 
   // ─── Footer ───

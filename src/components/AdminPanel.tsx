@@ -21,6 +21,7 @@ import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck } from "lucide-
 const ALL_MODULES = [
   "drawing", "costcalc", "cutting", "toollife", "threading",
   "drilling", "tolerance", "compare", "materials", "cost", "history",
+  "add_material",
 ];
 
 interface UserData {
