@@ -104,7 +104,7 @@ const Auth = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">
-            GAGE Confidence Toolroom
+            GAGE Confidence ToolSense
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             {t("auth", "loginTitle")}
