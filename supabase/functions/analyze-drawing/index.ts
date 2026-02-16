@@ -37,6 +37,7 @@ Tum islemlerde VERIMLI kesme stratejisi uygula. Bu strateji; URETKENLIK oncelikl
 - Kesme hizi (Vc): Malzeme icin verilen aralik UST YARISINI kullan (ust %60-75 arasi)
 - Ilerleme (f): YUKSEK deger sec - kaba islemlerde aralik ust yarisi, ince islemlerde aralik ortasi
 - Talaş derinliği (ap): MAKSIMUM derinlik - mumkun oldugunca AZ PASO ile isle, tek pasoda tamamla
+- KABA FREZELEME icin ap MAKSIMUM 5 mm! Asla 5 mm uzerinde ap kullanma frezeleme islemlerinde.
 - Takim omru: Makul seviyede, ancak uretkenlik oncelikli
 - Yuzey kalitesi: Sadece ince islemlerde dusuk ilerleme, kaba islemlerde AGRESIF parametreler
 - Aralik ust yarisini tercih et, ASLA en dusuk degerleri kullanma
