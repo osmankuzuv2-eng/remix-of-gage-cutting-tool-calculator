@@ -1,4 +1,4 @@
-import { Settings, LogOut, ShieldCheck, KeyRound } from "lucide-react";
+import { Settings, LogOut, KeyRound, User, ChevronDown, Mail } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 
 const FlagTR = () => (
@@ -137,12 +138,6 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
 
             {user && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
-                {isAdmin ? (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 animate-pulse">Admin</Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Personel</Badge>
-                )}
                 {isAdmin && onAdminClick && (
                   <Button
                     variant={adminActive ? "default" : "outline"}
@@ -154,30 +149,63 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                     <span className="hidden sm:inline">Yönetim Paneli</span>
                   </Button>
                 )}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShowPasswordDialog(true)}
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <KeyRound className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>{t("auth", "changePassword")}</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={signOut}
-                  title={t("auth", "logout")}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
+
+                {/* User Menu Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors">
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+                        <User className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="hidden sm:flex flex-col items-start">
+                        <span className="text-xs font-medium text-foreground leading-tight">
+                          {user.user_metadata?.display_name || user.email?.split("@")[0]}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground leading-tight">{user.email}</span>
+                      </div>
+                      {isAdmin ? (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 animate-pulse">Admin</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Personel</Badge>
+                      )}
+                      <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64 bg-popover border border-border z-50">
+                    <DropdownMenuLabel className="px-3 py-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {user.user_metadata?.display_name || user.email?.split("@")[0]}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setShowPasswordDialog(true)}
+                      className="flex items-center gap-2 cursor-pointer px-3 py-2"
+                    >
+                      <KeyRound className="w-4 h-4 text-muted-foreground" />
+                      <span>{t("auth", "changePassword")}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={signOut}
+                      className="flex items-center gap-2 cursor-pointer px-3 py-2 text-destructive focus:text-destructive"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>{t("auth", "logout")}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
 
