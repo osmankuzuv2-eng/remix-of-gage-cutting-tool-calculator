@@ -10,6 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 const languages: { code: Language; flag: string; label: string }[] = [
   { code: "tr", flag: "🇹🇷", label: "Türkçe" },
@@ -72,14 +74,26 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
                 {isAdmin && onAdminClick && (
-                  <Button
-                    variant={adminActive ? "default" : "ghost"}
-                    size="icon"
-                    onClick={onAdminClick}
-                    title={t("admin", "title")}
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={adminActive ? "default" : "ghost"}
+                          size="icon"
+                          onClick={onAdminClick}
+                          className="relative"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                          <Badge className="absolute -top-1.5 -right-1.5 px-1 py-0 text-[10px] leading-tight">
+                            Admin
+                          </Badge>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("admin", "title")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 <Button
                   variant="ghost"
