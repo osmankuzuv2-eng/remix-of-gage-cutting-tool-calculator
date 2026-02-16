@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Calculator, RotateCcw, Zap, Save, Cloud, Loader2 } from "lucide-react";
 import { materials as defaultMaterials, toolTypes, operations, Material } from "@/data/materials";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,9 @@ interface CuttingCalculatorProps {
 }
 
 const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
+  const { t } = useLanguage();
   const allMaterials = [...defaultMaterials, ...customMaterials];
-  const user = null; // Auth removed
+  const user = null;
   const { saveCalculation } = useSupabaseSync();
   const [saving, setSaving] = useState(false);
   
@@ -67,24 +69,24 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
           operation: operations.find(o => o.id === selectedOperation)?.name || "",
         },
         results: {
-          cuttingSpeed: `${calculations.cuttingSpeed} m/dk`,
-          spindleSpeed: `${calculations.spindleSpeed} dev/dk`,
+          cuttingSpeed: `${calculations.cuttingSpeed} m/${t("common", "minute")}`,
+          spindleSpeed: `${calculations.spindleSpeed} dev/${t("common", "minute")}`,
           feedRate: `${calculations.feedRate} mm/dev`,
-          tableFeed: `${calculations.tableFeed} mm/dk`,
-          mrr: `${calculations.mrr} cm³/dk`,
+          tableFeed: `${calculations.tableFeed} mm/${t("common", "minute")}`,
+          mrr: `${calculations.mrr} cm³/${t("common", "minute")}`,
           power: `${calculations.power} kW`,
         },
       });
       toast({
-        title: user ? "Buluta kaydedildi" : "Yerel olarak kaydedildi",
+        title: user ? t("common", "savedCloud") : t("common", "savedLocal"),
         description: user 
-          ? "Hesaplama bulut hesabınıza eklendi." 
-          : "Hesaplama geçmişe eklendi.",
+          ? t("common", "savedCloud")
+          : t("common", "savedLocal"),
       });
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Hesaplama kaydedilemedi.",
+        title: t("common", "error"),
+        description: t("common", "saveFailed"),
         variant: "destructive",
       });
     } finally {
@@ -100,7 +102,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
             <Calculator className="w-5 h-5 text-accent-foreground" />
           </div>
           <h2 className="text-lg font-semibold text-foreground">
-            Kesme Parametreleri Hesaplama
+            {t("cutting", "title")}
           </h2>
         </div>
         <div className="flex gap-2">
@@ -117,7 +119,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {saving ? "Kaydediliyor..." : "Kaydet"}
+            {saving ? t("common", "saving") : t("common", "save")}
           </Button>
           <Button
             onClick={resetForm}
@@ -126,7 +128,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
             className="gap-2"
           >
             <RotateCcw className="w-4 h-4" />
-            Sıfırla
+            {t("common", "reset")}
           </Button>
         </div>
       </div>
@@ -135,7 +137,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
         {/* Input Section */}
         <div className="space-y-4">
           <div>
-            <label className="label-industrial block mb-2">İşlem Tipi</label>
+            <label className="label-industrial block mb-2">{t("cutting", "operationType")}</label>
             <div className="grid grid-cols-2 gap-2">
               {operations.map((op) => (
                 <button
@@ -155,13 +157,13 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
           </div>
 
           <div>
-            <label className="label-industrial block mb-2">Malzeme</label>
+            <label className="label-industrial block mb-2">{t("common", "material")}</label>
             <select
               value={selectedMaterial}
               onChange={(e) => setSelectedMaterial(e.target.value)}
               className="input-industrial w-full"
             >
-              <optgroup label="Standart Malzemeler">
+              <optgroup label={t("cutting", "standardMaterials")}>
                 {defaultMaterials.map((mat) => (
                   <option key={mat.id} value={mat.id}>
                     {mat.name} ({mat.hardness})
@@ -169,7 +171,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
                 ))}
               </optgroup>
               {customMaterials.length > 0 && (
-                <optgroup label="Özel Malzemeler">
+                <optgroup label={t("cutting", "customMaterials")}>
                   {customMaterials.map((mat) => (
                     <option key={mat.id} value={mat.id}>
                       {mat.name} ({mat.hardness})
@@ -181,7 +183,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
           </div>
 
           <div>
-            <label className="label-industrial block mb-2">Takım Tipi</label>
+            <label className="label-industrial block mb-2">{t("common", "toolType")}</label>
             <select
               value={selectedTool}
               onChange={(e) => setSelectedTool(e.target.value)}
@@ -198,7 +200,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label-industrial block mb-2">
-                Takım Çapı (mm)
+                {t("cutting", "toolDiameter")}
               </label>
               <input
                 type="number"
@@ -211,7 +213,7 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
             </div>
             <div>
               <label className="label-industrial block mb-2">
-                Kesme Derinliği (mm)
+                {t("cutting", "cuttingDepth")}
               </label>
               <input
                 type="number"
@@ -231,32 +233,32 @@ const CuttingCalculator = ({ customMaterials }: CuttingCalculatorProps) => {
           <div className="p-4 rounded-lg metal-surface border border-border">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-4 h-4 text-primary" />
-              <span className="label-industrial">Hesaplanan Değerler</span>
+              <span className="label-industrial">{t("cutting", "calculatedValues")}</span>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-              <ResultCard label="Kesme Hızı" value={calculations.cuttingSpeed} unit="m/dk" />
-              <ResultCard label="Devir Sayısı" value={calculations.spindleSpeed.toString()} unit="dev/dk" highlight />
-              <ResultCard label="İlerleme" value={calculations.feedRate} unit="mm/dev" />
-              <ResultCard label="Tabla İlerlemesi" value={calculations.tableFeed.toString()} unit="mm/dk" highlight />
-              <ResultCard label="Talaş Kaldırma" value={calculations.mrr} unit="cm³/dk" />
-              <ResultCard label="Tahmini Güç" value={calculations.power} unit="kW" />
+              <ResultCard label={t("common", "cuttingSpeed")} value={calculations.cuttingSpeed} unit={`m/${t("common", "minute")}`} />
+              <ResultCard label={t("common", "spindleSpeed")} value={calculations.spindleSpeed.toString()} unit={`dev/${t("common", "minute")}`} highlight />
+              <ResultCard label={t("common", "feedRate")} value={calculations.feedRate} unit="mm/dev" />
+              <ResultCard label={t("cutting", "tableFeed")} value={calculations.tableFeed.toString()} unit={`mm/${t("common", "minute")}`} highlight />
+              <ResultCard label={t("cutting", "chipRemoval")} value={calculations.mrr} unit={`cm³/${t("common", "minute")}`} />
+              <ResultCard label={t("cutting", "estimatedPower")} value={calculations.power} unit="kW" />
             </div>
           </div>
 
           <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
             <p className="text-sm text-muted-foreground">
-              <span className="text-primary font-medium">💡 Öneri:</span>{" "}
-              {material.name} için {tool.name} kullanımında kesme hızını{" "}
-              {material.cuttingSpeed.min}-{material.cuttingSpeed.max} m/dk
-              aralığında tutun.
+              <span className="text-primary font-medium">💡 {t("cutting", "suggestion")}:</span>{" "}
+              {material.name} {t("cutting", "suggestionText")}{" "}
+              {material.cuttingSpeed.min}-{material.cuttingSpeed.max} m/{t("common", "minute")}{" "}
+              {t("cutting", "range")}
             </p>
           </div>
 
           {!user && (
             <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <p className="text-xs text-blue-400">
-                💡 Giriş yaparak hesaplamalarınızı bulutta saklayın ve tüm cihazlarınızdan erişin.
+                💡 {t("cutting", "cloudLoginHint")}
               </p>
             </div>
           )}

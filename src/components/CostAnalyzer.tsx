@@ -3,10 +3,12 @@ import { DollarSign, TrendingUp, BarChart3, Calculator, Info } from "lucide-reac
 import { materials, toolTypes } from "@/data/materials";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import InfoPanelContent from "./InfoPanelContent";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type InfoPanel = 'costPerPart' | 'toolCost' | 'economicSpeed' | 'savings' | null;
 
 const CostAnalyzer = () => {
+  const { t } = useLanguage();
   const [activeInfoPanel, setActiveInfoPanel] = useState<InfoPanel>(null);
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [selectedTool, setSelectedTool] = useState(toolTypes[1].id);
@@ -21,57 +23,36 @@ const CostAnalyzer = () => {
   const tool = toolTypes.find((t) => t.id === selectedTool)!;
 
   const calculations = useMemo(() => {
-    // Taylor denklemi ile takım ömrü
     const C = material.taylorC * tool.multiplier;
     const n = material.taylorN;
     const toolLifeMinutes = Math.pow(C / cuttingSpeed, 1 / n);
     const toolLifeHours = toolLifeMinutes / 60;
-
-    // Parça başına süre (dakika)
-    const timePerPart = 5; // Basitleştirilmiş ortalama
+    const timePerPart = 5;
     const partsPerTool = Math.floor(toolLifeMinutes / timePerPart);
-
-    // Günlük takım tüketimi
     const toolsPerDay = Math.ceil(partsPerDay / partsPerTool);
     const toolsPerMonth = toolsPerDay * workDays;
-
-    // Maliyet hesaplamaları
     const toolCostPerMonth = toolsPerMonth * toolPrice;
     const toolCostPerPart = toolPrice / partsPerTool;
-
-    // Makine ve işçilik maliyeti
     const hoursPerDay = (partsPerDay * timePerPart) / 60;
     const machineCostPerDay = hoursPerDay * machineHourlyRate;
     const laborCostPerDay = hoursPerDay * laborHourlyRate;
     const totalCostPerDay = machineCostPerDay + laborCostPerDay + (toolsPerDay * toolPrice);
-
-    const costPerPart = totalCostPerDay / partsPerDay;
+    const costPerPart = partsPerDay > 0 ? totalCostPerDay / partsPerDay : 0;
     const totalMonthly = totalCostPerDay * workDays;
-
-    // Optimum hız hesabı
     const economicSpeed = C * Math.pow(n / (1 - n), n);
     const optimalToolLife = Math.pow(C / economicSpeed, 1 / n);
     const optimalPartsPerTool = Math.floor(optimalToolLife / timePerPart);
     const optimalToolsPerMonth = Math.ceil((partsPerDay * workDays) / optimalPartsPerTool);
     const optimalToolCost = optimalToolsPerMonth * toolPrice;
     const savings = toolCostPerMonth - optimalToolCost;
-
     return {
-      toolLifeMinutes: toolLifeMinutes.toFixed(1),
-      toolLifeHours: toolLifeHours.toFixed(2),
-      partsPerTool,
-      toolsPerDay,
-      toolsPerMonth,
-      toolCostPerMonth: toolCostPerMonth.toFixed(0),
-      toolCostPerPart: toolCostPerPart.toFixed(2),
-      machineCostPerDay: machineCostPerDay.toFixed(0),
-      laborCostPerDay: laborCostPerDay.toFixed(0),
-      totalCostPerDay: totalCostPerDay.toFixed(0),
-      costPerPart: costPerPart.toFixed(2),
-      totalMonthly: totalMonthly.toFixed(0),
-      economicSpeed: economicSpeed.toFixed(0),
-      savings: savings.toFixed(0),
-      savingsPercent: ((savings / toolCostPerMonth) * 100).toFixed(1),
+      toolLifeMinutes: toolLifeMinutes.toFixed(1), toolLifeHours: toolLifeHours.toFixed(2),
+      partsPerTool, toolsPerDay, toolsPerMonth,
+      toolCostPerMonth: toolCostPerMonth.toFixed(0), toolCostPerPart: toolCostPerPart.toFixed(2),
+      machineCostPerDay: machineCostPerDay.toFixed(0), laborCostPerDay: laborCostPerDay.toFixed(0),
+      totalCostPerDay: totalCostPerDay.toFixed(0), costPerPart: costPerPart.toFixed(2),
+      totalMonthly: totalMonthly.toFixed(0), economicSpeed: economicSpeed.toFixed(0),
+      savings: savings.toFixed(0), savingsPercent: ((savings / toolCostPerMonth) * 100).toFixed(1),
     };
   }, [selectedMaterial, selectedTool, toolPrice, machineHourlyRate, laborHourlyRate, cuttingSpeed, partsPerDay, workDays]);
 
@@ -81,18 +62,17 @@ const CostAnalyzer = () => {
         <div className="p-2 rounded-lg bg-emerald-500/20">
           <DollarSign className="w-5 h-5 text-emerald-400" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground">Maliyet Analizi</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("costAnalyzer", "title")}</h2>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Inputs */}
         <div className="space-y-4">
           <h3 className="label-industrial flex items-center gap-2">
-            <Calculator className="w-4 h-4" /> Girdi Parametreleri
+            <Calculator className="w-4 h-4" /> {t("costAnalyzer", "inputParams")}
           </h3>
 
           <div>
-            <label className="label-industrial block mb-2">Malzeme</label>
+            <label className="label-industrial block mb-2">{t("common", "material")}</label>
             <select
               value={selectedMaterial}
               onChange={(e) => setSelectedMaterial(e.target.value)}
@@ -105,7 +85,7 @@ const CostAnalyzer = () => {
           </div>
 
           <div>
-            <label className="label-industrial block mb-2">Takım Tipi</label>
+            <label className="label-industrial block mb-2">{t("common", "toolType")}</label>
             <select
               value={selectedTool}
               onChange={(e) => setSelectedTool(e.target.value)}
@@ -119,7 +99,7 @@ const CostAnalyzer = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label-industrial block mb-2">Takım Fiyatı (₺)</label>
+              <label className="label-industrial block mb-2">{t("costAnalyzer", "toolPrice")}</label>
               <input
                 type="number"
                 value={toolPrice}
@@ -128,7 +108,7 @@ const CostAnalyzer = () => {
               />
             </div>
             <div>
-              <label className="label-industrial block mb-2">Kesme Hızı</label>
+              <label className="label-industrial block mb-2">{t("common", "cuttingSpeed")}</label>
               <input
                 type="number"
                 value={cuttingSpeed}
@@ -140,7 +120,7 @@ const CostAnalyzer = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label-industrial block mb-2">Makine (₺/saat)</label>
+              <label className="label-industrial block mb-2">{t("costAnalyzer", "machineRate")}</label>
               <input
                 type="number"
                 value={machineHourlyRate}
@@ -149,7 +129,7 @@ const CostAnalyzer = () => {
               />
             </div>
             <div>
-              <label className="label-industrial block mb-2">İşçilik (₺/saat)</label>
+              <label className="label-industrial block mb-2">{t("costAnalyzer", "laborRate")}</label>
               <input
                 type="number"
                 value={laborHourlyRate}
@@ -161,7 +141,7 @@ const CostAnalyzer = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label-industrial block mb-2">Günlük Üretim</label>
+              <label className="label-industrial block mb-2">{t("toolLife", "dailyProduction")}</label>
               <input
                 type="number"
                 value={partsPerDay}
@@ -170,7 +150,7 @@ const CostAnalyzer = () => {
               />
             </div>
             <div>
-              <label className="label-industrial block mb-2">Aylık İş Günü</label>
+              <label className="label-industrial block mb-2">{t("costAnalyzer", "workDays")}</label>
               <input
                 type="number"
                 value={workDays}
@@ -181,10 +161,9 @@ const CostAnalyzer = () => {
           </div>
         </div>
 
-        {/* Cost Breakdown */}
         <div className="space-y-4">
           <h3 className="label-industrial flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" /> Maliyet Dağılımı
+            <BarChart3 className="w-4 h-4" /> {t("costAnalyzer", "costBreakdown")}
           </h3>
 
           <div 
@@ -193,7 +172,7 @@ const CostAnalyzer = () => {
           >
             <div className="text-center mb-4">
               <div className="flex items-center justify-center gap-2">
-                <span className="label-industrial">Parça Başı Maliyet</span>
+                <span className="label-industrial">{t("costAnalyzer", "costPerPart")}</span>
                 <Info className={`w-4 h-4 ${activeInfoPanel === 'costPerPart' ? 'text-accent' : 'text-muted-foreground'}`} />
               </div>
               <div className="font-mono text-4xl font-bold text-primary mt-2">
@@ -202,64 +181,63 @@ const CostAnalyzer = () => {
             </div>
 
             <div className="space-y-3">
-              <CostBar label="Takım Maliyeti" value={Number(calculations.toolCostPerPart)} max={Number(calculations.costPerPart)} color="bg-orange-500" />
-              <CostBar label="Makine" value={Number(calculations.machineCostPerDay) / partsPerDay} max={Number(calculations.costPerPart)} color="bg-blue-500" />
-              <CostBar label="İşçilik" value={Number(calculations.laborCostPerDay) / partsPerDay} max={Number(calculations.costPerPart)} color="bg-green-500" />
+              <CostBar label={t("costAnalyzer", "toolCost")} value={Number(calculations.toolCostPerPart)} max={Number(calculations.costPerPart)} color="bg-orange-500" />
+              <CostBar label={t("costAnalyzer", "machineCost")} value={Number(calculations.machineCostPerDay) / partsPerDay} max={Number(calculations.costPerPart)} color="bg-blue-500" />
+              <CostBar label={t("costAnalyzer", "laborCost")} value={Number(calculations.laborCostPerDay) / partsPerDay} max={Number(calculations.costPerPart)} color="bg-green-500" />
             </div>
           </div>
 
           <Collapsible open={activeInfoPanel === 'costPerPart'}>
             <CollapsibleContent>
               <InfoPanelContent
-                title="Parça Başı Maliyet Nedir?"
-                description="Bir parçayı üretmek için gereken toplam maliyettir. Takım, makine ve işçilik maliyetlerinin toplamından oluşur."
-                formula="Parça Maliyeti = (Takım + Makine + İşçilik) ÷ Günlük Üretim"
+                title={t("costAnalyzer", "costPerPart")}
+                description="Cost per part breakdown"
+                formula="Part Cost = (Tool + Machine + Labor) ÷ Daily Production"
                 metrics={[
-                  { label: "Takım Maliyeti", value: `₺${calculations.toolCostPerPart}/parça` },
-                  { label: "Makine Maliyeti", value: `₺${(Number(calculations.machineCostPerDay) / partsPerDay).toFixed(2)}/parça` },
-                  { label: "İşçilik Maliyeti", value: `₺${(Number(calculations.laborCostPerDay) / partsPerDay).toFixed(2)}/parça` },
-                  { label: "Günlük Toplam", value: `₺${calculations.totalCostPerDay}` }
+                  { label: t("costAnalyzer", "toolCost"), value: `₺${calculations.toolCostPerPart}` },
+                  { label: t("costAnalyzer", "machineCost"), value: `₺${(Number(calculations.machineCostPerDay) / partsPerDay).toFixed(2)}` },
+                  { label: t("costAnalyzer", "laborCost"), value: `₺${(Number(calculations.laborCostPerDay) / partsPerDay).toFixed(2)}` },
+                  { label: t("costAnalyzer", "dailyCost"), value: `₺${calculations.totalCostPerDay}` }
                 ]}
-                useCases={["Fiyatlandırma", "Kârlılık analizi", "Maliyet optimizasyonu", "Teklif hazırlama"]}
+                useCases={["Pricing", "Profitability analysis", "Cost optimization"]}
               />
             </CollapsibleContent>
           </Collapsible>
 
           <div className="grid grid-cols-2 gap-3">
             <StatBox 
-              label="Günlük Maliyet" 
+              label={t("costAnalyzer", "dailyCost")} 
               value={`₺${calculations.totalCostPerDay}`}
               hasInfo
               isActive={activeInfoPanel === 'toolCost'}
               onInfoClick={() => setActiveInfoPanel(activeInfoPanel === 'toolCost' ? null : 'toolCost')}
             />
-            <StatBox label="Aylık Maliyet" value={`₺${calculations.totalMonthly}`} highlight />
-            <StatBox label="Günlük Takım" value={calculations.toolsPerDay.toString()} />
-            <StatBox label="Aylık Takım" value={calculations.toolsPerMonth.toString()} />
+            <StatBox label={t("costAnalyzer", "monthlyCost")} value={`₺${calculations.totalMonthly}`} highlight />
+            <StatBox label={t("toolLife", "dailyTools")} value={calculations.toolsPerDay.toString()} />
+            <StatBox label={t("toolLife", "monthlyTools")} value={calculations.toolsPerMonth.toString()} />
           </div>
 
           <Collapsible open={activeInfoPanel === 'toolCost'}>
             <CollapsibleContent>
               <InfoPanelContent
-                title="Günlük Maliyet Analizi"
-                description="Bir günlük üretim için gereken toplam maliyet. Makine, işçilik ve takım maliyetlerini içerir."
-                formula="Günlük Maliyet = (Saat × Makine) + (Saat × İşçilik) + (Takım × Fiyat)"
+                title={t("costAnalyzer", "dailyCost")}
+                description="Daily production cost analysis"
+                formula="Daily Cost = (Hours × Machine) + (Hours × Labor) + (Tools × Price)"
                 metrics={[
-                  { label: "Çalışma Saati", value: `${((partsPerDay * 5) / 60).toFixed(1)} saat` },
-                  { label: "Makine Maliyeti", value: `₺${calculations.machineCostPerDay}` },
-                  { label: "İşçilik Maliyeti", value: `₺${calculations.laborCostPerDay}` },
-                  { label: "Takım Maliyeti", value: `₺${(calculations.toolsPerDay * toolPrice)}` }
+                  { label: t("common", "time"), value: `${((partsPerDay * 5) / 60).toFixed(1)} ${t("common", "hour")}` },
+                  { label: t("costAnalyzer", "machineCost"), value: `₺${calculations.machineCostPerDay}` },
+                  { label: t("costAnalyzer", "laborCost"), value: `₺${calculations.laborCostPerDay}` },
+                  { label: t("costAnalyzer", "toolCost"), value: `₺${(calculations.toolsPerDay * toolPrice)}` }
                 ]}
-                useCases={["Günlük bütçe planlaması", "Kapasite kullanımı", "Vardiya planlaması"]}
+                useCases={["Daily budget planning", "Capacity utilization", "Shift planning"]}
               />
             </CollapsibleContent>
           </Collapsible>
         </div>
 
-        {/* Optimization */}
         <div className="space-y-4">
           <h3 className="label-industrial flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" /> Optimizasyon Önerileri
+            <TrendingUp className="w-4 h-4" /> {t("costAnalyzer", "optimizationTips")}
           </h3>
 
           <div 
@@ -273,34 +251,28 @@ const CostAnalyzer = () => {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">💡</span>
-                <span className="font-medium text-foreground">Ekonomik Kesme Hızı</span>
+                <span className="font-medium text-foreground">{t("costAnalyzer", "economicCuttingSpeed")}</span>
               </div>
               <Info className={`w-4 h-4 ${activeInfoPanel === 'economicSpeed' ? 'text-success' : 'text-muted-foreground'}`} />
             </div>
             <div className="font-mono text-3xl text-success mb-2">
-              {calculations.economicSpeed} m/dk
+              {calculations.economicSpeed} m/{t("common", "minute")}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Bu hızda çalışarak takım maliyetlerini optimize edebilirsiniz.
-            </p>
           </div>
 
           <Collapsible open={activeInfoPanel === 'economicSpeed'}>
             <CollapsibleContent>
               <InfoPanelContent
-                title="Ekonomik Kesme Hızı Nedir?"
-                description="Takım maliyetleri ve işleme süresi arasında optimal dengeyi sağlayan kesme hızıdır."
+                title={t("costAnalyzer", "economicCuttingSpeed")}
+                description="Optimal cutting speed for cost efficiency"
                 formula="V_ek = C × (n / (1-n))^n"
                 metrics={[
-                  { label: "Mevcut Hız", value: `${cuttingSpeed} m/dk` },
-                  { label: "Ekonomik Hız", value: `${calculations.economicSpeed} m/dk` },
-                  { label: "Fark", value: `${Math.abs(cuttingSpeed - Number(calculations.economicSpeed))} m/dk` },
-                  { label: "Takım Ömrü", value: `${calculations.toolLifeMinutes} dk` }
+                  { label: t("common", "cuttingSpeed"), value: `${cuttingSpeed} m/${t("common", "minute")}` },
+                  { label: t("costAnalyzer", "economicCuttingSpeed"), value: `${calculations.economicSpeed} m/${t("common", "minute")}` },
+                  { label: "Δ", value: `${Math.abs(cuttingSpeed - Number(calculations.economicSpeed))} m/${t("common", "minute")}` },
+                  { label: t("costAnalyzer", "toolLifeLabel"), value: `${calculations.toolLifeMinutes} ${t("common", "minute")}` }
                 ]}
-                useCases={["Maliyet optimizasyonu", "Verimlilik artışı", "Takım ömrü uzatma"]}
-                tip={cuttingSpeed > Number(calculations.economicSpeed)
-                  ? `Hızı düşürerek takım ömrünü artırın ve maliyetleri azaltın.`
-                  : `Mevcut hız ekonomik seviyeye yakın.`}
+                useCases={["Cost optimization", "Efficiency improvement", "Tool life extension"]}
               />
             </CollapsibleContent>
           </Collapsible>
@@ -316,34 +288,33 @@ const CostAnalyzer = () => {
                 onClick={() => setActiveInfoPanel(activeInfoPanel === 'savings' ? null : 'savings')}
               >
                 <div className="flex items-center justify-between">
-                  <span className="label-industrial">Potansiyel Tasarruf</span>
+                  <span className="label-industrial">{t("costAnalyzer", "potentialSavings")}</span>
                   <Info className={`w-4 h-4 ${activeInfoPanel === 'savings' ? 'text-primary' : 'text-muted-foreground'}`} />
                 </div>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="font-mono text-3xl font-bold text-primary">
                     ₺{calculations.savings}
                   </span>
-                  <span className="text-sm text-muted-foreground">/ay</span>
+                  <span className="text-sm text-muted-foreground">/{t("common", "monthly").toLowerCase()}</span>
                 </div>
                 <div className="text-sm text-success mt-1">
-                  %{calculations.savingsPercent} takım maliyeti azalması
+                  %{calculations.savingsPercent}
                 </div>
               </div>
 
               <Collapsible open={activeInfoPanel === 'savings'}>
                 <CollapsibleContent>
                   <InfoPanelContent
-                    title="Tasarruf Potansiyeli Nedir?"
-                    description="Ekonomik kesme hızına geçildiğinde elde edilecek aylık takım maliyeti tasarrufudur."
-                    formula="Tasarruf = Mevcut Takım Maliyeti - Optimal Takım Maliyeti"
+                    title={t("costAnalyzer", "potentialSavings")}
+                    description="Monthly savings potential"
+                    formula="Savings = Current Tool Cost - Optimal Tool Cost"
                     metrics={[
-                      { label: "Mevcut Aylık Takım", value: `₺${calculations.toolCostPerMonth}` },
-                      { label: "Optimal Maliyet", value: `₺${(Number(calculations.toolCostPerMonth) - Number(calculations.savings)).toFixed(0)}` },
-                      { label: "Tasarruf", value: `₺${calculations.savings}` },
-                      { label: "Tasarruf Oranı", value: `%${calculations.savingsPercent}` }
+                      { label: t("costAnalyzer", "monthlyToolCost"), value: `₺${calculations.toolCostPerMonth}` },
+                      { label: "Optimal", value: `₺${(Number(calculations.toolCostPerMonth) - Number(calculations.savings)).toFixed(0)}` },
+                      { label: t("costAnalyzer", "potentialSavings"), value: `₺${calculations.savings}` },
+                      { label: "%", value: `${calculations.savingsPercent}` }
                     ]}
-                    useCases={["Bütçe planlaması", "Yatırım geri dönüşü", "Maliyet raporlama"]}
-                    tip="Bu tasarruf sadece kesme hızını optimize ederek elde edilebilir, ek yatırım gerektirmez."
+                    useCases={["Budget planning", "ROI analysis", "Cost reporting"]}
                   />
                 </CollapsibleContent>
               </Collapsible>
@@ -351,18 +322,18 @@ const CostAnalyzer = () => {
           )}
 
           <div className="p-4 rounded-lg bg-secondary/30 border border-border">
-            <h4 className="font-medium text-foreground mb-3">Takım Performansı</h4>
+            <h4 className="font-medium text-foreground mb-3">{t("costAnalyzer", "toolPerformance")}</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Takım Ömrü:</span>
-                <span className="font-mono text-foreground">{calculations.toolLifeMinutes} dk</span>
+                <span className="text-muted-foreground">{t("costAnalyzer", "toolLifeLabel")}:</span>
+                <span className="font-mono text-foreground">{calculations.toolLifeMinutes} {t("common", "minute")}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Takım Başına Parça:</span>
-                <span className="font-mono text-foreground">{calculations.partsPerTool} adet</span>
+                <span className="text-muted-foreground">{t("costAnalyzer", "partsPerTool")}:</span>
+                <span className="font-mono text-foreground">{calculations.partsPerTool} {t("common", "piece")}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Aylık Takım Maliyeti:</span>
+                <span className="text-muted-foreground">{t("costAnalyzer", "monthlyToolCost")}:</span>
                 <span className="font-mono text-warning">₺{calculations.toolCostPerMonth}</span>
               </div>
             </div>
