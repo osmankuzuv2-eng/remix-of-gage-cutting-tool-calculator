@@ -12,6 +12,7 @@ export const translations = {
     error: { tr: "Hata", en: "Error", fr: "Erreur" },
     success: { tr: "Başarılı", en: "Success", fr: "Succès" },
     active: { tr: "Aktif", en: "Active", fr: "Actif" },
+    back: { tr: "Geri", en: "Back", fr: "Retour" },
     material: { tr: "Malzeme", en: "Material", fr: "Matériau" },
     toolType: { tr: "Takım Tipi", en: "Tool Type", fr: "Type d'outil" },
     cuttingSpeed: { tr: "Kesme Hızı", en: "Cutting Speed", fr: "Vitesse de coupe" },
