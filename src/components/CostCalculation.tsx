@@ -214,7 +214,7 @@ const CostCalculation = () => {
               { label: t("costCalc", "turning"), name: getMachineName(selectedTurning), rate: turningRate },
               { label: t("costCalc", "milling"), name: getMachineName(selectedMilling), rate: millingRate },
               { label: t("costCalc", "fiveAxis"), name: getMachineName(selected5Axis), rate: fiveAxisRate },
-            ], setupTime, machiningTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations });
+            ], setupTime, machiningTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
           }} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors">
             <FileDown className="w-4 h-4" />{t("costCalc", "downloadPdf")}
           </button>
