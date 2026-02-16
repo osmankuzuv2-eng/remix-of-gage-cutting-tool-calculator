@@ -9,6 +9,46 @@ import { toast } from "sonner";
 import { exportAnalysisPdf } from "@/lib/exportAnalysisPdf";
 import * as UTIF from "utif2";
 
+const convertPdfToJpg = async (file: File): Promise<File> => {
+  const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
+  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs`;
+  const buf = await file.arrayBuffer();
+  const pdf = await getDocument({ data: new Uint8Array(buf) }).promise;
+  const numPages = pdf.numPages;
+  const scale = 2;
+  const GAP = 20;
+
+  const pageCanvases: HTMLCanvasElement[] = [];
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale });
+    const c = document.createElement("canvas");
+    c.width = viewport.width;
+    c.height = viewport.height;
+    const ctx = c.getContext("2d")!;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    pageCanvases.push(c);
+  }
+
+  const totalWidth = Math.max(...pageCanvases.map((c) => c.width));
+  const totalHeight = pageCanvases.reduce((sum, c) => sum + c.height, 0) + GAP * (numPages - 1);
+  const final = document.createElement("canvas");
+  final.width = totalWidth;
+  final.height = totalHeight;
+  const fCtx = final.getContext("2d")!;
+  fCtx.fillStyle = "#ffffff";
+  fCtx.fillRect(0, 0, totalWidth, totalHeight);
+
+  let y = 0;
+  for (const c of pageCanvases) {
+    fCtx.drawImage(c, 0, y);
+    y += c.height + GAP;
+  }
+
+  const blob = await new Promise<Blob>((res) => final.toBlob((b) => res(b!), "image/jpeg", 0.85));
+  return new File([blob], file.name.replace(/\.pdf$/i, ".jpg"), { type: "image/jpeg" });
+};
+
 interface Operation {
   step: number;
   operation: string;
@@ -106,8 +146,28 @@ const DrawingAnalyzer = () => {
       setIsConverting(false);
     }
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
-    if (!allowedTypes.includes(file.type) && !["jpg", "jpeg", "png", "webp", "gif", "pdf"].includes(ext || "")) {
+    // Auto-convert PDF to JPG (all pages stitched)
+    if (ext === "pdf" || file.type === "application/pdf") {
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("PDF dosyası çok büyük (maks 50MB). Lütfen daha küçük bir dosya seçin.");
+        return;
+      }
+      setIsConverting(true);
+      try {
+        toast.info("PDF dosyası JPG'ye dönüştürülüyor (tüm sayfalar)...");
+        file = await convertPdfToJpg(file);
+        toast.success("PDF → JPG dönüştürme başarılı!");
+      } catch (err: any) {
+        console.error("PDF conversion error:", err);
+        toast.error(`PDF dönüştürme hatası: ${err.message}`);
+        setIsConverting(false);
+        return;
+      }
+      setIsConverting(false);
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type) && !["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "")) {
       toast.error("Desteklenen formatlar: JPG, PNG, WebP, GIF, PDF, TIF/TIFF");
       return;
     }
@@ -120,12 +180,8 @@ const DrawingAnalyzer = () => {
     setSelectedFile(file);
     setAnalysis(null);
 
-    if (file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
-    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
   };
 
   const handleAnalyze = async () => {
