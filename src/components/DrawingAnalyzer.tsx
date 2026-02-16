@@ -140,7 +140,7 @@ const AnalysisResultCard = ({ item, t, onSave, canSave }: { item: DrawingItem; t
             <Save className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "saveResult")}
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={() => { exportAnalysisPdf(analysis, t); toast.success(t("drawingAnalyzer", "reportDownloaded")); }}>
+        <Button variant="outline" size="sm" onClick={async () => { await exportAnalysisPdf(analysis, t); toast.success(t("drawingAnalyzer", "reportDownloaded")); }}>
           <Download className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "downloadReport")}
         </Button>
       </div>
