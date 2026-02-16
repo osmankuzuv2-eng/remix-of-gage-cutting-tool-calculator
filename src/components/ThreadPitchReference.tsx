@@ -4,14 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Search, BookOpen } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /* ═══════════════════════════════════════════════
    COMPREHENSIVE THREAD PITCH REFERENCE DATA

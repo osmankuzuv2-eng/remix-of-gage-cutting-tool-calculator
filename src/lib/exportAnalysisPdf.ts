@@ -41,7 +41,11 @@ const safeText = (text: string) => {
     .replace(/Ç/g, "C").replace(/ç/g, "c");
 };
 
-export const exportAnalysisPdf = (analysis: AnalysisResult) => {
+type TFn = (section: string, key: string) => string;
+
+export const exportAnalysisPdf = (analysis: AnalysisResult, t?: TFn) => {
+  // Fallback t function for backward compat
+  const tr = t || ((s: string, k: string) => k);
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -57,14 +61,16 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
     }
   };
 
+  const minute = tr("common", "minute");
+
   // --- Title ---
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text(safeText("Teknik Resim Analiz Raporu"), pageWidth / 2, y, { align: "center" });
+  doc.text(safeText(tr("pdf", "analysisReport")), pageWidth / 2, y, { align: "center" });
   y += 8;
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(new Date().toLocaleDateString("tr-TR") + " " + new Date().toLocaleTimeString("tr-TR"), pageWidth / 2, y, { align: "center" });
+  doc.text(new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(), pageWidth / 2, y, { align: "center" });
   y += 12;
 
   // --- Summary box ---
@@ -74,10 +80,10 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
   const boxTop = y + 7;
   doc.setFontSize(9);
   const cols = [
-    { label: safeText("Parca"), value: safeText(analysis.partName) },
-    { label: "Malzeme", value: safeText(analysis.material) },
-    { label: safeText("Karmasiklik"), value: safeText(analysis.complexity) },
-    { label: safeText("Toplam Sure"), value: `${analysis.totalEstimatedTime} dk` },
+    { label: safeText(tr("pdf", "part")), value: safeText(analysis.partName) },
+    { label: safeText(tr("common", "material")), value: safeText(analysis.material) },
+    { label: safeText(tr("pdf", "complexity")), value: safeText(analysis.complexity) },
+    { label: safeText(tr("pdf", "totalTime")), value: `${analysis.totalEstimatedTime} ${minute}` },
   ];
   const colW = contentWidth / 4;
   cols.forEach((c, i) => {
@@ -95,12 +101,12 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
   // --- Dimensions & Setup ---
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(`${safeText("Genel Boyutlar")}: ${safeText(analysis.overallDimensions)}    |    ${safeText("Hazirlik Suresi")}: ${analysis.setupTime} dk`, margin, y);
+  doc.text(`${safeText(tr("pdf", "dimensions"))}: ${safeText(analysis.overallDimensions)}    |    ${safeText(tr("pdf", "setupTime"))}: ${analysis.setupTime} ${minute}`, margin, y);
   y += 6;
 
   // --- Clamping strategy ---
   if (analysis.clampingStrategy) {
-    const clampLines = doc.splitTextToSize(`${safeText("Baglama Stratejisi")}: ${safeText(analysis.clampingStrategy)}`, contentWidth);
+    const clampLines = doc.splitTextToSize(`${safeText(tr("pdf", "clampingStrategy"))}: ${safeText(analysis.clampingStrategy)}`, contentWidth);
     doc.text(clampLines, margin, y);
     y += clampLines.length * 4 + 4;
   }
@@ -110,14 +116,13 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
   checkPage(30);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text(safeText("Islem Adimlari"), margin, y);
+  doc.text(safeText(tr("pdf", "operationSteps")), margin, y);
   y += 7;
 
   // Table header
   const colWidths = [8, 34, 24, 28, 18, 18, 18, 16, 16];
-  const headers = ["#", safeText("Islem"), safeText("Tezgah"), safeText("Takim"), "Vc", "n", "f", "ap", safeText("Sure")];
+  const headers = ["#", safeText(tr("pdf", "operation")), safeText(tr("pdf", "machine")), safeText(tr("pdf", "tool")), "Vc", "n", "f", "ap", safeText(tr("pdf", "time"))];
   const totalColW = colWidths.reduce((a, b) => a + b, 0);
-  // Scale columns to fit contentWidth
   const scale = contentWidth / totalColW;
   const scaledCols = colWidths.map(w => w * scale);
 
@@ -164,7 +169,7 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
       op.spindleSpeed ? String(op.spindleSpeed) : "-",
       String(op.feedRate),
       String(op.depthOfCut),
-      `${op.estimatedTime} dk`,
+      `${op.estimatedTime} ${minute}`,
     ];
     row.forEach((cell, i) => {
       const maxChars = Math.floor(scaledCols[i] / 1.8);
@@ -182,16 +187,16 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text(safeText("Gereken Tezgahlar"), margin, y);
-  doc.text(safeText("Tolerans & Yuzey"), margin + halfW + 6, y);
+  doc.text(safeText(tr("pdf", "requiredMachines")), margin, y);
+  doc.text(safeText(tr("pdf", "toleranceAndSurface")), margin + halfW + 6, y);
   y += 6;
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
 
   const machineLines = doc.splitTextToSize(analysis.machinesRequired.map(m => safeText(m)).join(", "), halfW);
-  const tolLines = doc.splitTextToSize(`Toleranslar: ${safeText(analysis.tolerances)}`, halfW);
-  const surfLines = doc.splitTextToSize(`${safeText("Yuzey Kalitesi")}: ${safeText(analysis.surfaceFinish)}`, halfW);
+  const tolLines = doc.splitTextToSize(`${safeText(tr("pdf", "tolerances"))}: ${safeText(analysis.tolerances)}`, halfW);
+  const surfLines = doc.splitTextToSize(`${safeText(tr("pdf", "surfaceQuality"))}: ${safeText(analysis.surfaceFinish)}`, halfW);
 
   const leftLines = machineLines;
   const rightLines = [...tolLines, "", ...surfLines];
@@ -206,7 +211,7 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
   checkPage(20);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text(safeText("Oneriler"), margin, y);
+  doc.text(safeText(tr("pdf", "recommendations")), margin, y);
   y += 6;
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
@@ -222,7 +227,7 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
   checkPage(15);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text(safeText("Zorluk Notlari"), margin, y);
+  doc.text(safeText(tr("pdf", "difficultyNotes")), margin, y);
   y += 6;
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
@@ -235,8 +240,8 @@ export const exportAnalysisPdf = (analysis: AnalysisResult) => {
   doc.setDrawColor(180);
   doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
   doc.setFontSize(7);
-  doc.text("GAGE Confidence Toolroom - CNC Analiz Raporu", margin, pageHeight - 8);
-  doc.text(`Sayfa 1/${doc.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+  doc.text(safeText(tr("pdf", "footer")), margin, pageHeight - 8);
+  doc.text(`${safeText(tr("pdf", "page"))} 1/${doc.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: "right" });
 
   // Save
   const fileName = `${safeText(analysis.partName).replace(/\s+/g, "_")}_analiz_${new Date().toISOString().slice(0, 10)}.pdf`;

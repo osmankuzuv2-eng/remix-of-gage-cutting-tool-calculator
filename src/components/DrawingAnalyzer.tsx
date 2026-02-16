@@ -191,7 +191,7 @@ const DrawingAnalyzer = () => {
       {analysis && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => { exportAnalysisPdf(analysis); toast.success(t("drawingAnalyzer", "reportDownloaded")); }}>
+            <Button variant="outline" size="sm" onClick={() => { exportAnalysisPdf(analysis, t); toast.success(t("drawingAnalyzer", "reportDownloaded")); }}>
               <Download className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "downloadReport")}
             </Button>
           </div>

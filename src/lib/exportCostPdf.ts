@@ -43,21 +43,26 @@ export interface CostPdfData {
   };
 }
 
-export const exportCostPdf = (data: CostPdfData) => {
+type TFn = (section: string, key: string) => string;
+
+export const exportCostPdf = (data: CostPdfData, t?: TFn) => {
+  const tr = t || ((s: string, k: string) => k);
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
   const contentWidth = pageWidth - margin * 2;
   let y = 14;
+  const minute = tr("common", "minute");
+  const hour = tr("common", "hour");
 
   // ── Title ──
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text(safeText("Maliyet Hesaplama Raporu"), pageWidth / 2, y, { align: "center" });
+  doc.text(safeText(tr("pdf", "costReport")), pageWidth / 2, y, { align: "center" });
   y += 5;
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
-  doc.text(new Date().toLocaleDateString("tr-TR") + " " + new Date().toLocaleTimeString("tr-TR"), pageWidth / 2, y, { align: "center" });
+  doc.text(new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(), pageWidth / 2, y, { align: "center" });
   y += 7;
 
   // ── Reference & Customer info bar ──
@@ -66,10 +71,10 @@ export const exportCostPdf = (data: CostPdfData) => {
   doc.roundedRect(margin, y, contentWidth, 14, 2, 2, "FD");
   const boxMid = y + 9;
   const infoCols = [
-    { label: "Referans No", value: data.referenceNo || "-" },
-    { label: safeText("Musteri"), value: data.customer || "-" },
-    { label: "Malzeme", value: data.material },
-    { label: safeText("Iscilik (EUR/dk)"), value: `${data.laborRate}` },
+    { label: safeText(tr("pdf", "referenceNo")), value: data.referenceNo || "-" },
+    { label: safeText(tr("pdf", "customer")), value: data.customer || "-" },
+    { label: safeText(tr("common", "material")), value: data.material },
+    { label: safeText(tr("pdf", "laborRate")), value: `${data.laborRate}` },
   ];
   const colW = contentWidth / 4;
   infoCols.forEach((c, i) => {
@@ -108,15 +113,15 @@ export const exportCostPdf = (data: CostPdfData) => {
   };
 
   // ── Machines ──
-  sectionTitle("Tezgah Bilgileri");
+  sectionTitle(tr("pdf", "machineInfo"));
   doc.setFillColor(50, 50, 70);
   doc.setTextColor(255);
   doc.rect(margin, y, contentWidth, ROW_H, "F");
   doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
-  doc.text("Tip", margin + 2, y + 4);
-  doc.text(safeText("Tezgah"), margin + 30, y + 4);
-  doc.text("EUR/dk", margin + contentWidth - 3, y + 4, { align: "right" });
+  doc.text(safeText(tr("pdf", "type")), margin + 2, y + 4);
+  doc.text(safeText(tr("pdf", "machine")), margin + 30, y + 4);
+  doc.text("EUR/" + minute, margin + contentWidth - 3, y + 4, { align: "right" });
   y += ROW_H;
   doc.setTextColor(0);
 
@@ -135,31 +140,27 @@ export const exportCostPdf = (data: CostPdfData) => {
   });
   y += 4;
 
-  // ── Production Info & Additional Costs side by side ──
-  const halfW = (contentWidth - 4) / 2;
-
-  // Left: Production
-  const prodY = y;
-  sectionTitle("Uretim Bilgileri");
+  // ── Production Info ──
+  sectionTitle(tr("pdf", "productionInfo"));
   const prodRows = [
-    [safeText("Setup Suresi"), `${data.setupTime} dk`],
-    [safeText("Isleme Suresi (parca basi)"), `${data.machiningTime} dk`],
-    [safeText("Siparis Adeti"), `${data.orderQuantity}`],
-    [safeText("Toplam Isleme"), `${data.calculations.totalMachiningHours} saat`],
-    [safeText("Yogunluk"), `${data.density} g/cm3`],
-    [safeText("Parca Agirligi"), `${data.weightKg} kg`],
-    [`Malzeme Fiyati`, `${data.materialPricePerKg} EUR/kg`],
+    [safeText(tr("pdf", "perPartSetup")), `${data.setupTime} ${minute}`],
+    [safeText(tr("pdf", "perPartMachining")), `${data.machiningTime} ${minute}`],
+    [safeText(tr("pdf", "orderQty")), `${data.orderQuantity}`],
+    [safeText(tr("pdf", "totalMachining")), `${data.calculations.totalMachiningHours} ${hour}`],
+    [safeText(tr("pdf", "density")), `${data.density} g/cm3`],
+    [safeText(tr("pdf", "partWeight")), `${data.weightKg} kg`],
+    [safeText(tr("pdf", "materialPrice")), `${data.materialPricePerKg} EUR/kg`],
   ];
   prodRows.forEach((row, idx) => tableRow(row[0], row[1], idx));
   y += 4;
 
   // ── Additional Costs ──
-  sectionTitle("Ek Giderler");
+  sectionTitle(tr("pdf", "additionalCosts"));
   const addCosts = [
-    [safeText("Takim"), `${data.toolCost.toFixed(2)} EUR`],
-    ["Nakliye", `${data.shippingCost.toFixed(2)} EUR`],
-    ["Kaplama", `${data.coatingCost.toFixed(2)} EUR`],
-    [safeText("Isil Islem"), `${data.heatTreatmentCost.toFixed(2)} EUR`],
+    [safeText(tr("pdf", "tooling")), `${data.toolCost.toFixed(2)} EUR`],
+    [safeText(tr("pdf", "shipping")), `${data.shippingCost.toFixed(2)} EUR`],
+    [safeText(tr("pdf", "coating")), `${data.coatingCost.toFixed(2)} EUR`],
+    [safeText(tr("pdf", "heatTreatment")), `${data.heatTreatmentCost.toFixed(2)} EUR`],
   ];
   addCosts.forEach((row, idx) => tableRow(row[0], row[1], idx));
   y += 6;
@@ -167,16 +168,16 @@ export const exportCostPdf = (data: CostPdfData) => {
   // ── Cost Summary ──
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(safeText("Maliyet Ozeti"), margin, y);
+  doc.text(safeText(tr("pdf", "costSummary")), margin, y);
   y += 5;
 
   const summaryRows = [
-    [safeText("Malzeme Maliyeti"), `${data.calculations.totalMaterialCost} EUR`],
-    [safeText("Iscilik Maliyeti"), `${data.calculations.laborCost} EUR`],
-    [safeText("Tezgah Maliyeti"), `${data.calculations.machineCost} EUR`],
-    [safeText("Ek Giderler Toplami"), `${data.calculations.additionalCosts} EUR`],
-    [`Fire Maliyeti (%${data.scrapRate})`, `${data.calculations.scrapCost} EUR`],
-    [`Kar (%${data.profitMargin})`, `${data.calculations.profit} EUR`],
+    [safeText(tr("pdf", "materialCost")), `${data.calculations.totalMaterialCost} EUR`],
+    [safeText(tr("pdf", "laborCost")), `${data.calculations.laborCost} EUR`],
+    [safeText(tr("pdf", "machineCost")), `${data.calculations.machineCost} EUR`],
+    [safeText(tr("pdf", "totalAdditional")), `${data.calculations.additionalCosts} EUR`],
+    [`${safeText(tr("pdf", "scrapCost"))} (%${data.scrapRate})`, `${data.calculations.scrapCost} EUR`],
+    [`${safeText(tr("pdf", "profitLabel"))} (%${data.profitMargin})`, `${data.calculations.profit} EUR`],
   ];
   summaryRows.forEach((row, idx) => {
     if (idx % 2 === 0) {
@@ -198,7 +199,7 @@ export const exportCostPdf = (data: CostPdfData) => {
   doc.roundedRect(margin, y, contentWidth, 14, 2, 2, "F");
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("Genel Toplam", margin + 4, y + 6);
+  doc.text(safeText(tr("pdf", "grandTotal")), margin + 4, y + 6);
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text(`${data.calculations.grandTotal} EUR`, margin + contentWidth - 4, y + 10, { align: "right" });
@@ -208,16 +209,16 @@ export const exportCostPdf = (data: CostPdfData) => {
   doc.setTextColor(0);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(`${safeText("Parca Basi Maliyet")}: ${data.calculations.costPerPart} EUR  (${data.orderQuantity} adet)`, margin, y);
+  doc.text(`${safeText(tr("pdf", "costPerPart"))}: ${data.calculations.costPerPart} EUR  (${data.orderQuantity} ${tr("common", "piece")})`, margin, y);
 
   // ── Footer ──
   const pageHeight = doc.internal.pageSize.getHeight();
   doc.setDrawColor(180);
   doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
   doc.setFontSize(6);
-  doc.text("GAGE Confidence Toolroom - Maliyet Raporu", margin, pageHeight - 6);
-  doc.text(`Sayfa 1/1`, pageWidth - margin, pageHeight - 6, { align: "right" });
+  doc.text(safeText(tr("pdf", "costFooter")), margin, pageHeight - 6);
+  doc.text(`${safeText(tr("pdf", "page"))} 1/1`, pageWidth - margin, pageHeight - 6, { align: "right" });
 
-  const refSlug = data.referenceNo ? safeText(data.referenceNo).replace(/\s+/g, "_") : "maliyet";
-  doc.save(`${refSlug}_maliyet_${new Date().toISOString().slice(0, 10)}.pdf`);
+  const refSlug = data.referenceNo ? safeText(data.referenceNo).replace(/\s+/g, "_") : "cost";
+  doc.save(`${refSlug}_cost_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
