@@ -23,7 +23,7 @@ const GCodeGenerator = () => {
   const calculations = useMemo(() => {
     const avgCuttingSpeed = ((material.cuttingSpeed.min + material.cuttingSpeed.max) / 2) * tool.multiplier;
     const avgFeedRate = (material.feedRate.min + material.feedRate.max) / 2;
-    const spindleSpeed = Math.round((1000 * avgCuttingSpeed) / (Math.PI * diameter));
+    const spindleSpeed = Math.min(20000, Math.round((1000 * avgCuttingSpeed) / (Math.PI * diameter)));
     const tableFeed = Math.round(avgFeedRate * spindleSpeed);
     return { spindleSpeed, tableFeed };
   }, [selectedMaterial, selectedTool, diameter]);
