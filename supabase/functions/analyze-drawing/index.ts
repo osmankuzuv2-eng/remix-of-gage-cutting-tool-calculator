@@ -91,7 +91,8 @@ MALZEME BAZLI KESME PARAMETRELERI - VERIMLI STRATEJI (karbur takim):
 - Celik (St37, S235): Vc = 250-280 m/dk, f = 0.30-0.35 mm/dev (kaba), f = 0.12-0.15 mm/dev (ince)
 - Celik (C45, 4140): Vc = 200-230 m/dk, f = 0.25-0.30 mm/dev (kaba), f = 0.10-0.14 mm/dev (ince)
 - Paslanmaz celik: Vc = 150-180 m/dk, f = 0.18-0.22 mm/dev (kaba), f = 0.08-0.12 mm/dev (ince)
-- Aluminyum: Vc = 600-800 m/dk, f = 0.35-0.45 mm/dev (kaba), f = 0.15-0.20 mm/dev (ince)
+- Aluminyum (genel, 6xxx serisi): Vc = 600-800 m/dk, f = 0.35-0.45 mm/dev (kaba), f = 0.15-0.20 mm/dev (ince)
+- Aluminyum 7050 / 7075 (yuksek mukavemet alasimi): Vc = 400-500 m/dk, f = 0.25-0.35 mm/dev (kaba), f = 0.10-0.15 mm/dev (ince)
 - Dokme demir: Vc = 140-170 m/dk, f = 0.22-0.28 mm/dev (kaba), f = 0.10-0.14 mm/dev (ince)
 - Titanyum alasimi (Ti6Al4V): Vc = 40-60 m/dk, f = 0.08-0.15 mm/dev (kaba), f = 0.05-0.08 mm/dev (ince), ap = 0.5-2 mm
 - SUPER ALASIMLAR (Inconel 718, Hastelloy, Waspaloy): Vc = 15-25 m/dk, f = 0.05-0.10 mm/dev (kaba), f = 0.03-0.06 mm/dev (ince), ap = 0.3-1.5 mm
