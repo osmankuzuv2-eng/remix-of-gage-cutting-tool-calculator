@@ -140,7 +140,7 @@ const Index = () => {
             );
           })}
           
-          {user && (
+          {(isAdmin || permissions["add_material"]) && (
           <button
             onClick={() => setShowMaterialForm(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium bg-success/20 text-success border border-success/30 hover:bg-success/30 transition-all whitespace-nowrap ml-auto"
