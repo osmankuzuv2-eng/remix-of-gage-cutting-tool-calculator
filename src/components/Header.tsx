@@ -1,4 +1,10 @@
-import { Settings, LogOut, ShieldCheck } from "lucide-react";
+import { Settings, LogOut, ShieldCheck, KeyRound } from "lucide-react";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,10 +63,39 @@ interface HeaderProps {
 const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
   const { language, setLanguage, t } = useLanguage();
   const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const current = languages.find((l) => l.code === language)!;
   const CurrentFlag = flagComponents[language];
 
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast({ title: t("auth", "passwordTooShort"), variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: t("auth", "passwordMismatch"), variant: "destructive" });
+      return;
+    }
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setChangingPassword(false);
+    if (error) {
+      toast({ title: error.message, variant: "destructive" });
+    } else {
+      toast({ title: t("auth", "passwordChanged") });
+      setShowPasswordDialog(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
+
   return (
+    <>
     <header className="border-b border-border bg-card">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
@@ -130,6 +165,21 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                     </Tooltip>
                   </TooltipProvider>
                 )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowPasswordDialog(true)}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{t("auth", "changePassword")}</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -150,6 +200,29 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
         </div>
       </div>
     </header>
+
+    {/* Password Change Dialog */}
+    <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("auth", "changePassword")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>{t("auth", "newPassword")}</Label>
+            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>{t("auth", "confirmPassword")}</Label>
+            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          </div>
+          <Button onClick={handleChangePassword} disabled={changingPassword} className="w-full">
+            {changingPassword ? "..." : t("auth", "changePassword")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
