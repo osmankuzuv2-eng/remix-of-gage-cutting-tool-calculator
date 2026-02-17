@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Circle, Percent } from "lucide-react";
+import { DollarSign, Circle, Percent, Package } from "lucide-react";
 import { materials } from "@/data/materials";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -17,6 +17,7 @@ const AFKPriceCalculator = () => {
   const [smallHoles, setSmallHoles] = useState(0);
   const [largeHoles, setLargeHoles] = useState(0);
   const [profitMargin, setProfitMargin] = useState(20);
+  const [quantity, setQuantity] = useState(1);
 
   const currentMaterial = materials.find((m) => m.id === selectedMaterial);
   const materialPrice = currentMaterial?.pricePerKg ?? 0;
@@ -29,7 +30,8 @@ const AFKPriceCalculator = () => {
     const totalHoleCost = smallHoleCost + largeHoleCost;
     const subtotal = chipCost + totalHoleCost;
     const profit = subtotal * (profitMargin / 100);
-    const grandTotal = subtotal + profit;
+    const unitTotal = subtotal + profit;
+    const grandTotal = unitTotal * quantity;
 
     return {
       chipWeight: chipWeight.toFixed(3),
@@ -39,9 +41,10 @@ const AFKPriceCalculator = () => {
       totalHoleCost: totalHoleCost.toFixed(2),
       subtotal: subtotal.toFixed(2),
       profit: profit.toFixed(2),
+      unitTotal: unitTotal.toFixed(2),
       grandTotal: grandTotal.toFixed(2),
     };
-  }, [grossWeight, netWeight, materialPrice, hasHoles, smallHoles, largeHoles, profitMargin]);
+  }, [grossWeight, netWeight, materialPrice, hasHoles, smallHoles, largeHoles, profitMargin, quantity]);
 
   return (
     <div className="industrial-card p-6 animate-fade-in">
@@ -152,6 +155,20 @@ const AFKPriceCalculator = () => {
             </div>
           )}
 
+          {/* Quantity */}
+          <div>
+            <label className="label-industrial block mb-2 flex items-center gap-1">
+              <Package className="w-3 h-3" /> {t("afkPrice", "quantity")}
+            </label>
+            <input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+              className="input-industrial w-full"
+              min={1}
+            />
+          </div>
+
           {/* Profit margin */}
           <div>
             <label className="label-industrial block mb-2 flex items-center gap-1">
@@ -166,14 +183,15 @@ const AFKPriceCalculator = () => {
             />
           </div>
         </div>
+        </div>
 
         {/* Results */}
         <div className="space-y-4">
           <h3 className="label-industrial">{t("afkPrice", "results")}</h3>
 
           <div className="p-4 rounded-lg metal-surface border border-border text-center">
-            <span className="label-industrial">{t("afkPrice", "grandTotal")}</span>
-            <div className="font-mono text-4xl font-bold text-primary mt-2">€{calculations.grandTotal}</div>
+            <span className="label-industrial">{t("afkPrice", "unitPrice")}</span>
+            <div className="font-mono text-4xl font-bold text-primary mt-2">€{calculations.unitTotal}</div>
           </div>
 
           <div className="space-y-2">
@@ -194,6 +212,7 @@ const AFKPriceCalculator = () => {
               <span className="font-medium text-foreground">{t("afkPrice", "grandTotal")}</span>
               <span className="font-mono text-2xl font-bold text-primary">€{calculations.grandTotal}</span>
             </div>
+            <div className="text-xs text-muted-foreground mt-1">{quantity} {t("common", "piece")} × €{calculations.unitTotal}</div>
           </div>
         </div>
       </div>
