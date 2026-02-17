@@ -52,6 +52,7 @@ export type Database = {
           original_analysis: Json
           part_name: string
           rating: number | null
+          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -68,6 +69,7 @@ export type Database = {
           original_analysis: Json
           part_name: string
           rating?: number | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -84,6 +86,7 @@ export type Database = {
           original_analysis?: Json
           part_name?: string
           rating?: number | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string

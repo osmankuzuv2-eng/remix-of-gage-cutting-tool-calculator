@@ -1,0 +1,1 @@
+ALTER TABLE public.analysis_feedback ADD COLUMN rejection_reason text;

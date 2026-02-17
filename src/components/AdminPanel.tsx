@@ -111,6 +111,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [trainingInProgress, setTrainingInProgress] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectingFeedbackId, setRejectingFeedbackId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const callAdmin = async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", {
@@ -363,7 +366,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     }
   };
 
-  const updateFeedbackStatus = async (id: string, status: string) => {
+  const updateFeedbackStatus = async (id: string, status: string, reason?: string) => {
     try {
       const reviewerId = session?.user?.id;
       const { error } = await supabase.from("analysis_feedback" as any).update({
@@ -371,6 +374,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         reviewed_by: reviewerId,
         reviewed_at: new Date().toISOString(),
         ...(status === "approved" ? { applied_at: new Date().toISOString() } : {}),
+        ...(status === "rejected" && reason ? { rejection_reason: reason } : {}),
       } as any).eq("id", id);
       if (error) throw error;
       toast({ title: t("common", "success"), description: status === "approved" ? "Onaylandı" : "Reddedildi" });
@@ -378,6 +382,20 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     } catch (e: any) {
       toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
     }
+  };
+
+  const openRejectDialog = (id: string) => {
+    setRejectingFeedbackId(id);
+    setRejectionReason("");
+    setShowRejectDialog(true);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectingFeedbackId || !rejectionReason.trim()) return;
+    await updateFeedbackStatus(rejectingFeedbackId, "rejected", rejectionReason.trim());
+    setShowRejectDialog(false);
+    setRejectingFeedbackId(null);
+    setRejectionReason("");
   };
 
   const deleteFeedback = async (id: string) => {
@@ -988,6 +1006,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                          )}
                          {fb.file_name && <p className="text-xs text-muted-foreground">Dosya: {fb.file_name}</p>}
                          <p className="text-sm text-foreground bg-secondary/30 p-2 rounded">{fb.feedback_text}</p>
+                         {fb.status === "rejected" && fb.rejection_reason && (
+                           <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 p-2 rounded">
+                             <span className="font-medium">Red Açıklaması:</span> {fb.rejection_reason}
+                           </div>
+                         )}
                          <p className="text-xs text-muted-foreground">{new Date(fb.created_at).toLocaleString("tr-TR")}</p>
                       </div>
                       {canEditFeedback && (
@@ -997,7 +1020,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:text-success" onClick={() => updateFeedbackStatus(fb.id, "approved")} title="Onayla">
                                 <Check className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => updateFeedbackStatus(fb.id, "rejected")} title="Reddet">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => openRejectDialog(fb.id)} title="Reddet">
                                 <X className="w-4 h-4" />
                               </Button>
                             </>
@@ -1015,6 +1038,30 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Reject Reason Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Red Açıklaması</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Bu geri bildirimi neden reddettiğinizi açıklayın.</p>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Red açıklaması yazın..."
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>İptal</Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={!rejectionReason.trim()}>
+              Reddet
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
