@@ -10,11 +10,14 @@ interface MaterialListProps {
   onDeleteCustom: (id: string) => void;
   isAdmin?: boolean;
   onUpdatePrice?: (id: string, price: number) => void;
+  materialPrices?: Record<string, number>;
 }
 
-const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice }: MaterialListProps) => {
+const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice, materialPrices = {} }: MaterialListProps) => {
   const { t } = useLanguage();
-  const allMaterials = [...defaultMaterials, ...customMaterials];
+  const allMaterials = [...defaultMaterials, ...customMaterials].map((m) =>
+    materialPrices[m.id] !== undefined ? { ...m, pricePerKg: materialPrices[m.id] } : m
+  );
 
   const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
   const getCategoryName = (cat: string) => { const tr = t("materialCategories", cat); return tr !== cat ? tr : cat; };

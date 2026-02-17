@@ -28,6 +28,7 @@ type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "c
 
 const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
+const MATERIAL_PRICES_KEY = "cnc_material_prices";
 
 const Index = () => {
   const { t, language } = useLanguage();
@@ -37,6 +38,7 @@ const Index = () => {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
+  const [materialPrices, setMaterialPrices] = useState<Record<string, number>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -51,6 +53,8 @@ const Index = () => {
   useEffect(() => {
     const stored = safeGetItem<Material[]>(CUSTOM_MATERIALS_KEY, []);
     if (isValidArray(stored)) setCustomMaterials(stored);
+    const storedPrices = safeGetItem<Record<string, number>>(MATERIAL_PRICES_KEY, {});
+    if (storedPrices && typeof storedPrices === "object") setMaterialPrices(storedPrices);
   }, []);
 
   useEffect(() => {
@@ -88,7 +92,9 @@ const Index = () => {
     safeSetItem(CUSTOM_MATERIALS_KEY, updated);
   };
 
-  const allMaterials = [...defaultMaterials, ...customMaterials];
+  const allMaterials = [...defaultMaterials, ...customMaterials].map((m) => 
+    materialPrices[m.id] !== undefined ? { ...m, pricePerKg: materialPrices[m.id] } : m
+  );
 
   const handleTabClick = (tabId: TabId) => {
     if (!hasAccess(tabId)) return;
@@ -204,14 +210,22 @@ const Index = () => {
           {activeTab === "materials" && hasAccess("materials") && (
             <MaterialList
               customMaterials={customMaterials}
+              materialPrices={materialPrices}
               onDeleteCustom={handleDeleteMaterial}
               isAdmin={isAdmin}
               onUpdatePrice={(id, price) => {
-                const updated = customMaterials.map((m) =>
-                  m.id === id ? { ...m, pricePerKg: price } : m
-                );
-                setCustomMaterials(updated);
-                safeSetItem(CUSTOM_MATERIALS_KEY, updated);
+                // Update price map for all materials (default + custom)
+                const updatedPrices = { ...materialPrices, [id]: price };
+                setMaterialPrices(updatedPrices);
+                safeSetItem(MATERIAL_PRICES_KEY, updatedPrices);
+                // Also update custom material if it's custom
+                if (id.startsWith("custom-")) {
+                  const updated = customMaterials.map((m) =>
+                    m.id === id ? { ...m, pricePerKg: price } : m
+                  );
+                  setCustomMaterials(updated);
+                  safeSetItem(CUSTOM_MATERIALS_KEY, updated);
+                }
               }}
             />
           )}
