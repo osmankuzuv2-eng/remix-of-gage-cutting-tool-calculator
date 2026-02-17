@@ -59,15 +59,13 @@ const AFKPriceCalculator = () => {
   const calculations = useMemo(() => {
     const density = currentMaterial?.density ?? 7.85;
     const chipWeight = Math.max(0, grossWeight - netWeight);
+    const rawMaterialCost = grossWeight * materialPrice;
     const chipCost = chipWeight * materialPrice;
 
     // Calculate machining time from machine power
     const chipVolumeCm3 = (chipWeight * 1000) / density; // cm³
     const powerKw = currentMachine?.power_kw ?? 0;
     const kc = getKc(currentMaterial?.category ?? "Çelik");
-    // MRR (cm³/min) = (Power × 1000 × η) / Kc
-    // Kc in N/mm² = N/mm² = (N·mm)/mm³ → to get cm³/min we convert:
-    // MRR = (P_kW × 1000 × η × 1000) / Kc  [mm³/min] then / 1000 for cm³/min
     const mrrCm3PerMin = powerKw > 0 ? (powerKw * 1000 * MACHINE_EFFICIENCY * 1000) / kc / 1000 : 0;
     const machiningTimeMin = mrrCm3PerMin > 0 ? chipVolumeCm3 / mrrCm3PerMin : 0;
     const machineCost = machiningTimeMin * machineRate;
@@ -75,7 +73,7 @@ const AFKPriceCalculator = () => {
     const smallHoleCost = hasHoles ? smallHoles * 1.5 : 0;
     const largeHoleCost = hasHoles ? largeHoles * 1.0 : 0;
     const totalHoleCost = smallHoleCost + largeHoleCost;
-    const subtotal = chipCost + totalHoleCost + machineCost;
+    const subtotal = rawMaterialCost + chipCost + totalHoleCost + machineCost;
     const profit = subtotal * (profitMargin / 100);
     const unitTotal = subtotal + profit;
     const grandTotal = unitTotal * quantity;
@@ -83,6 +81,7 @@ const AFKPriceCalculator = () => {
     return {
       chipWeight: chipWeight.toFixed(3),
       chipVolumeCm3: chipVolumeCm3.toFixed(1),
+      rawMaterialCost: rawMaterialCost.toFixed(2),
       chipCost: chipCost.toFixed(2),
       mrrCm3PerMin: mrrCm3PerMin.toFixed(1),
       machiningTimeMin: machiningTimeMin.toFixed(1),
@@ -229,6 +228,7 @@ const AFKPriceCalculator = () => {
           </div>
 
           <div className="space-y-2">
+            <ResultRow label={`${t("afkPrice", "rawMaterialCost")} (${grossWeight} kg × €${materialPrice})`} value={`€${calculations.rawMaterialCost}`} />
             <ResultRow label={`${t("afkPrice", "chipCost")} (${calculations.chipWeight} kg × €${materialPrice})`} value={`€${calculations.chipCost}`} />
             <ResultRow label={`${t("afkPrice", "machineCostLabel")} (${calculations.machiningTimeMin} dk × €${machineRate})`} value={`€${calculations.machineCost}`} />
             {hasHoles && (
