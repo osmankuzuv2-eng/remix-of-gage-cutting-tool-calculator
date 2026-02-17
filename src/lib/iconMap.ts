@@ -27,4 +27,5 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "compare": GitCompare,
   "materials": Database,
   "history": History,
+  "afkprice": DollarSign,
 };

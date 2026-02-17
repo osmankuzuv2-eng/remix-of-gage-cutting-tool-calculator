@@ -63,7 +63,28 @@ export const translations = {
     materials: { tr: "Malzemeler", en: "Materials", fr: "Matériaux" },
     cost: { tr: "Takım Maliyet", en: "Tool Cost", fr: "Coût outil" },
     history: { tr: "Geçmiş", en: "History", fr: "Historique" },
+    afkprice: { tr: "AFK Price", en: "AFK Price", fr: "AFK Price" },
     add_material: { tr: "Malzeme Ekle", en: "Add Material", fr: "Ajouter matériau" },
+  },
+
+  // ─── AFK Price ───
+  afkPrice: {
+    title: { tr: "AFK Price Hesaplama", en: "AFK Price Calculation", fr: "Calcul AFK Price" },
+    inputs: { tr: "Giriş Verileri", en: "Input Data", fr: "Données d'entrée" },
+    results: { tr: "Sonuçlar", en: "Results", fr: "Résultats" },
+    materialPrice: { tr: "Malzeme Fiyatı", en: "Material Price", fr: "Prix matériau" },
+    grossWeight: { tr: "Brüt Kilo (kg)", en: "Gross Weight (kg)", fr: "Poids brut (kg)" },
+    netWeight: { tr: "Net Kilo (kg)", en: "Net Weight (kg)", fr: "Poids net (kg)" },
+    chipWeight: { tr: "Talaş Miktarı", en: "Chip Weight", fr: "Poids copeaux" },
+    hasHoles: { tr: "Delikli Parça", en: "Has Holes", fr: "Avec trous" },
+    smallHoles: { tr: "Küçük Delik", en: "Small Holes", fr: "Petits trous" },
+    largeHoles: { tr: "Büyük Delik", en: "Large Holes", fr: "Grands trous" },
+    chipCost: { tr: "Talaş Maliyeti", en: "Chip Cost", fr: "Coût copeaux" },
+    totalHoleCost: { tr: "Toplam Delik Maliyeti", en: "Total Hole Cost", fr: "Coût total trous" },
+    subtotal: { tr: "Ara Toplam", en: "Subtotal", fr: "Sous-total" },
+    profit: { tr: "Kar", en: "Profit", fr: "Profit" },
+    profitMargin: { tr: "Kar Oranı (%)", en: "Profit Margin (%)", fr: "Marge bénéficiaire (%)" },
+    grandTotal: { tr: "Genel Toplam", en: "Grand Total", fr: "Total général" },
   },
 
   // ─── Footer ───
