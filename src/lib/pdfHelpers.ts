@@ -30,8 +30,8 @@ export const registerFonts = async (doc: jsPDF): Promise<string> => {
   try {
     if (!fontCache.regular || !fontCache.bold) {
       const [regRes, boldRes] = await Promise.all([
-        fetch("/fonts/Roboto-Regular.ttf"),
-        fetch("/fonts/Roboto-Bold.ttf"),
+        fetch("/fonts/Aptos-Regular.ttf"),
+        fetch("/fonts/Aptos-Bold.ttf"),
       ]);
 
       if (!regRes.ok || !boldRes.ok) {
@@ -44,8 +44,8 @@ export const registerFonts = async (doc: jsPDF): Promise<string> => {
         boldRes.arrayBuffer(),
       ]);
 
-      // Valid Roboto TTF files are 100KB+. Smaller files are corrupted subsets.
-      if (regBuf.byteLength < 100000 || boldBuf.byteLength < 100000) {
+      // Valid TTF files should be at least 10KB
+      if (regBuf.byteLength < 10000 || boldBuf.byteLength < 10000) {
         console.warn(`Font files too small (Regular: ${regBuf.byteLength}B, Bold: ${boldBuf.byteLength}B) - using helvetica fallback`);
         fontsRegistered = false;
         return "helvetica";
@@ -55,13 +55,13 @@ export const registerFonts = async (doc: jsPDF): Promise<string> => {
       fontCache.bold = arrayBufferToBase64(boldBuf);
     }
 
-    doc.addFileToVFS("Roboto-Regular.ttf", fontCache.regular);
-    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-    doc.addFileToVFS("Roboto-Bold.ttf", fontCache.bold);
-    doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
-    doc.setFont("Roboto");
+    doc.addFileToVFS("Aptos-Regular.ttf", fontCache.regular);
+    doc.addFont("Aptos-Regular.ttf", "Aptos", "normal");
+    doc.addFileToVFS("Aptos-Bold.ttf", fontCache.bold);
+    doc.addFont("Aptos-Bold.ttf", "Aptos", "bold");
+    doc.setFont("Aptos");
     fontsRegistered = true;
-    return "Roboto";
+    return "Aptos";
   } catch (err) {
     console.warn("Font registration failed:", err);
     fontsRegistered = false;
@@ -70,7 +70,7 @@ export const registerFonts = async (doc: jsPDF): Promise<string> => {
 };
 
 /** Get the active font family name */
-export const getFontFamily = (): string => fontsRegistered ? "Roboto" : "helvetica";
+export const getFontFamily = (): string => fontsRegistered ? "Aptos" : "helvetica";
 
 // ── Logo cache ──
 let logoBase64Cache: string | null = null;
