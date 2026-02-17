@@ -225,11 +225,11 @@ HAZIRLIK SURESI (DETAYLI):
 - TOPLAM: Basit parca 8-15 dk, orta karmasiklik 15-25 dk, karmasik 25-45 dk
 
 BAGLAMA SURESI HESAPLAMA (DETAYLI - her baglama icin ayri hesapla):
-- 3 ceneli ayna baglama/cozme: 1-2 dk (standart), 2-3 dk (hassas ayar)
+- 3 ceneli ayna baglama/cozme (TORNA): 0.5 dk (30 sn) - hidrolik/pnomatik ayna standart
 - Mengenede baglama/cozme: 2-3 dk (standart), 3-5 dk (coklu parca)
 - Ozel aparat ile baglama: 3-8 dk (karmasikliga bagli)
-- Punta ile destekleme: +1-2 dk ek sure
-- Parca cevirme (2. op icin): 1-3 dk (cevirme + yeniden baglama + referans)
+- Punta ile destekleme: +0.5 dk ek sure
+- Parca cevirme (2. op icin torna): 1 dk (cozme 0.5 dk + cevirme + yeniden baglama 0.5 dk)
 - Paralel/takoz ayarlama (mengenede): 1-2 dk
 - Hassas hizalama (komparator ile): 3-5 dk
 - TOPLAM BAGLAMA SURESI: Tum baglama/cozme adimlari toplanir
