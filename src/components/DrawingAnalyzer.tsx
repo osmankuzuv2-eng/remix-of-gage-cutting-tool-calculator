@@ -16,6 +16,7 @@ import { useFactories } from "@/hooks/useFactories";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { materials as defaultMaterials, Material } from "@/data/materials";
 
 // ─── File conversion helpers ───
 
@@ -386,6 +387,7 @@ const DrawingAnalyzer = () => {
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [selectedFactory, setSelectedFactory] = useState("Havacılık");
+  const [selectedMaterial, setSelectedMaterial] = useState("");
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [currentAnalyzing, setCurrentAnalyzing] = useState(0);
 
@@ -434,8 +436,9 @@ const DrawingAnalyzer = () => {
       if (uploadError) throw uploadError;
       const { data: urlData, error: urlError } = await supabase.storage.from("technical-drawings").createSignedUrl(filePath, 3600);
       if (urlError) throw urlError;
+      const materialInfo = selectedMaterial ? defaultMaterials.find(m => m.id === selectedMaterial) : null;
       const { data, error } = await supabase.functions.invoke("analyze-drawing", {
-        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo, factory: selectedFactory },
+        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo, factory: selectedFactory, material: materialInfo ? { name: materialInfo.name, category: materialInfo.category, hardness: materialInfo.hardness, cuttingSpeed: materialInfo.cuttingSpeed, feedRate: materialInfo.feedRate, taylorN: materialInfo.taylorN, taylorC: materialInfo.taylorC } : null },
       });
       if (error) throw error;
       if (data?.analysis) {
@@ -545,6 +548,20 @@ const DrawingAnalyzer = () => {
                   <Textarea placeholder={t("drawingAnalyzer", "additionalInfo")} value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} className="bg-secondary/30 border-border" rows={2} />
                 </div>
                 <div className="w-48 shrink-0 space-y-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Malzeme (opsiyonel)</p>
+                    <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
+                      <SelectTrigger className="bg-secondary/30 border-border">
+                        <SelectValue placeholder="Otomatik (AI)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Otomatik (AI belirlesin)</SelectItem>
+                        {defaultMaterials.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Müşteri (opsiyonel)</p>
                     <Select value={customerName} onValueChange={(val) => {

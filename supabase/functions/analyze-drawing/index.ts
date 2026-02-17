@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    const { imageUrl, fileName, additionalInfo, factory } = body;
+    const { imageUrl, fileName, additionalInfo, factory, material } = body;
 
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "imageUrl is required" }), {
@@ -352,9 +352,15 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
 
     const finalSystemPrompt = systemPrompt + feedbackContext;
 
-    const userMessage = additionalInfo 
-      ? `Bu teknik resmi analiz et. Tüm kritik ölçüleri ve toleransları dikkatlice oku. Ek bilgiler: ${additionalInfo}`
-      : "Bu teknik resmi analiz et. Tüm kritik ölçüleri, toleransları ve yüzey pürüzlülük değerlerini dikkatlice oku ve detaylı işleme planı oluştur.";
+    let userMessage = "";
+    if (material) {
+      userMessage = `Bu teknik resmi analiz et. MALZEME KULLANICI TARAFINDAN BELİRLENMİŞTİR: ${material.name} (Kategori: ${material.category}, Sertlik: ${material.hardness}, Kesme Hızı: ${material.cuttingSpeed.min}-${material.cuttingSpeed.max} ${material.cuttingSpeed.unit}, İlerleme: ${material.feedRate.min}-${material.feedRate.max} ${material.feedRate.unit}, Taylor n=${material.taylorN}, Taylor C=${material.taylorC}). Bu malzemeye göre tüm kesme parametrelerini hesapla. Resimdeki malzeme bilgisini DIKKATE ALMA, kullanıcının seçtiği malzemeyi kullan.`;
+    } else {
+      userMessage = "Bu teknik resmi analiz et. Tüm kritik ölçüleri, toleransları ve yüzey pürüzlülük değerlerini dikkatlice oku ve detaylı işleme planı oluştur.";
+    }
+    if (additionalInfo) {
+      userMessage += ` Ek bilgiler: ${additionalInfo}`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
