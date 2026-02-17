@@ -17,7 +17,7 @@ import { iconMap, getIcon } from "@/lib/iconMap";
 
 const ALL_MODULES = [
   "ai-learn", "drawing", "cutting", "toollife", "threading",
-  "drilling", "tolerance", "costcalc", "cost", "compare", "materials", "history",
+  "drilling", "tolerance", "costcalc", "cost", "compare", "materials", "history", "salary",
 ];
 
 const COLOR_PRESETS = [
