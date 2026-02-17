@@ -390,6 +390,7 @@ export type Database = {
           hardness_min: number | null
           id: string
           name: string
+          price_per_kg: number | null
           tool_life_factor: number
           updated_at: string
           user_id: string
@@ -407,6 +408,7 @@ export type Database = {
           hardness_min?: number | null
           id?: string
           name: string
+          price_per_kg?: number | null
           tool_life_factor?: number
           updated_at?: string
           user_id: string
@@ -424,6 +426,7 @@ export type Database = {
           hardness_min?: number | null
           id?: string
           name?: string
+          price_per_kg?: number | null
           tool_life_factor?: number
           updated_at?: string
           user_id?: string

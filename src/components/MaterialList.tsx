@@ -85,6 +85,7 @@ const MaterialList = ({ customMaterials, onDeleteCustom }: MaterialListProps) =>
               </th>
               <th className="text-left py-3 px-2 label-industrial">{t("common", "cuttingSpeed")}</th>
               <th className="text-left py-3 px-2 label-industrial">{t("common", "feedRate")}</th>
+              <th className="text-left py-3 px-2 label-industrial">{t("materialForm", "pricePerKg")}</th>
               <th className="py-3 px-2"></th>
             </tr>
           </thead>
@@ -119,12 +120,19 @@ const MaterialList = ({ customMaterials, onDeleteCustom }: MaterialListProps) =>
                     <span className="text-xs text-muted-foreground ml-1">{material.feedRate.unit}</span>
                   </td>
                   <td className="py-3 px-2">
+                    {material.pricePerKg ? (
+                      <span className="font-mono text-sm text-foreground">{material.pricePerKg} <span className="text-xs text-muted-foreground">EUR/kg</span></span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-2">
                     {expandedId === material.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                   </td>
                 </tr>
                 {expandedId === material.id && (
                   <tr key={`${material.id}-expanded`}>
-                    <td colSpan={6} className={`py-4 px-4 ${categoryStyle.bgColor} border-l-2 ${categoryStyle.borderColor}`}>
+                    <td colSpan={7} className={`py-4 px-4 ${categoryStyle.bgColor} border-l-2 ${categoryStyle.borderColor}`}>
                       <div className="grid md:grid-cols-4 gap-4">
                         <div className={`p-3 rounded-lg bg-card border ${categoryStyle.borderColor}`}>
                           <span className="label-industrial text-xs">{t("materialList", "taylorN")}</span>
