@@ -183,7 +183,6 @@ const AFKPriceCalculator = () => {
             />
           </div>
         </div>
-        </div>
 
         {/* Results */}
         <div className="space-y-4">
