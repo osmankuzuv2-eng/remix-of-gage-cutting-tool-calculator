@@ -80,14 +80,15 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     { label: tr("common", "material"), value: analysis.material },
     { label: tr("pdf", "complexity"), value: analysis.complexity },
     { label: tr("pdf", "totalTime"), value: `${analysis.totalEstimatedTime} ${minute}` },
+    { label: tr("pdf", "setupTime"), value: `${analysis.setupTime} ${minute}` },
   ]);
 
-  // ── Dimensions & Setup ──
+  // ── Dimensions ──
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...BRAND.muted);
   doc.text(
-    `${tr("pdf", "dimensions")}: ${analysis.overallDimensions}    |    ${tr("pdf", "setupTime")}: ${analysis.setupTime} ${minute}`,
+    `${tr("pdf", "dimensions")}: ${analysis.overallDimensions}`,
     margin,
     y
   );
@@ -189,9 +190,19 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   checkPage(30);
   const halfW = contentWidth / 2 - 4;
 
+  // Left column title - Machines
   y = sectionTitle(doc, tr("pdf", "requiredMachines"), y, margin);
-  const machY = y;
 
+  // Right column title - Tolerances (same Y level)
+  doc.setFont("Roboto", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BRAND.dark);
+  doc.text(tr("pdf", "toleranceAndSurface"), margin + halfW + 8, y - 7);
+  const tolTextW = doc.getTextWidth(tr("pdf", "toleranceAndSurface"));
+  doc.setFillColor(...BRAND.primary);
+  doc.rect(margin + halfW + 8, y - 6, tolTextW, 0.7, "F");
+
+  // Left column content - machines
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(50, 50, 60);
@@ -201,15 +212,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   );
   doc.text(machineLines, margin, y);
 
-  // Right column - tolerances
-  doc.setFont("Roboto", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...BRAND.dark);
-  doc.text(tr("pdf", "toleranceAndSurface"), margin + halfW + 8, machY - 7);
-  const tolTextW = doc.getTextWidth(tr("pdf", "toleranceAndSurface"));
-  doc.setFillColor(...BRAND.primary);
-  doc.rect(margin + halfW + 8, machY - 6, tolTextW, 0.7, "F");
-
+  // Right column content - tolerances & surface
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(50, 50, 60);
