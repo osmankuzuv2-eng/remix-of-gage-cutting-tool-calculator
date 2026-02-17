@@ -38,7 +38,7 @@ interface UserData {
   id: string;
   email: string;
   created_at: string;
-  profile: { display_name: string | null; company: string | null; position: string | null; custom_title: string | null; title_color: string | null } | null;
+  profile: { display_name: string | null; company: string | null; position: string | null; custom_title: string | null; title_color: string | null; avatar_url: string | null } | null;
   roles: string[];
   permissions: { module_key: string; granted: boolean }[];
   admin_permissions?: { panel_key: string; can_view: boolean; can_edit: boolean }[];
@@ -587,39 +587,48 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
             {users.map((user) => (
               <Card key={user.id} className="border-border bg-card">
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground truncate">{user.profile?.display_name || user.email}</span>
-                        {user.roles.includes("admin") ? (
-                          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
-                        ) : (
-                          <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        )}
-                        {user.profile?.custom_title ? (
-                          <Badge
-                            className="text-[10px] px-1.5 py-0"
-                            style={user.profile?.title_color ? { backgroundColor: user.profile.title_color, color: '#fff' } : undefined}
-                          >
-                            {user.profile.custom_title}
-                          </Badge>
-                        ) : (
-                          <Badge variant={user.roles.includes("admin") ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
-                            {user.roles.includes("admin") ? "Admin" : "Personel"}
-                          </Badge>
-                        )}
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {user.profile?.avatar_url ? (
+                            <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="w-5 h-5 text-primary" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground truncate">{user.profile?.display_name || user.email}</span>
+                            {user.roles.includes("admin") ? (
+                              <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                            ) : (
+                              <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            )}
+                            {user.profile?.custom_title ? (
+                              <Badge
+                                className="text-[10px] px-1.5 py-0"
+                                style={user.profile?.title_color ? { backgroundColor: user.profile.title_color, color: '#fff' } : undefined}
+                              >
+                                {user.profile.custom_title}
+                              </Badge>
+                            ) : (
+                              <Badge variant={user.roles.includes("admin") ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
+                                {user.roles.includes("admin") ? "Admin" : "Personel"}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {user.permissions
+                              .filter((p) => p.granted)
+                              .map((p) => (
+                                <span key={p.module_key} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                                  {t("tabs", p.module_key)}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {user.permissions
-                          .filter((p) => p.granted)
-                          .map((p) => (
-                            <span key={p.module_key} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                              {t("tabs", p.module_key)}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
                     {canEditUsers && (
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={t("admin", "editUser")}>
