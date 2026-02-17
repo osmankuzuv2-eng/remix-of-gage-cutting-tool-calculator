@@ -1,5 +1,4 @@
 import jsPDF from "jspdf";
-import QRCode from "qrcode";
 import {
   registerFonts,
   getFontFamily,
@@ -139,23 +138,35 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     });
   } catch { /* ignore */ }
 
-  // ── Generate QR code ──
-  let qrDataUrl = "";
-  try {
-    const qrContent = `GAGE Confidence ToolSense\nParca: ${analysis.partName}\nMalzeme: ${analysis.material}\nSure: ${analysis.totalEstimatedTime} dk\nTarih: ${new Date().toLocaleDateString("tr-TR")}`;
-    qrDataUrl = await QRCode.toDataURL(qrContent, {
-      width: 200, margin: 1,
-      color: { dark: "#1e2332", light: "#f5f6fc" },
-      errorCorrectionLevel: "M",
-    });
-  } catch { /* ignore */ }
-
   // ── Summary card ──
   const cardY = y;
   const cardPad = 4;
-  const cardH = 48;
   const logoSize = 28;
-  const qrSize = 28;
+
+  // Left info items
+  const infoItems: { label: string; value: string }[] = [
+    { label: "PARCA ADI", value: analysis.partName || "-" },
+    { label: "MALZEME", value: analysis.material || "-" },
+    { label: "BOYUTLAR", value: analysis.overallDimensions || "-" },
+  ];
+  if (analysis.rawMaterialDimensions) {
+    infoItems.push({ label: "HAM MALZEME", value: analysis.rawMaterialDimensions });
+  }
+
+  // Right info items
+  const rightItems: { label: string; value: string }[] = [
+    { label: "KARMASIKLIK", value: analysis.complexity || "-" },
+    { label: "TOPLAM ISLEME SURESI", value: `${analysis.totalEstimatedTime} dk` },
+    { label: "HAZIRLIK SURESI", value: `${analysis.setupTime} dk` },
+  ];
+  if (analysis.weight) {
+    rightItems.push({ label: "AGIRLIK", value: analysis.weight });
+  }
+
+  // Calculate card height based on content
+  const rowCount = Math.max(infoItems.length, rightItems.length);
+  const itemH = 10; // height per info item
+  const cardH = Math.max(rowCount * itemH + 8, logoSize + 8);
 
   doc.setFillColor(245, 246, 252);
   doc.setDrawColor(200, 200, 220);
@@ -168,77 +179,36 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     try { doc.addImage(gageLogo, "PNG", margin + 3, cardY + (cardH - logoSize) / 2, logoSize, logoSize); } catch { /* ignore */ }
   }
 
-  const qrAreaW = qrDataUrl ? qrSize + 6 : 0;
-  if (qrDataUrl) {
-    try {
-      const qrX = margin + contentWidth - qrSize - 3;
-      const qrY = cardY + (cardH - qrSize) / 2;
-      doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
-      doc.setFont(ff, "normal"); doc.setFontSize(5); doc.setTextColor(...BRAND.muted);
-      doc.text("QR Rapor", qrX + qrSize / 2, qrY + qrSize + 3, { align: "center" });
-    } catch { /* ignore */ }
-  }
-
   const infoLeftX = margin + logoAreaW + cardPad;
-  const infoWidth = contentWidth - logoAreaW - qrAreaW - cardPad * 2;
-  const colW = infoWidth / 2;
-
-  let cy = cardY + 6;
-  doc.setFont(ff, "bold"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-  doc.text("PARCA ADI", infoLeftX, cy);
-  doc.setFont(ff, "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
-  const partNameTrunc = analysis.partName.length > 26 ? analysis.partName.substring(0, 24) + ".." : analysis.partName;
-  doc.text(partNameTrunc, infoLeftX, cy + 5);
-
-  cy = cardY + 18;
-  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-  doc.text("MALZEME", infoLeftX, cy);
-  doc.setFont(ff, "bold"); doc.setFontSize(8); doc.setTextColor(50, 50, 70);
-  const matTrunc = analysis.material.length > 30 ? analysis.material.substring(0, 28) + ".." : analysis.material;
-  doc.text(matTrunc, infoLeftX, cy + 4.5);
-
-  cy = cardY + 28;
-  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-  doc.text("BOYUTLAR", infoLeftX, cy);
-  doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
-  doc.text(analysis.overallDimensions || "-", infoLeftX, cy + 4.5);
-
-  cy = cardY + 38;
-  if (analysis.rawMaterialDimensions) {
-    doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-    doc.text("HAM MALZEME", infoLeftX, cy);
-    doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
-    doc.text(analysis.rawMaterialDimensions, infoLeftX, cy + 4.5);
-  }
-
+  const colW = (contentWidth - logoAreaW - cardPad * 2) / 2;
   const rightX = infoLeftX + colW;
-  cy = cardY + 6;
-  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-  doc.text("KARMASIKLIK", rightX, cy);
-  doc.setFont(ff, "bold"); doc.setFontSize(9); doc.setTextColor(...BRAND.primary);
-  doc.text(analysis.complexity || "-", rightX, cy + 5);
 
-  cy = cardY + 18;
-  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-  doc.text("TOPLAM ISLEME SURESI", rightX, cy);
-  doc.setFont(ff, "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
-  doc.text(`${analysis.totalEstimatedTime} dk`, rightX, cy + 5);
-
-  cy = cardY + 28;
-  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-  doc.text("HAZIRLIK SURESI", rightX, cy);
-  doc.setFont(ff, "bold"); doc.setFontSize(8.5); doc.setTextColor(50, 50, 70);
-  doc.text(`${analysis.setupTime} dk`, rightX, cy + 4.5);
-
-  cy = cardY + 38;
-  if (analysis.weight) {
+  // Draw left column
+  infoItems.forEach((item, i) => {
+    const iy = cardY + 6 + i * itemH;
     doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
-    doc.text("AGIRLIK", rightX, cy);
-    doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
-    doc.text(analysis.weight, rightX, cy + 4.5);
-  }
+    doc.text(item.label, infoLeftX, iy);
+    doc.setFont(ff, "bold"); doc.setFontSize(8); doc.setTextColor(...BRAND.dark);
+    const maxW = colW - 4;
+    const truncated = doc.getTextWidth(item.value) > maxW
+      ? item.value.substring(0, Math.floor(item.value.length * maxW / doc.getTextWidth(item.value)) - 2) + ".."
+      : item.value;
+    doc.text(truncated, infoLeftX, iy + 4.5);
+  });
 
-  y = cardY + 52;
+  // Draw right column
+  rightItems.forEach((item, i) => {
+    const iy = cardY + 6 + i * itemH;
+    doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+    doc.text(item.label, rightX, iy);
+    const isTime = item.label.includes("SURESI");
+    const isComplexity = item.label === "KARMASIKLIK";
+    doc.setFont(ff, "bold"); doc.setFontSize(isTime ? 9 : 8);
+    doc.setTextColor(...(isComplexity ? BRAND.primary : BRAND.dark));
+    doc.text(item.value, rightX, iy + 4.5);
+  });
+
+  y = cardY + cardH + 4;
 
   // ── Clamping strategy ──
   if (analysis.clampingStrategy) {
