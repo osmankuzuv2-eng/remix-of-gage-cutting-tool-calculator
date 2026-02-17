@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback } from "react";
-import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star } from "lucide-react";
+import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { exportAnalysisPdf } from "@/lib/exportAnalysisPdf";
+import { exportBomExcel } from "@/lib/exportBomExcel";
 import * as UTIF from "utif2";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -257,6 +258,9 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId }: { item: Drawin
         )}
         <Button variant="outline" size="sm" onClick={async () => { await exportAnalysisPdf(analysis, t); toast.success(t("drawingAnalyzer", "reportDownloaded")); }}>
           <Download className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "downloadReport")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={async () => { await exportBomExcel(analysis); toast.success("Ürün ağacı Excel indirildi"); }} className="text-success border-success/30 hover:bg-success/10">
+          <FileSpreadsheet className="w-4 h-4 mr-2" />Ürün Ağacı (Excel)
         </Button>
       </div>
 
