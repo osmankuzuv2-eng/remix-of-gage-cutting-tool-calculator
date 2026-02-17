@@ -201,7 +201,18 @@ const Index = () => {
           {activeTab === "drilling" && hasAccess("drilling") && <DrillTapCalculator customMaterials={customMaterials} />}
           {activeTab === "compare" && hasAccess("compare") && <ParameterComparison customMaterials={customMaterials} />}
           {activeTab === "materials" && hasAccess("materials") && (
-            <MaterialList customMaterials={customMaterials} onDeleteCustom={handleDeleteMaterial} />
+            <MaterialList
+              customMaterials={customMaterials}
+              onDeleteCustom={handleDeleteMaterial}
+              isAdmin={isAdmin}
+              onUpdatePrice={(id, price) => {
+                const updated = customMaterials.map((m) =>
+                  m.id === id ? { ...m, pricePerKg: price } : m
+                );
+                setCustomMaterials(updated);
+                safeSetItem(CUSTOM_MATERIALS_KEY, updated);
+              }}
+            />
           )}
           {activeTab === "cost" && hasAccess("cost") && <CostAnalyzer />}
           {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation />}
