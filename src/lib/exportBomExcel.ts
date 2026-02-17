@@ -160,33 +160,33 @@ export const exportBomExcel = async (
     row.getCell(9).font = { name: "Aptos", size: 10, bold: true, color: { argb: brandOrange } };
   });
 
-  // ── Summary Row ──
-  const summaryRowNum = 8 + analysis.operations.length + 1;
+  // ── Summary Rows ──
+  const spacerRowNum = 8 + analysis.operations.length;
+  ws.getRow(spacerRowNum).height = 6;
 
-  // Spacer
-  ws.getRow(summaryRowNum - 1).height = 6;
+  // Setup row (above total)
+  const setupRowNum = spacerRowNum + 1;
+  const setupRow = ws.getRow(setupRowNum);
+  setupRow.height = 26;
+  ws.mergeCells(`A${setupRowNum}:J${setupRowNum}`);
+  const setupCell = setupRow.getCell(1);
+  setupCell.value = `HAZIRLIK SÜRESİ:  ${analysis.setupTime} dk`;
+  setupCell.font = { name: "Aptos", size: 10, bold: true, color: { argb: brandWhite } };
+  setupCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2D3348" } };
+  setupCell.alignment = { horizontal: "center", vertical: "middle" };
 
-  const summaryRow = ws.getRow(summaryRowNum);
-  summaryRow.height = 28;
+  // Total row
+  const totalRowNum = setupRowNum + 1;
+  const totalRow = ws.getRow(totalRowNum);
+  totalRow.height = 30;
+  ws.mergeCells(`A${totalRowNum}:J${totalRowNum}`);
+  const totalCell = totalRow.getCell(1);
+  totalCell.value = `TOPLAM ÜRETİM SÜRESİ:  ${analysis.totalEstimatedTime} dk`;
+  totalCell.font = { name: "Aptos", size: 13, bold: true, color: { argb: brandOrange } };
+  totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
+  totalCell.alignment = { horizontal: "center", vertical: "middle" };
 
-  ws.mergeCells(`A${summaryRowNum}:H${summaryRowNum}`);
-  const sumLabelCell = summaryRow.getCell(1);
-  sumLabelCell.value = "TOPLAM ÜRETİM SÜRESİ";
-  sumLabelCell.font = { name: "Aptos", size: 11, bold: true, color: { argb: brandWhite } };
-  sumLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
-  sumLabelCell.alignment = { horizontal: "right", vertical: "middle" };
-
-  const sumValCell = summaryRow.getCell(9);
-  sumValCell.value = `${analysis.totalEstimatedTime} dk`;
-  sumValCell.font = { name: "Aptos", size: 12, bold: true, color: { argb: brandOrange } };
-  sumValCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
-  sumValCell.alignment = { horizontal: "center", vertical: "middle" };
-
-  const sumNoteCell = summaryRow.getCell(10);
-  sumNoteCell.value = `Hazırlık: ${analysis.setupTime} dk`;
-  sumNoteCell.font = { name: "Aptos", size: 10, color: { argb: brandMuted } };
-  sumNoteCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
-  sumNoteCell.alignment = { horizontal: "center", vertical: "middle" };
+  const summaryRowNum = totalRowNum;
 
   // ── Column Widths ──
   ws.columns = [
