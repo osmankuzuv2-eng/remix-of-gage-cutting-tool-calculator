@@ -14,24 +14,40 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
 };
 
 export const registerFonts = async (doc: jsPDF) => {
-  if (!fontCache.regular || !fontCache.bold) {
-    const [regRes, boldRes] = await Promise.all([
-      fetch("/fonts/Roboto-Regular.ttf"),
-      fetch("/fonts/Roboto-Bold.ttf"),
-    ]);
-    const [regBuf, boldBuf] = await Promise.all([
-      regRes.arrayBuffer(),
-      boldRes.arrayBuffer(),
-    ]);
-    fontCache.regular = arrayBufferToBase64(regBuf);
-    fontCache.bold = arrayBufferToBase64(boldBuf);
-  }
+  try {
+    if (!fontCache.regular || !fontCache.bold) {
+      const [regRes, boldRes] = await Promise.all([
+        fetch("/fonts/Roboto-Regular.ttf"),
+        fetch("/fonts/Roboto-Bold.ttf"),
+      ]);
+      
+      if (!regRes.ok || !boldRes.ok) {
+        console.warn("Font fetch failed, using default font", regRes.status, boldRes.status);
+        return;
+      }
+      
+      const [regBuf, boldBuf] = await Promise.all([
+        regRes.arrayBuffer(),
+        boldRes.arrayBuffer(),
+      ]);
+      
+      if (regBuf.byteLength === 0 || boldBuf.byteLength === 0) {
+        console.warn("Font files are empty, using default font");
+        return;
+      }
+      
+      fontCache.regular = arrayBufferToBase64(regBuf);
+      fontCache.bold = arrayBufferToBase64(boldBuf);
+    }
 
-  doc.addFileToVFS("Roboto-Regular.ttf", fontCache.regular);
-  doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-  doc.addFileToVFS("Roboto-Bold.ttf", fontCache.bold);
-  doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
-  doc.setFont("Roboto");
+    doc.addFileToVFS("Roboto-Regular.ttf", fontCache.regular);
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    doc.addFileToVFS("Roboto-Bold.ttf", fontCache.bold);
+    doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+    doc.setFont("Roboto");
+  } catch (err) {
+    console.warn("Font registration failed, using default font:", err);
+  }
 };
 
 // ── Logo cache ──
