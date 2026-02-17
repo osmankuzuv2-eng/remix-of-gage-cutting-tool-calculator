@@ -28,5 +28,4 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "materials": Database,
   "history": History,
   "afkprice": DollarSign,
-  "salary": Users,
 };
