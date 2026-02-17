@@ -10,10 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calculator, TrendingUp, TrendingDown, Info, Users } from "lucide-react";
 
 // ─── 2025 & 2026 Tax Data ───
+interface HalfYearData {
+  grossMinWage: number;
+  sgkCeiling: number;
+}
+
 interface YearData {
   year: number;
-  grossMinWage: number;
-  sgkCeiling: number; // monthly
+  h1: HalfYearData; // Ocak-Haziran
+  h2: HalfYearData; // Temmuz-Aralık
   sgkWorkerRate: number; // 14%
   sgkEmployerRate: number; // 20.5% (with 5 puan indirim: 15.5%)
   unemploymentWorker: number; // 1%
@@ -23,11 +28,14 @@ interface YearData {
   minWageExemption: boolean; // asgari ücret istisnası
 }
 
+const getHalfYear = (data: YearData, month: number): HalfYearData =>
+  month <= 6 ? data.h1 : data.h2;
+
 const YEAR_DATA: Record<string, YearData> = {
   "2025": {
     year: 2025,
-    grossMinWage: 22104.67,
-    sgkCeiling: 165757.50,
+    h1: { grossMinWage: 22104.67, sgkCeiling: 165757.50 },
+    h2: { grossMinWage: 25500.00, sgkCeiling: 191250.00 }, // Temmuz zammı tahmini
     sgkWorkerRate: 0.14,
     sgkEmployerRate: 0.205,
     unemploymentWorker: 0.01,
@@ -44,8 +52,8 @@ const YEAR_DATA: Record<string, YearData> = {
   },
   "2026": {
     year: 2026,
-    grossMinWage: 25000, // Tahmini
-    sgkCeiling: 187500,
+    h1: { grossMinWage: 25000, sgkCeiling: 187500 }, // Tahmini
+    h2: { grossMinWage: 28500, sgkCeiling: 213750 }, // Tahmini
     sgkWorkerRate: 0.14,
     sgkEmployerRate: 0.205,
     unemploymentWorker: 0.01,
@@ -61,14 +69,14 @@ const YEAR_DATA: Record<string, YearData> = {
     minWageExemption: true,
   },
 };
-
 type CalcDirection = "gross-to-net" | "net-to-gross";
 
 const fmt = (n: number) =>
   n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const calcNetFromGross = (grossSalary: number, month: number, data: YearData, applyExemption: boolean, sgk5PuanIndirim: boolean) => {
-  const sgkBase = Math.min(grossSalary, data.sgkCeiling);
+  const half = getHalfYear(data, month);
+  const sgkBase = Math.min(grossSalary, half.sgkCeiling);
   const sgkWorker = sgkBase * data.sgkWorkerRate;
   const unemploymentWorker = sgkBase * data.unemploymentWorker;
   const totalSgkWorker = sgkWorker + unemploymentWorker;
@@ -76,8 +84,14 @@ const calcNetFromGross = (grossSalary: number, month: number, data: YearData, ap
   // Gelir vergisi matrahı
   const incomeTaxBase = grossSalary - totalSgkWorker;
 
-  // Kümülatif matrah (yılın başından itibaren)
-  const cumulativePrev = incomeTaxBase * (month - 1);
+  // Kümülatif matrah - her ay için doğru yarıyıl asgari ücretini kullanarak hesapla
+  let cumulativePrev = 0;
+  for (let m = 1; m < month; m++) {
+    const mHalf = getHalfYear(data, m);
+    const mSgkBase = Math.min(grossSalary, mHalf.sgkCeiling);
+    const mSgk = mSgkBase * data.sgkWorkerRate + mSgkBase * data.unemploymentWorker;
+    cumulativePrev += grossSalary - mSgk;
+  }
   const cumulativeCurrent = cumulativePrev + incomeTaxBase;
 
   // Kümülatif vergiyi hesapla
@@ -101,13 +115,21 @@ const calcNetFromGross = (grossSalary: number, month: number, data: YearData, ap
   const taxCurrent = calcCumulativeTax(cumulativeCurrent);
   let incomeTax = taxCurrent - taxPrev;
 
-  // Asgari ücret istisnası
+  // Asgari ücret istisnası - her ay kendi yarıyılının asgari ücretini kullanır
   let exemptionAmount = 0;
   if (applyExemption && data.minWageExemption) {
-    const minWageSgk = Math.min(data.grossMinWage, data.sgkCeiling);
-    const minWageIncomeTaxBase = data.grossMinWage - (minWageSgk * data.sgkWorkerRate) - (minWageSgk * data.unemploymentWorker);
-    const minWageCumulativePrev = minWageIncomeTaxBase * (month - 1);
+    // Kümülatif asgari ücret matrahı (önceki aylar)
+    let minWageCumulativePrev = 0;
+    for (let m = 1; m < month; m++) {
+      const mHalf = getHalfYear(data, m);
+      const mMinSgkBase = Math.min(mHalf.grossMinWage, mHalf.sgkCeiling);
+      minWageCumulativePrev += mHalf.grossMinWage - (mMinSgkBase * data.sgkWorkerRate) - (mMinSgkBase * data.unemploymentWorker);
+    }
+    // Bu ayın asgari ücret matrahı
+    const minSgkBase = Math.min(half.grossMinWage, half.sgkCeiling);
+    const minWageIncomeTaxBase = half.grossMinWage - (minSgkBase * data.sgkWorkerRate) - (minSgkBase * data.unemploymentWorker);
     const minWageCumulativeCurrent = minWageCumulativePrev + minWageIncomeTaxBase;
+
     const minWageTaxPrev = calcCumulativeTax(minWageCumulativePrev);
     const minWageTaxCurrent = calcCumulativeTax(minWageCumulativeCurrent);
     exemptionAmount = minWageTaxCurrent - minWageTaxPrev;
@@ -119,7 +141,7 @@ const calcNetFromGross = (grossSalary: number, month: number, data: YearData, ap
   let stampTax = grossSalary * data.stampTaxRate;
   // Asgari ücret damga vergisi istisnası
   if (applyExemption && data.minWageExemption) {
-    const minWageStamp = data.grossMinWage * data.stampTaxRate;
+    const minWageStamp = half.grossMinWage * data.stampTaxRate;
     stampTax = Math.max(0, stampTax - minWageStamp);
   }
 
@@ -284,7 +306,7 @@ const SalaryCalculator = () => {
                 step="100"
                 value={direction === "gross-to-net" ? grossInput : netInput}
                 onChange={(e) => direction === "gross-to-net" ? setGrossInput(e.target.value) : setNetInput(e.target.value)}
-                placeholder={direction === "gross-to-net" ? `Ör: ${fmt(data.grossMinWage)}` : "Ör: 20,000"}
+                placeholder={direction === "gross-to-net" ? `Ör: ${fmt(getHalfYear(data, month).grossMinWage)}` : "Ör: 20,000"}
               />
             </div>
             <div className="space-y-3 pt-1">
@@ -305,7 +327,7 @@ const SalaryCalculator = () => {
               variant="secondary"
               className="cursor-pointer hover:bg-primary/20 transition-colors"
               onClick={() => {
-                if (direction === "gross-to-net") setGrossInput(data.grossMinWage.toString());
+                if (direction === "gross-to-net") setGrossInput(getHalfYear(data, month).grossMinWage.toString());
                 else setNetInput("17000");
               }}
             >
@@ -458,8 +480,8 @@ const SalaryCalculator = () => {
           <Info className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground space-y-1">
             <p>{t("salary", "disclaimer")}</p>
-            <p className="text-xs">{t("salary", "minWageInfo")}: ₺{fmt(data.grossMinWage)} ({selectedYear})</p>
-            <p className="text-xs">{t("salary", "sgkCeiling")}: ₺{fmt(data.sgkCeiling)} ({selectedYear})</p>
+            <p className="text-xs">{t("salary", "minWageInfo")}: ₺{fmt(data.h1.grossMinWage)} (H1) / ₺{fmt(data.h2.grossMinWage)} (H2) ({selectedYear})</p>
+            <p className="text-xs">{t("salary", "sgkCeiling")}: ₺{fmt(data.h1.sgkCeiling)} (H1) / ₺{fmt(data.h2.sgkCeiling)} (H2) ({selectedYear})</p>
           </div>
         </CardContent>
       </Card>
