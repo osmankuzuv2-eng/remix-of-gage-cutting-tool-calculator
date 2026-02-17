@@ -11,6 +11,7 @@ import * as UTIF from "utif2";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useCustomers } from "@/hooks/useCustomers";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -377,6 +378,7 @@ const DrawingAnalyzer = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
+  const { activeCustomers } = useCustomers();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<DrawingItem[]>([]);
   const [additionalInfo, setAdditionalInfo] = useState("");
@@ -543,13 +545,20 @@ const DrawingAnalyzer = () => {
                 <div className="w-48 shrink-0 space-y-2">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Müşteri (opsiyonel)</p>
-                    <input
-                      type="text"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value.slice(0, 100))}
-                      placeholder="Müşteri adı..."
-                      className="w-full bg-secondary/30 border border-border rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                    />
+                    <Select value={customerName} onValueChange={(val) => {
+                      setCustomerName(val);
+                      const found = activeCustomers.find(c => c.name === val);
+                      if (found) setSelectedFactory(found.factory);
+                    }}>
+                      <SelectTrigger className="bg-secondary/30 border-border">
+                        <SelectValue placeholder="Müşteri seçin..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeCustomers.map((c) => (
+                          <SelectItem key={c.id} value={c.name}>{c.name} <span className="text-xs text-muted-foreground ml-1">({c.factory})</span></SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Fabrika Seçimi</p>
