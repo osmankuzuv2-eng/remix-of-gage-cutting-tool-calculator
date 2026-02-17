@@ -45,6 +45,7 @@ interface CategoryData {
 
 interface MenuManagerProps {
   onUpdated?: () => void;
+  readOnly?: boolean;
 }
 
 const MenuManager = ({ onUpdated }: MenuManagerProps) => {

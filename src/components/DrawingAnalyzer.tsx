@@ -12,6 +12,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useFactories } from "@/hooks/useFactories";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -379,6 +380,7 @@ const DrawingAnalyzer = () => {
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
   const { activeCustomers } = useCustomers();
+  const { activeFactories } = useFactories();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<DrawingItem[]>([]);
   const [additionalInfo, setAdditionalInfo] = useState("");
@@ -567,8 +569,9 @@ const DrawingAnalyzer = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Havacılık">Havacılık</SelectItem>
-                        <SelectItem value="Raylı Sistemler">Raylı Sistemler</SelectItem>
+                        {activeFactories.map((f) => (
+                          <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

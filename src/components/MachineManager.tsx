@@ -15,17 +15,13 @@ import {
 import { Loader2, Plus, Pencil, Trash2, Cog, Monitor, Factory } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Machine } from "@/hooks/useMachines";
+import { useFactories } from "@/hooks/useFactories";
 
 const MACHINE_TYPES = [
   { value: "turning", label: "CNC Torna" },
   { value: "milling-3axis", label: "3 Eksen CNC Freze" },
   { value: "milling-4axis", label: "4 Eksen CNC Freze" },
   { value: "milling-5axis", label: "5 Eksen CNC Freze" },
-];
-
-const FACTORIES = [
-  { value: "Havacılık", label: "Havacılık" },
-  { value: "Raylı Sistemler", label: "Raylı Sistemler" },
 ];
 
 const emptyForm = {
@@ -38,8 +34,9 @@ const emptyForm = {
   factory: "Raylı Sistemler",
 };
 
-const MachineManager = () => {
+const MachineManager = ({ readOnly = false }: { readOnly?: boolean }) => {
   const { toast } = useToast();
+  const { activeFactories } = useFactories();
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
@@ -138,12 +135,12 @@ const MachineManager = () => {
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Monitor className="w-5 h-5" /> Makine Parkı Yönetimi
         </h3>
-        <Button onClick={openCreate} size="sm" className="gap-1"><Plus className="w-4 h-4" /> Tezgah Ekle</Button>
+        {!readOnly && <Button onClick={openCreate} size="sm" className="gap-1"><Plus className="w-4 h-4" /> Tezgah Ekle</Button>}
       </div>
 
       {/* Factory Filter */}
       <div className="flex gap-2 flex-wrap">
-        {[{ value: "all", label: "Tüm Fabrikalar" }, ...FACTORIES].map(f => (
+        {[{ value: "all", label: "Tüm Fabrikalar" }, ...activeFactories.map(f => ({ value: f.name, label: f.name }))].map(f => (
           <button key={f.value} onClick={() => setFactoryFilter(f.value)}
             className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${factoryFilter === f.value ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
             {f.label} {f.value === "all" ? `(${machines.length})` : `(${machines.filter(m => m.factory === f.value).length})`}
@@ -183,10 +180,12 @@ const MachineManager = () => {
                   {m.max_diameter_mm && <span>• Ø{m.max_diameter_mm}mm</span>}
                 </div>
               </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Pencil className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Pencil className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -213,7 +212,7 @@ const MachineManager = () => {
               <Label>Fabrika *</Label>
               <Select value={form.factory} onValueChange={v => setForm(f => ({ ...f, factory: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{FACTORIES.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{activeFactories.map(f => <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label>Tanım</Label><Input value={form.designation} onChange={e => setForm(f => ({ ...f, designation: e.target.value }))} placeholder="CNC Torna" /></div>
