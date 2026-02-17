@@ -59,7 +59,8 @@ const AFKPriceCalculator = () => {
   const calculations = useMemo(() => {
     const density = currentMaterial?.density ?? 7.85;
     const chipWeight = Math.max(0, grossWeight - netWeight);
-    const rawMaterialCost = grossWeight * materialPrice;
+    const rawMaterialBase = grossWeight * materialPrice;
+    const rawMaterialCost = rawMaterialBase * 1.10; // +%10 fire/işleme payı
     const chipCost = chipWeight * materialPrice;
 
     // Calculate machining time from machine power
@@ -228,7 +229,8 @@ const AFKPriceCalculator = () => {
           </div>
 
           <div className="space-y-2">
-            <ResultRow label={`${t("afkPrice", "rawMaterialCost")} (${grossWeight} kg × €${materialPrice})`} value={`€${calculations.rawMaterialCost}`} />
+            <ResultRow label={`${t("afkPrice", "rawMaterialCost")} (${grossWeight} kg × €${materialPrice} + %10)`} value={`€${calculations.rawMaterialCost}`} />
+            <div className="text-xs text-muted-foreground italic px-2 -mt-1">{t("afkPrice", "rawMaterialMarkupNote")}</div>
             <ResultRow label={`${t("afkPrice", "chipCost")} (${calculations.chipWeight} kg × €${materialPrice})`} value={`€${calculations.chipCost}`} />
             <ResultRow label={`${t("afkPrice", "machineCostLabel")} (${calculations.machiningTimeMin} dk × €${machineRate})`} value={`€${calculations.machineCost}`} />
             {hasHoles && (
