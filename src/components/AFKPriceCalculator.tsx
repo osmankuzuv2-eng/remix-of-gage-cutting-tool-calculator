@@ -46,8 +46,10 @@ const AFKPriceCalculator = () => {
   const [machineRate, setMachineRate] = useState(0);
 
   const savedPrices = safeGetItem<Record<string, number>>("cnc_material_prices", {}) || {};
+  const savedAfkMultipliers = safeGetItem<Record<string, number>>("cnc_afk_multipliers", {}) || {};
   const currentMaterial = materials.find((m) => m.id === selectedMaterial);
   const materialPrice = savedPrices[selectedMaterial] ?? currentMaterial?.pricePerKg ?? 0;
+  const afkMultiplier = savedAfkMultipliers[selectedMaterial] ?? 1.0;
   const currentMachine = machines.find((m) => m.id === selectedMachine);
 
   // Auto-select first machine when loaded
@@ -60,7 +62,7 @@ const AFKPriceCalculator = () => {
   const calculations = useMemo(() => {
     const density = currentMaterial?.density ?? 7.85;
     const chipWeight = Math.max(0, grossWeight - netWeight);
-    const rawMaterialBase = grossWeight * materialPrice;
+    const rawMaterialBase = grossWeight * materialPrice * afkMultiplier;
     const rawMaterialCost = rawMaterialBase * 1.10; // +%10 fire/işleme payı
     const chipCost = chipWeight * materialPrice;
 
@@ -96,12 +98,13 @@ const AFKPriceCalculator = () => {
       unitTotal: unitTotal.toFixed(2),
       grandTotal: grandTotal.toFixed(2),
     };
-  }, [grossWeight, netWeight, materialPrice, currentMaterial, currentMachine, hasHoles, smallHoles, largeHoles, profitMargin, quantity, machineRate]);
+  }, [grossWeight, netWeight, materialPrice, afkMultiplier, currentMaterial, currentMachine, hasHoles, smallHoles, largeHoles, profitMargin, quantity, machineRate]);
 
   const handleExportPdf = () => {
     exportAfkPricePdf({
       material: getMaterialName(selectedMaterial),
       materialPrice,
+      afkMultiplier,
       density: currentMaterial?.density ?? 7.85,
       grossWeight,
       netWeight,
@@ -157,7 +160,7 @@ const AFKPriceCalculator = () => {
               ))}
             </select>
             <div className="text-xs text-muted-foreground mt-1">
-              {t("afkPrice", "materialPrice")}: €{materialPrice}/kg · {t("afkPrice", "density")}: {currentMaterial?.density ?? 7.85} g/cm³
+              {t("afkPrice", "materialPrice")}: €{materialPrice}/kg · {t("afkPrice", "afkMultiplier")}: {afkMultiplier} · {t("afkPrice", "density")}: {currentMaterial?.density ?? 7.85} g/cm³
             </div>
           </div>
 
@@ -262,7 +265,7 @@ const AFKPriceCalculator = () => {
           </div>
 
           <div className="space-y-2">
-            <ResultRow label={`${t("afkPrice", "rawMaterialCost")} (${grossWeight} kg × €${materialPrice} + %10)`} value={`€${calculations.rawMaterialCost}`} />
+            <ResultRow label={`${t("afkPrice", "rawMaterialCost")} (${grossWeight} kg × €${materialPrice} × ${afkMultiplier} + %10)`} value={`€${calculations.rawMaterialCost}`} />
             <div className="text-xs text-muted-foreground italic px-2 -mt-1">{t("afkPrice", "rawMaterialMarkupNote")}</div>
             <ResultRow label={`${t("afkPrice", "chipCost")} (${calculations.chipWeight} kg × €${materialPrice})`} value={`€${calculations.chipCost}`} />
             <ResultRow label={`${t("afkPrice", "machineCostLabel")} (${calculations.machiningTimeMin} dk × €${machineRate})`} value={`€${calculations.machineCost}`} />

@@ -13,6 +13,7 @@ import {
 export interface AfkPricePdfData {
   material: string;
   materialPrice: number;
+  afkMultiplier: number;
   density: number;
   grossWeight: number;
   netWeight: number;
@@ -76,7 +77,7 @@ export const exportAfkPricePdf = async (data: AfkPricePdfData, t?: TFn) => {
     [tr("afkPrice", "netWeight"), `${data.netWeight} kg`],
     [tr("afkPrice", "chipWeight"), `${data.chipWeight} kg`],
     [tr("afkPrice", "chipVolume"), `${data.chipVolumeCm3} cm³`],
-    [tr("afkPrice", "materialPrice"), `€${data.materialPrice}/kg (+%10)`],
+    [tr("afkPrice", "materialPrice"), `€${data.materialPrice}/kg (AFK: ×${data.afkMultiplier}) (+%10)`],
   ];
   weightRows.forEach((row, idx) => {
     y = drawTableRow(doc, y, margin, contentWidth, row, scaled, idx % 2 === 0);
@@ -101,7 +102,7 @@ export const exportAfkPricePdf = async (data: AfkPricePdfData, t?: TFn) => {
   y = sectionTitle(doc, tr("afkPrice", "results"), y, margin);
 
   const costRows = [
-    [`${tr("afkPrice", "rawMaterialCost")} (+%10)`, `€${data.calculations.rawMaterialCost}`],
+    [`${tr("afkPrice", "rawMaterialCost")} (×${data.afkMultiplier} +%10)`, `€${data.calculations.rawMaterialCost}`],
     [tr("afkPrice", "chipCost"), `€${data.calculations.chipCost}`],
     [tr("afkPrice", "machineCostLabel"), `€${data.calculations.machineCost}`],
   ];
