@@ -163,7 +163,7 @@ export const exportCostPdf = async (data: CostPdfData, t?: TFn) => {
   );
 
   // ── Footer ──
-  drawFooter(doc, tr("pdf", "costFooter"));
+  drawFooter(doc, tr("pdf", "costFooter"), tr("pdf", "page"));
 
   const refSlug = data.referenceNo ? data.referenceNo.replace(/\s+/g, "_") : "maliyet";
   doc.save(`${refSlug}_maliyet_${new Date().toISOString().slice(0, 10)}.pdf`);

@@ -132,6 +132,6 @@ export const exportWorkOrderPdf = async (params: ExportWorkOrderPdfParams) => {
   doc.setTextColor(...BRAND.primary);
   doc.text(`${totalCost.toFixed(2)} TL`, margin + contentWidth - 4, y + 11, { align: "right" });
 
-  drawFooter(doc, "GAGE Confidence ToolSense - Is Emri Raporu");
+  drawFooter(doc, t("pdf", "workOrderFooter"), t("pdf", "page"));
   doc.save(`${orderName.replace(/\s+/g, "_")}.pdf`);
 };
