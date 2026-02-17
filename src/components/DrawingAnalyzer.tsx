@@ -376,6 +376,7 @@ const DrawingAnalyzer = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<DrawingItem[]>([]);
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [selectedFactory, setSelectedFactory] = useState("Havacılık");
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [currentAnalyzing, setCurrentAnalyzing] = useState(0);
 
@@ -425,7 +426,7 @@ const DrawingAnalyzer = () => {
       const { data: urlData, error: urlError } = await supabase.storage.from("technical-drawings").createSignedUrl(filePath, 3600);
       if (urlError) throw urlError;
       const { data, error } = await supabase.functions.invoke("analyze-drawing", {
-        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo },
+        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo, factory: selectedFactory },
       });
       if (error) throw error;
       if (data?.analysis) {
@@ -530,7 +531,23 @@ const DrawingAnalyzer = () => {
 
           {items.length > 0 && (
             <>
-              <Textarea placeholder={t("drawingAnalyzer", "additionalInfo")} value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} className="bg-secondary/30 border-border" rows={2} />
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Textarea placeholder={t("drawingAnalyzer", "additionalInfo")} value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} className="bg-secondary/30 border-border" rows={2} />
+                </div>
+                <div className="w-48 shrink-0">
+                  <p className="text-xs text-muted-foreground mb-1">Fabrika Seçimi</p>
+                  <Select value={selectedFactory} onValueChange={setSelectedFactory}>
+                    <SelectTrigger className="bg-secondary/30 border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Havacılık">Havacılık</SelectItem>
+                      <SelectItem value="Raylı Sistemler">Raylı Sistemler</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">{items.length} {t("drawingAnalyzer", "filesSelected")}</p>
                 <div className="flex gap-2">

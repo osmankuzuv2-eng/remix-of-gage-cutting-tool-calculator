@@ -65,6 +65,7 @@ export type Database = {
           code: string
           created_at: string
           designation: string
+          factory: string
           has_c_axis: boolean | null
           has_live_tooling: boolean | null
           has_y_axis: boolean | null
@@ -89,6 +90,7 @@ export type Database = {
           code: string
           created_at?: string
           designation: string
+          factory?: string
           has_c_axis?: boolean | null
           has_live_tooling?: boolean | null
           has_y_axis?: boolean | null
@@ -113,6 +115,7 @@ export type Database = {
           code?: string
           created_at?: string
           designation?: string
+          factory?: string
           has_c_axis?: boolean | null
           has_live_tooling?: boolean | null
           has_y_axis?: boolean | null
