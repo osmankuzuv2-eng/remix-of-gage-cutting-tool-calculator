@@ -467,6 +467,24 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               count: rated.filter((f: any) => f.rating === r).length,
             }));
 
+            // Top 10 feedback contributors
+            const userFbCount: Record<string, number> = {};
+            feedbacks.forEach((fb: any) => {
+              userFbCount[fb.user_id] = (userFbCount[fb.user_id] || 0) + 1;
+            });
+            const top10 = Object.entries(userFbCount)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 10)
+              .map(([userId, count]) => {
+                const user = users.find(u => u.id === userId);
+                return {
+                  userId,
+                  name: user?.profile?.display_name || user?.email || userId.slice(0, 8) + "...",
+                  email: user?.email || "",
+                  count,
+                };
+              });
+
             return (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Summary Cards */}
@@ -519,6 +537,30 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                   </CardContent>
                 </Card>
 
+                {/* Top 10 Contributors */}
+                <Card className="bg-card border-border md:col-span-3">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Users className="w-4 h-4 text-primary" />
+                      <p className="text-sm font-medium text-foreground">En Çok Bildirim Yapan 10 Kullanıcı</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {top10.map((item, idx) => (
+                        <div key={item.userId} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/30 border border-border">
+                          <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                            {item.email && <p className="text-xs text-muted-foreground truncate">{item.email}</p>}
+                          </div>
+                          <Badge variant="secondary" className="shrink-0">{item.count} bildirim</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Trend Chart */}
                 {trendData.length > 1 && (
                   <Card className="bg-card border-border md:col-span-3">
@@ -563,22 +605,29 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-foreground text-sm">{fb.part_name}</span>
-                          <Badge variant="outline" className="text-[10px]">{feedbackTypeLabel(fb.feedback_type)}</Badge>
-                          {fb.rating && (
-                            <span className="flex items-center gap-0.5 text-[10px]">
-                              {[1,2,3,4,5].map(s => (
-                                <span key={s} className={s <= fb.rating ? "text-yellow-400" : "text-muted-foreground/30"}>★</span>
-                              ))}
-                            </span>
-                          )}
-                          {feedbackStatusBadge(fb.status)}
-                          {fb.applied_at && <Badge variant="outline" className="text-[10px] border-success/30 text-success">Uygulandı</Badge>}
-                        </div>
-                        {fb.file_name && <p className="text-xs text-muted-foreground">Dosya: {fb.file_name}</p>}
-                        <p className="text-sm text-foreground bg-secondary/30 p-2 rounded">{fb.feedback_text}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(fb.created_at).toLocaleString("tr-TR")}</p>
+                         <div className="flex items-center gap-2 flex-wrap">
+                           <span className="font-medium text-foreground text-sm">{fb.part_name}</span>
+                           <Badge variant="outline" className="text-[10px]">{feedbackTypeLabel(fb.feedback_type)}</Badge>
+                           {fb.rating && (
+                             <span className="flex items-center gap-0.5 text-[10px]">
+                               {[1,2,3,4,5].map(s => (
+                                 <span key={s} className={s <= fb.rating ? "text-yellow-400" : "text-muted-foreground/30"}>★</span>
+                               ))}
+                             </span>
+                           )}
+                           {feedbackStatusBadge(fb.status)}
+                           {fb.applied_at && <Badge variant="outline" className="text-[10px] border-success/30 text-success">Uygulandı</Badge>}
+                         </div>
+                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                           <Users className="w-3 h-3" />
+                           <span>{(() => {
+                             const u = users.find(u => u.id === fb.user_id);
+                             return u?.profile?.display_name || u?.email || fb.user_id?.slice(0, 8) + "...";
+                           })()}</span>
+                         </div>
+                         {fb.file_name && <p className="text-xs text-muted-foreground">Dosya: {fb.file_name}</p>}
+                         <p className="text-sm text-foreground bg-secondary/30 p-2 rounded">{fb.feedback_text}</p>
+                         <p className="text-xs text-muted-foreground">{new Date(fb.created_at).toLocaleString("tr-TR")}</p>
                       </div>
                       <div className="flex gap-1 shrink-0">
                         {fb.status === "pending" && (
