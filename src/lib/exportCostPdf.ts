@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import {
   registerFonts,
+  getFontFamily,
   drawHeader,
   drawFooter,
   sectionTitle,
@@ -47,9 +48,9 @@ export const exportCostPdf = async (data: CostPdfData, t?: TFn) => {
   const tr = t || ((_s: string, k: string) => k);
   const doc = new jsPDF();
   await registerFonts(doc);
+  const ff = getFontFamily();
 
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 14;
   const contentWidth = pageWidth - margin * 2;
   const minute = tr("common", "minute");
@@ -137,23 +138,22 @@ export const exportCostPdf = async (data: CostPdfData, t?: TFn) => {
   // ── Grand Total Box ──
   doc.setFillColor(...BRAND.dark);
   doc.roundedRect(margin, y, contentWidth, 16, 2, 2, "F");
-  // Orange accent
   doc.setFillColor(...BRAND.primary);
   doc.rect(margin, y, 4, 16, "F");
 
-  doc.setFont("Roboto", "normal");
+  doc.setFont(ff, "normal");
   doc.setFontSize(9);
   doc.setTextColor(...BRAND.white);
   doc.text(tr("pdf", "grandTotal"), margin + 8, y + 7);
 
-  doc.setFont("Roboto", "bold");
+  doc.setFont(ff, "bold");
   doc.setFontSize(16);
   doc.setTextColor(...BRAND.primary);
   doc.text(`${data.calculations.grandTotal} EUR`, margin + contentWidth - 4, y + 11, { align: "right" });
   y += 20;
 
   // Per part
-  doc.setFont("Roboto", "normal");
+  doc.setFont(ff, "normal");
   doc.setFontSize(8);
   doc.setTextColor(...BRAND.muted);
   doc.text(

@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import {
   registerFonts,
+  getFontFamily,
   drawHeader,
   drawFooter,
   sectionTitle,
@@ -60,14 +61,8 @@ interface AnalysisResult {
 
 type TFn = (section: string, key: string) => string;
 
-/* ── Helper: draw wrapped text in a cell, return actual height used ── */
 const drawCellText = (
-  doc: jsPDF,
-  text: string,
-  x: number,
-  y: number,
-  maxW: number,
-  lineH: number
+  doc: jsPDF, text: string, x: number, y: number, maxW: number, lineH: number
 ): number => {
   const lines: string[] = doc.splitTextToSize(text, maxW - 2);
   lines.forEach((line: string, i: number) => {
@@ -76,28 +71,22 @@ const drawCellText = (
   return Math.max(lines.length * lineH + 2, 6);
 };
 
-/* ── Helper: measure cell height without drawing ── */
 const measureCellH = (doc: jsPDF, text: string, maxW: number, lineH: number): number => {
   const lines: string[] = doc.splitTextToSize(text, maxW - 2);
   return Math.max(lines.length * lineH + 2, 6);
 };
 
-/* ── Helper: draw a key-value detail line ── */
 const drawDetail = (
-  doc: jsPDF,
-  label: string,
-  value: string,
-  x: number,
-  y: number,
-  maxW: number
+  doc: jsPDF, label: string, value: string, x: number, y: number, maxW: number
 ): number => {
-  doc.setFont("Roboto", "bold");
+  const ff = getFontFamily();
+  doc.setFont(ff, "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(...BRAND.dark);
   doc.text(`${label}:`, x, y);
   const labelW = doc.getTextWidth(`${label}: `);
 
-  doc.setFont("Roboto", "normal");
+  doc.setFont(ff, "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(50, 50, 60);
   const valLines: string[] = doc.splitTextToSize(value, maxW - labelW - 4);
@@ -111,6 +100,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   const tr = t || ((_s: string, k: string) => k);
   const doc = new jsPDF({ orientation: "portrait" });
   await registerFonts(doc);
+  const ff = getFontFamily();
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -126,9 +116,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     }
   };
 
-  // ═══════════════════════════════════════════
   // PAGE 1: HEADER + SUMMARY
-  // ═══════════════════════════════════════════
   let y = await drawHeader(doc, tr("pdf", "analysisReport"));
 
   // ── Load GAGE logo for summary card ──
@@ -156,8 +144,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   try {
     const qrContent = `GAGE Confidence ToolSense\nParca: ${analysis.partName}\nMalzeme: ${analysis.material}\nSure: ${analysis.totalEstimatedTime} dk\nTarih: ${new Date().toLocaleDateString("tr-TR")}`;
     qrDataUrl = await QRCode.toDataURL(qrContent, {
-      width: 200,
-      margin: 1,
+      width: 200, margin: 1,
       color: { dark: "#1e2332", light: "#f5f6fc" },
       errorCorrectionLevel: "M",
     });
@@ -170,92 +157,84 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   const logoSize = 28;
   const qrSize = 28;
 
-  // Card background
   doc.setFillColor(245, 246, 252);
   doc.setDrawColor(200, 200, 220);
   doc.roundedRect(margin, cardY, contentWidth, cardH, 2, 2, "FD");
   doc.setFillColor(...BRAND.primary);
   doc.rect(margin, cardY, contentWidth, 1.5, "F");
 
-  // Logo on left side of card
   const logoAreaW = gageLogo ? logoSize + 6 : 0;
   if (gageLogo) {
-    try {
-      doc.addImage(gageLogo, "PNG", margin + 3, cardY + (cardH - logoSize) / 2, logoSize, logoSize);
-    } catch { /* ignore */ }
+    try { doc.addImage(gageLogo, "PNG", margin + 3, cardY + (cardH - logoSize) / 2, logoSize, logoSize); } catch { /* ignore */ }
   }
 
-  // QR code on right side of card
   const qrAreaW = qrDataUrl ? qrSize + 6 : 0;
   if (qrDataUrl) {
     try {
       const qrX = margin + contentWidth - qrSize - 3;
       const qrY = cardY + (cardH - qrSize) / 2;
       doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
-      doc.setFont("Roboto", "normal"); doc.setFontSize(5); doc.setTextColor(...BRAND.muted);
+      doc.setFont(ff, "normal"); doc.setFontSize(5); doc.setTextColor(...BRAND.muted);
       doc.text("QR Rapor", qrX + qrSize / 2, qrY + qrSize + 3, { align: "center" });
     } catch { /* ignore */ }
   }
 
-  // Content area between logo and QR
   const infoLeftX = margin + logoAreaW + cardPad;
   const infoWidth = contentWidth - logoAreaW - qrAreaW - cardPad * 2;
   const colW = infoWidth / 2;
 
-  // Left info column
   let cy = cardY + 6;
-  doc.setFont("Roboto", "bold"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.setFont(ff, "bold"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("PARCA ADI", infoLeftX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
+  doc.setFont(ff, "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
   const partNameTrunc = analysis.partName.length > 26 ? analysis.partName.substring(0, 24) + ".." : analysis.partName;
   doc.text(partNameTrunc, infoLeftX, cy + 5);
 
   cy = cardY + 18;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("MALZEME", infoLeftX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(8); doc.setTextColor(50, 50, 70);
+  doc.setFont(ff, "bold"); doc.setFontSize(8); doc.setTextColor(50, 50, 70);
   const matTrunc = analysis.material.length > 30 ? analysis.material.substring(0, 28) + ".." : analysis.material;
   doc.text(matTrunc, infoLeftX, cy + 4.5);
 
   cy = cardY + 28;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("BOYUTLAR", infoLeftX, cy);
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
+  doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
   doc.text(analysis.overallDimensions || "-", infoLeftX, cy + 4.5);
 
   cy = cardY + 38;
   if (analysis.rawMaterialDimensions) {
-    doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+    doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
     doc.text("HAM MALZEME", infoLeftX, cy);
-    doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
+    doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
     doc.text(analysis.rawMaterialDimensions, infoLeftX, cy + 4.5);
   }
 
-  // Right info column
   const rightX = infoLeftX + colW;
   cy = cardY + 6;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("KARMASIKLIK", rightX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(9); doc.setTextColor(...BRAND.primary);
+  doc.setFont(ff, "bold"); doc.setFontSize(9); doc.setTextColor(...BRAND.primary);
   doc.text(analysis.complexity || "-", rightX, cy + 5);
 
   cy = cardY + 18;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("TOPLAM ISLEME SURESI", rightX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
+  doc.setFont(ff, "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
   doc.text(`${analysis.totalEstimatedTime} dk`, rightX, cy + 5);
 
   cy = cardY + 28;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("HAZIRLIK SURESI", rightX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(8.5); doc.setTextColor(50, 50, 70);
+  doc.setFont(ff, "bold"); doc.setFontSize(8.5); doc.setTextColor(50, 50, 70);
   doc.text(`${analysis.setupTime} dk`, rightX, cy + 4.5);
 
   cy = cardY + 38;
   if (analysis.weight) {
-    doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+    doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
     doc.text("AGIRLIK", rightX, cy);
-    doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
+    doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
     doc.text(analysis.weight, rightX, cy + 4.5);
   }
 
@@ -279,11 +258,10 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     const sc = clampCols.map(w => w * clampScale);
     const clampHeaders = ["Setup", "Tip", "Aciklama", "Baglama", "Cozme", "Notlar"];
 
-    // Header
     const drawClampHead = () => {
       doc.setFillColor(...BRAND.dark);
       doc.rect(margin, y, contentWidth, 6, "F");
-      doc.setFont("Roboto", "bold"); doc.setFontSize(6); doc.setTextColor(...BRAND.white);
+      doc.setFont(ff, "bold"); doc.setFontSize(6); doc.setTextColor(...BRAND.white);
       let tx = margin + 1;
       clampHeaders.forEach((h, i) => { doc.text(h, tx, y + 4); tx += sc[i]; });
       y += 6;
@@ -293,42 +271,38 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     analysis.clampingDetails.forEach((cd, idx) => {
       const cells = [String(cd.setupNumber), cd.clampingType, cd.description, `${cd.clampingTime} dk`, `${cd.unclampingTime} dk`, cd.notes || "-"];
       const rowH = Math.max(...cells.map((c, i) => measureCellH(doc, c, sc[i], lineH)));
-      
+
       if (y + rowH > pageHeight - bottomMargin) { doc.addPage(); y = 14; drawClampHead(); }
-      
+
       if (idx % 2 === 0) { doc.setFillColor(245, 246, 250); doc.rect(margin, y, contentWidth, rowH, "F"); }
-      doc.setFont("Roboto", "normal"); doc.setFontSize(6); doc.setTextColor(50, 50, 60);
+      doc.setFont(ff, "normal"); doc.setFontSize(6); doc.setTextColor(50, 50, 60);
       let tx = margin;
       cells.forEach((c, i) => { drawCellText(doc, c, tx, y, sc[i], lineH); tx += sc[i]; });
       y += rowH;
     });
 
     if (analysis.totalClampingTime) {
-      doc.setFont("Roboto", "bold"); doc.setFontSize(7.5); doc.setTextColor(...BRAND.primary);
+      doc.setFont(ff, "bold"); doc.setFontSize(7.5); doc.setTextColor(...BRAND.primary);
       doc.text(`Toplam Baglama Suresi: ${analysis.totalClampingTime} dk`, margin, y + 4);
       y += 8;
     }
     y += 3;
   }
 
-  // ═══════════════════════════════════════════
   // OPERATIONS TABLE - LANDSCAPE PAGE
-  // ═══════════════════════════════════════════
-  doc.addPage("l"); // landscape
+  doc.addPage("l");
   y = 14;
 
   const lPageW = doc.internal.pageSize.getWidth();
   const lPageH = doc.internal.pageSize.getHeight();
   const lContentW = lPageW - margin * 2;
 
-  // Section title
-  doc.setFont("Roboto", "bold"); doc.setFontSize(11); doc.setTextColor(...BRAND.dark);
+  doc.setFont(ff, "bold"); doc.setFontSize(11); doc.setTextColor(...BRAND.dark);
   doc.text("Operasyon Adimlari", margin, y);
   doc.setFillColor(...BRAND.primary);
   doc.rect(margin, y + 1.5, doc.getTextWidth("Operasyon Adimlari"), 0.7, "F");
   y += 8;
 
-  // Column definitions for landscape - much more room
   const opCols = [8, 42, 28, 40, 16, 16, 16, 12, 12, 14, 14, 30, 14];
   const opHeaders = ["#", "Islem", "Tezgah", "Takim", "Vc", "n", "f/fz", "ap", "ae", "Paso", "Sogutma", "Hesaplama Notlari", "Sure"];
   const opTotalW = opCols.reduce((a, b) => a + b, 0);
@@ -340,7 +314,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     doc.rect(margin, y, lContentW, 7, "F");
     doc.setFillColor(...BRAND.primary);
     doc.rect(margin, y, lContentW, 0.8, "F");
-    doc.setFont("Roboto", "bold"); doc.setFontSize(6); doc.setTextColor(...BRAND.white);
+    doc.setFont(ff, "bold"); doc.setFontSize(6); doc.setTextColor(...BRAND.white);
     let tx = margin + 1;
     opHeaders.forEach((h, i) => { doc.text(h, tx, y + 5); tx += opSc[i]; });
     doc.setTextColor(0, 0, 0);
@@ -366,8 +340,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
       `${op.estimatedTime} dk`,
     ];
 
-    // Calculate row height
-    doc.setFont("Roboto", "normal"); doc.setFontSize(5.5);
+    doc.setFont(ff, "normal"); doc.setFontSize(5.5);
     const rowH = Math.max(...cells.map((c, i) => measureCellH(doc, c, opSc[i], 2.8)), 6);
 
     if (y + rowH > lPageH - bottomMargin) {
@@ -376,13 +349,11 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
       drawOpsHead();
     }
 
-    // Zebra stripe
     if (idx % 2 === 0) { doc.setFillColor(245, 246, 250); doc.rect(margin, y, lContentW, rowH, "F"); }
-    // Light grid lines
     doc.setDrawColor(220, 220, 230); doc.setLineWidth(0.2);
     doc.line(margin, y + rowH, margin + lContentW, y + rowH);
 
-    doc.setFont("Roboto", "normal"); doc.setFontSize(5.5); doc.setTextColor(40, 40, 55);
+    doc.setFont(ff, "normal"); doc.setFontSize(5.5); doc.setTextColor(40, 40, 55);
     let tx = margin;
     cells.forEach((c, i) => {
       drawCellText(doc, c, tx, y, opSc[i], 2.8);
@@ -394,19 +365,17 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   // Total time row
   doc.setFillColor(...BRAND.dark);
   doc.rect(margin, y, lContentW, 7, "F");
-  doc.setFont("Roboto", "bold"); doc.setFontSize(7); doc.setTextColor(...BRAND.white);
+  doc.setFont(ff, "bold"); doc.setFontSize(7); doc.setTextColor(...BRAND.white);
   doc.text("TOPLAM ISLEME SURESI", margin + 4, y + 5);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(8); doc.setTextColor(...BRAND.primary);
+  doc.setFont(ff, "bold"); doc.setFontSize(8); doc.setTextColor(...BRAND.primary);
   doc.text(`${analysis.totalEstimatedTime} dk`, lContentW + margin - 4, y + 5, { align: "right" });
   if (analysis.totalMachiningTime) {
-    doc.setFont("Roboto", "normal"); doc.setFontSize(6); doc.setTextColor(180, 185, 200);
+    doc.setFont(ff, "normal"); doc.setFontSize(6); doc.setTextColor(180, 185, 200);
     doc.text(`(Tezgah suresi: ${analysis.totalMachiningTime} dk)`, lContentW / 2 + margin, y + 5, { align: "center" });
   }
   y += 10;
 
-  // ═══════════════════════════════════════════
-  // PAGE 3+: DETAILS (portrait)
-  // ═══════════════════════════════════════════
+  // DETAILS (portrait)
   doc.addPage("p");
   y = 14;
   const pW = doc.internal.pageSize.getWidth();
@@ -419,7 +388,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
 
   // ── Machines Required ──
   y = sectionTitle(doc, "Kullanilan Tezgahlar", y, margin);
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
+  doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
   analysis.machinesRequired.forEach(m => {
     checkPortrait(5);
     doc.text(`• ${m}`, margin + 2, y);
@@ -431,7 +400,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   if (analysis.toolList && analysis.toolList.length > 0) {
     checkPortrait(15);
     y = sectionTitle(doc, "Takim Listesi", y, margin);
-    doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(50, 50, 60);
+    doc.setFont(ff, "normal"); doc.setFontSize(7); doc.setTextColor(50, 50, 60);
     analysis.toolList.forEach(tl => {
       const lines: string[] = doc.splitTextToSize(`• ${tl}`, cW - 4);
       checkPortrait(lines.length * 3.5 + 2);
@@ -454,7 +423,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   // ── Recommendations ──
   checkPortrait(15);
   y = sectionTitle(doc, "Oneriler", y, margin);
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
+  doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
   analysis.recommendations.forEach(r => {
     const lines: string[] = doc.splitTextToSize(`• ${r}`, cW - 4);
     checkPortrait(lines.length * 3.5 + 3);
@@ -466,7 +435,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   // ── Difficulty Notes ──
   checkPortrait(15);
   y = sectionTitle(doc, "Zorluk Notlari", y, margin);
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
+  doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
   const diffLines: string[] = doc.splitTextToSize(analysis.difficultyNotes || "-", cW);
   checkPortrait(diffLines.length * 3.5);
   doc.text(diffLines, margin, y);
@@ -474,7 +443,6 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   // ── Footer on all pages ──
   drawFooter(doc, tr("pdf", "footer"));
 
-  // Save
   const fileName = `${analysis.partName.replace(/\s+/g, "_")}_analiz_${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);
 };

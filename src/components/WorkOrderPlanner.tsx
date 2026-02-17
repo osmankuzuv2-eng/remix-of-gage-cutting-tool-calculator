@@ -4,7 +4,7 @@ import { materials, toolTypes, operations, Material } from "@/data/materials";
 import { machinePark } from "@/data/machinePark";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
-import jsPDF from "jspdf";
+import { exportWorkOrderPdf } from "@/lib/exportWorkOrderPdf";
 
 interface WorkOrderOperation {
   id: string;
@@ -114,49 +114,21 @@ const WorkOrderPlanner = ({ customMaterials }: WorkOrderPlannerProps) => {
   const getToolName = (id: string) => t("toolTypeNames", id) !== id ? t("toolTypeNames", id) : toolTypes.find(tt => tt.id === id)?.name || id;
   const getOpName = (id: string) => t("operationNames", id) !== id ? t("operationNames", id) : operations.find(o => o.id === id)?.name || id;
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    doc.setFontSize(18);
-    doc.text(orderName, pageWidth / 2, 20, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.text(`${t("workOrder", "date")}: ${new Date().toLocaleDateString()}`, 14, 35);
-    doc.text(`${t("workOrder", "machineRate")}: ${machineRate} TL`, 14, 42);
-    
-    doc.setFontSize(12);
-    doc.text(t("workOrder", "operationDetails"), 14, 55);
-    
-    let yPos = 65;
-    operationsList.forEach((op, index) => {
-      const times = calculateOperationTime(op);
-      const machine = machinePark.find((m) => m.id === op.machineId);
-      
-      doc.setFontSize(10);
-      doc.text(`${index + 1}. ${getOpName(op.operationType)}`, 14, yPos);
-      doc.text(`   ${t("workOrder", "machine")}: ${machine?.label ?? "-"}`, 14, yPos + 6);
-      doc.text(`   ${t("common", "material")}: ${getMaterialName(op.materialId)}`, 14, yPos + 12);
-      doc.text(`   ${t("workOrder", "tool")}: ${getToolName(op.toolId)} - Ø${op.diameter}mm`, 14, yPos + 18);
-      doc.text(`   ${t("common", "depth")}: ${op.depth}mm, ${t("workOrder", "lengthMm")}: ${op.length}mm, ${t("workOrder", "quantity")}: ${op.quantity}`, 14, yPos + 24);
-      doc.text(`   ${t("workOrder", "duration")}: ${times.totalTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 24);
-      
-      yPos += 35;
-      if (yPos > 260) { doc.addPage(); yPos = 20; }
+  const exportToPDF = async () => {
+    const getMachineName = (id: string) => machinePark.find(m => m.id === id)?.label ?? "-";
+    await exportWorkOrderPdf({
+      orderName,
+      machineRate,
+      operations: operationsList,
+      totals,
+      totalCost,
+      getMaterialName,
+      getToolName,
+      getOpName,
+      getMachineName,
+      calculateOperationTime,
+      t,
     });
-    
-    yPos += 10;
-    doc.setFontSize(12);
-    doc.text(t("workOrder", "summary"), 14, yPos);
-    doc.setFontSize(10);
-    doc.text(`${t("workOrder", "totalCuttingTime")}: ${totals.cuttingTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 10);
-    doc.text(`${t("workOrder", "totalSetupTime")}: ${totals.setupTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 17);
-    doc.text(`${t("workOrder", "totalToolChange")}: ${totals.toolChangeTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 24);
-    doc.text(`${t("workOrder", "grandTotalTime")}: ${totals.totalTime.toFixed(2)} ${t("common", "minute")}`, 14, yPos + 34);
-    doc.text(`${t("workOrder", "grandTotalCost")}: ${totalCost.toFixed(2)} TL`, 14, yPos + 44);
-    
-    doc.save(`${orderName.replace(/\s+/g, "_")}.pdf`);
-    
     toast({
       title: t("workOrder", "pdfDownloaded"),
       description: t("workOrder", "pdfSaved"),
