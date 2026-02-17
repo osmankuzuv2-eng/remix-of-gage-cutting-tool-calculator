@@ -308,7 +308,7 @@ JSON formatinda dondur:
   "difficultyNotes": "Zorluk, dikkat edilecekler, ozel stratejiler"
 }
 
-Sadece JSON dondur, baska metin ekleme.`;
+Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift tirnak (") karakteri KULLANMA, bunun yerine tek tirnak (') kullan. JSON gecerli olmali.`;
 
     const userMessage = additionalInfo 
       ? `Bu teknik resmi analiz et. Tüm kritik ölçüleri ve toleransları dikkatlice oku. Ek bilgiler: ${additionalInfo}`
@@ -357,14 +357,37 @@ Sadece JSON dondur, baska metin ekleme.`;
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from response
+    // Parse JSON from response - with robust error recovery
+    let jsonStr = "";
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error("Could not parse response:", content.substring(0, 500));
       throw new Error("AI yanıtı işlenemedi");
     }
+    jsonStr = jsonMatch[0];
 
-    const analysis = JSON.parse(jsonMatch[0]);
+    let analysis;
+    try {
+      analysis = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error("JSON parse error, attempting fix:", parseErr.message);
+      // Try to fix common JSON issues from AI responses
+      // Fix trailing commas before } or ]
+      let fixed = jsonStr.replace(/,\s*([}\]])/g, '$1');
+      // Fix unescaped quotes inside string values
+      fixed = fixed.replace(/:\s*"([^"]*?)(?<!\\)"([^"]*?)"/g, (match, p1, p2) => {
+        if (p2.includes(':') || p2.includes('{') || p2.includes('[')) return match;
+        return `: "${p1}\\"${p2}"`;
+      });
+      try {
+        analysis = JSON.parse(fixed);
+        console.log("JSON fixed successfully");
+      } catch (fixErr) {
+        console.error("Could not fix JSON:", fixErr.message);
+        console.error("Raw content (first 2000 chars):", jsonStr.substring(0, 2000));
+        throw new Error("AI yanıtı JSON formatında işlenemedi, lütfen tekrar deneyin.");
+      }
+    }
 
     return new Response(JSON.stringify({ analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
