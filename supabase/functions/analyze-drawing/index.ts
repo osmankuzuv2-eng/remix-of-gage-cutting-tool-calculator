@@ -297,7 +297,7 @@ JSON formatinda dondur:
     }
   ],
   "totalMachiningTime": "Toplam tezgah suresi (dk) - sadece isleme",
-  "totalEstimatedTime": "Toplam sure (dk) - isleme + hazirlik",
+  "totalEstimatedTime": "Toplam sure (dk) - SADECE isleme suresi, hazirlik suresi DAHIL EDILMEZ",
   "setupTime": "Hazirlik suresi (dk) - detayli aciklama",
   "recommendations": ["Strateji onerisi 1", "Oneri 2"],
   "tolerances": "Tespit edilen toleranslar ve tolerans siniflari",
