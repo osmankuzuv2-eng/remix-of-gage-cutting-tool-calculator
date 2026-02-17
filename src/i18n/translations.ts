@@ -96,6 +96,7 @@ export const translations = {
     machiningTime: { tr: "İşleme Süresi", en: "Machining Time", fr: "Temps d'usinage" },
     machineRate: { tr: "Tezgah Dakika Ücreti", en: "Machine Rate", fr: "Tarif machine" },
     machineCostLabel: { tr: "Tezgah Maliyeti", en: "Machine Cost", fr: "Coût machine" },
+    afkMultiplier: { tr: "AFK Çarpanı", en: "AFK Multiplier", fr: "Multiplicateur AFK" },
   },
 
   // ─── Footer ───
@@ -235,6 +236,7 @@ export const translations = {
     highSpeedHighFeed: { tr: "Yüksek hız, büyük ilerleme", en: "High speed, high feed", fr: "Haute vitesse, grande avance" },
     lowSpeedLowDepth: { tr: "Düşük hız, küçük kesme derinliği", en: "Low speed, small depth of cut", fr: "Faible vitesse, petite profondeur de coupe" },
     standardParams: { tr: "Standart parametreler", en: "Standard parameters", fr: "Paramètres standard" },
+    afkMultiplier: { tr: "AFK Çarpanı", en: "AFK Multiplier", fr: "Multiplicateur AFK" },
   },
 
   // ─── Cost Analyzer ───

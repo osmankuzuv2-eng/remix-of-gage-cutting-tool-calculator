@@ -11,9 +11,11 @@ interface MaterialListProps {
   isAdmin?: boolean;
   onUpdatePrice?: (id: string, price: number) => void;
   materialPrices?: Record<string, number>;
+  afkMultipliers?: Record<string, number>;
+  onUpdateAfkMultiplier?: (id: string, multiplier: number) => void;
 }
 
-const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice, materialPrices = {} }: MaterialListProps) => {
+const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice, materialPrices = {}, afkMultipliers = {}, onUpdateAfkMultiplier }: MaterialListProps) => {
   const { t } = useLanguage();
   const allMaterials = [...defaultMaterials, ...customMaterials].map((m) =>
     materialPrices[m.id] !== undefined ? { ...m, pricePerKg: materialPrices[m.id] } : m
@@ -28,6 +30,8 @@ const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice,
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editPriceValue, setEditPriceValue] = useState("");
+  const [editingAfkId, setEditingAfkId] = useState<string | null>(null);
+  const [editAfkValue, setEditAfkValue] = useState("");
 
   const filteredMaterials = allMaterials
     .filter((m) => {
@@ -94,6 +98,7 @@ const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice,
               <th className="text-left py-3 px-2 label-industrial">{t("common", "cuttingSpeed")}</th>
               <th className="text-left py-3 px-2 label-industrial">{t("common", "feedRate")}</th>
               <th className="text-left py-3 px-2 label-industrial">{t("materialForm", "pricePerKg")}</th>
+              <th className="text-left py-3 px-2 label-industrial">{t("materialList", "afkMultiplier")}</th>
               <th className="py-3 px-2"></th>
             </tr>
           </thead>
@@ -168,13 +173,50 @@ const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice,
                       </div>
                     )}
                   </td>
+                  <td className="py-3 px-2" onClick={(e) => e.stopPropagation()}>
+                    {editingAfkId === material.id ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editAfkValue}
+                          onChange={(e) => setEditAfkValue(e.target.value)}
+                          className="input-industrial w-20 text-sm py-1 px-2"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              onUpdateAfkMultiplier?.(material.id, Number(editAfkValue));
+                              setEditingAfkId(null);
+                            } else if (e.key === "Escape") {
+                              setEditingAfkId(null);
+                            }
+                          }}
+                        />
+                        <button onClick={() => { onUpdateAfkMultiplier?.(material.id, Number(editAfkValue)); setEditingAfkId(null); }} className="p-1 rounded hover:bg-success/20 text-success"><Check className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setEditingAfkId(null)} className="p-1 rounded hover:bg-destructive/20 text-destructive"><X className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 group/afk">
+                        <span className="font-mono text-sm text-foreground">{afkMultipliers[material.id] ?? 1.0}</span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => { setEditingAfkId(material.id); setEditAfkValue(String(afkMultipliers[material.id] ?? 1.0)); }}
+                            className="p-1 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary opacity-0 group-hover/afk:opacity-100 transition-opacity"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
                   <td className="py-3 px-2">
                     {expandedId === material.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                   </td>
                 </tr>
                 {expandedId === material.id && (
                   <tr key={`${material.id}-expanded`}>
-                    <td colSpan={7} className={`py-4 px-4 ${categoryStyle.bgColor} border-l-2 ${categoryStyle.borderColor}`}>
+                    <td colSpan={8} className={`py-4 px-4 ${categoryStyle.bgColor} border-l-2 ${categoryStyle.borderColor}`}>
                       <div className="grid md:grid-cols-4 gap-4">
                         <div className={`p-3 rounded-lg bg-card border ${categoryStyle.borderColor}`}>
                           <span className="label-industrial text-xs">{t("materialList", "taylorN")}</span>
