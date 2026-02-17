@@ -87,6 +87,13 @@ export const translations = {
     grandTotal: { tr: "Genel Toplam", en: "Grand Total", fr: "Total général" },
     quantity: { tr: "Adet", en: "Quantity", fr: "Quantité" },
     unitPrice: { tr: "Birim Fiyat", en: "Unit Price", fr: "Prix unitaire" },
+    density: { tr: "Yoğunluk", en: "Density", fr: "Densité" },
+    chipVolume: { tr: "Talaş Hacmi", en: "Chip Volume", fr: "Volume copeaux" },
+    machineSelection: { tr: "Tezgah Seçimi", en: "Machine Selection", fr: "Sélection machine" },
+    mrr: { tr: "Talaş Kaldırma Hızı", en: "Material Removal Rate", fr: "Taux d'enlèvement" },
+    machiningTime: { tr: "İşleme Süresi", en: "Machining Time", fr: "Temps d'usinage" },
+    machineRate: { tr: "Tezgah Dakika Ücreti", en: "Machine Rate", fr: "Tarif machine" },
+    machineCostLabel: { tr: "Tezgah Maliyeti", en: "Machine Cost", fr: "Coût machine" },
   },
 
   // ─── Footer ───
