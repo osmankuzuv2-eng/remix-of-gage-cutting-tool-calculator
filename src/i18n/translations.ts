@@ -85,6 +85,8 @@ export const translations = {
     profit: { tr: "Kar", en: "Profit", fr: "Profit" },
     profitMargin: { tr: "Kar Oranı (%)", en: "Profit Margin (%)", fr: "Marge bénéficiaire (%)" },
     grandTotal: { tr: "Genel Toplam", en: "Grand Total", fr: "Total général" },
+    quantity: { tr: "Adet", en: "Quantity", fr: "Quantité" },
+    unitPrice: { tr: "Birim Fiyat", en: "Unit Price", fr: "Prix unitaire" },
   },
 
   // ─── Footer ───
