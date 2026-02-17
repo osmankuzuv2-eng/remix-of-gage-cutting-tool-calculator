@@ -224,6 +224,18 @@ HAZIRLIK SURESI (DETAYLI):
 - Referans alma (sifir noktasi): 1-3 dk (prob ile), 3-5 dk (manuel)
 - TOPLAM: Basit parca 8-15 dk, orta karmasiklik 15-25 dk, karmasik 25-45 dk
 
+BAGLAMA SURESI HESAPLAMA (DETAYLI - her baglama icin ayri hesapla):
+- 3 ceneli ayna baglama/cozme: 1-2 dk (standart), 2-3 dk (hassas ayar)
+- Mengenede baglama/cozme: 2-3 dk (standart), 3-5 dk (coklu parca)
+- Ozel aparat ile baglama: 3-8 dk (karmasikliga bagli)
+- Punta ile destekleme: +1-2 dk ek sure
+- Parca cevirme (2. op icin): 1-3 dk (cevirme + yeniden baglama + referans)
+- Paralel/takoz ayarlama (mengenede): 1-2 dk
+- Hassas hizalama (komparator ile): 3-5 dk
+- TOPLAM BAGLAMA SURESI: Tum baglama/cozme adimlari toplanir
+- Her operasyonda baglama degisiyorsa, O ISLEMIN suresine baglama suresi EKLE
+- Ayni baglamada yapilan islemlerde baglama suresi TEKRAR EKLENMEZ
+
 STRATEJI VE PLANLAMA:
 - Baglama sekli belirt: 3 cenelik ayna, mengenede, ozel aparat, punta ile destekli
 - Her islemde neden o strateji secildigini KISA acikla
@@ -254,6 +266,17 @@ JSON formatinda dondur:
   "complexity": "Dusuk/Orta/Yuksek/Cok Yuksek",
   "weight": "Tahmini agirlik (kg)",
   "clampingStrategy": "Baglama stratejisi, tipi ve kac baglama gerektigi",
+  "clampingDetails": [
+    {
+      "setupNumber": 1,
+      "clampingType": "3 ceneli ayna / mengene / ozel aparat",
+      "description": "Nasil baglanacagi detayli aciklama",
+      "clampingTime": "Baglama suresi (dk)",
+      "unclampingTime": "Cozme suresi (dk)",
+      "notes": "Ek notlar (punta, paralel, hizalama vb.)"
+    }
+  ],
+  "totalClampingTime": "Toplam baglama/cozme suresi (dk)",
   "operations": [
     {
       "step": 1,

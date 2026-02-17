@@ -74,9 +74,20 @@ interface Operation {
   spindleSpeed?: string; estimatedTime: string; notes: string;
 }
 
+interface ClampingDetail {
+  setupNumber: number;
+  clampingType: string;
+  description: string;
+  clampingTime: string;
+  unclampingTime: string;
+  notes: string;
+}
+
 interface AnalysisResult {
   partName: string; material: string; overallDimensions: string;
-  complexity: string; clampingStrategy?: string; operations: Operation[];
+  complexity: string; clampingStrategy?: string;
+  clampingDetails?: ClampingDetail[]; totalClampingTime?: string;
+  operations: Operation[];
   totalEstimatedTime: string; setupTime: string; recommendations: string[];
   tolerances: string; surfaceFinish: string; machinesRequired: string[];
   difficultyNotes: string;
@@ -218,8 +229,33 @@ const AnalysisResultCard = ({ item, t, onSave, canSave }: { item: DrawingItem; t
           <CardHeader className="pb-3"><CardTitle className="text-foreground text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-warning" />{t("drawingAnalyzer", "difficultyNotes")}</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             <div><p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "setupTime")}</p><p className="text-sm text-primary font-semibold">{analysis.setupTime} {t("common", "minute")}</p></div>
-            {analysis.clampingStrategy && (<div><p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "clampingStrategy")}</p><p className="text-sm text-foreground">{analysis.clampingStrategy}</p></div>)}
-            <div><p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "difficultyNotes")}</p><p className="text-sm text-foreground">{analysis.difficultyNotes}</p></div>
+             {analysis.clampingStrategy && (<div><p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "clampingStrategy")}</p><p className="text-sm text-foreground">{analysis.clampingStrategy}</p></div>)}
+             {analysis.clampingDetails && analysis.clampingDetails.length > 0 && (
+               <div className="space-y-2">
+                 <p className="text-xs text-muted-foreground font-medium">{t("drawingAnalyzer", "clampingDetails") || "Bağlama Detayları"}</p>
+                 {analysis.clampingDetails.map((cd, i) => (
+                   <div key={i} className="p-2 rounded-md bg-secondary/30 border border-border/50 space-y-1">
+                     <div className="flex items-center gap-2">
+                       <Badge variant="outline" className="text-[10px]">Setup {cd.setupNumber}</Badge>
+                       <span className="text-xs font-medium text-foreground">{cd.clampingType}</span>
+                     </div>
+                     <p className="text-xs text-muted-foreground">{cd.description}</p>
+                     <div className="flex gap-3 text-xs">
+                       <span className="text-primary">⏱ Bağlama: {cd.clampingTime} dk</span>
+                       <span className="text-primary">⏱ Çözme: {cd.unclampingTime} dk</span>
+                     </div>
+                     {cd.notes && <p className="text-[10px] text-muted-foreground italic">{cd.notes}</p>}
+                   </div>
+                 ))}
+                 {analysis.totalClampingTime && (
+                   <div className="flex items-center gap-2 pt-1">
+                     <span className="text-xs text-muted-foreground">Toplam Bağlama Süresi:</span>
+                     <span className="text-sm font-semibold text-primary">{analysis.totalClampingTime} dk</span>
+                   </div>
+                 )}
+               </div>
+             )}
+             <div><p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "difficultyNotes")}</p><p className="text-sm text-foreground">{analysis.difficultyNotes}</p></div>
           </CardContent>
         </Card>
       </div>

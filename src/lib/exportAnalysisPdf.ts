@@ -23,12 +23,23 @@ interface Operation {
   notes: string;
 }
 
+interface ClampingDetail {
+  setupNumber: number;
+  clampingType: string;
+  description: string;
+  clampingTime: string;
+  unclampingTime: string;
+  notes: string;
+}
+
 interface AnalysisResult {
   partName: string;
   material: string;
   overallDimensions: string;
   complexity: string;
   clampingStrategy?: string;
+  clampingDetails?: ClampingDetail[];
+  totalClampingTime?: string;
   operations: Operation[];
   totalEstimatedTime: string;
   setupTime: string;
@@ -82,7 +93,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   );
   y += 5;
 
-  // Clamping
+  // Clamping strategy
   if (analysis.clampingStrategy) {
     doc.setFont("Roboto", "normal");
     doc.setFontSize(7);
@@ -94,6 +105,36 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     doc.text(clampLines, margin, y);
     y += clampLines.length * 3.5 + 4;
   }
+
+  // Clamping details table
+  if (analysis.clampingDetails && analysis.clampingDetails.length > 0) {
+    checkPage(20);
+    y = sectionTitle(doc, "Bağlama Detayları", y, margin);
+
+    const clampColWidths = [12, 30, 50, 18, 18, 40];
+    const clampHeaders = ["Setup", "Bağlama Tipi", "Açıklama", "Bağlama", "Çözme", "Notlar"];
+    const clampTotalW = clampColWidths.reduce((a, b) => a + b, 0);
+    const clampScale = contentWidth / clampTotalW;
+    const scaledClampCols = clampColWidths.map((w) => w * clampScale);
+
+    y = drawTableHeader(doc, y, margin, contentWidth, clampHeaders, scaledClampCols);
+
+    analysis.clampingDetails.forEach((cd, idx) => {
+      if (y + 7 > pageHeight - bottomMargin) { doc.addPage(); y = 16; y = drawTableHeader(doc, y, margin, contentWidth, clampHeaders, scaledClampCols); }
+      const row = [String(cd.setupNumber), cd.clampingType, cd.description, `${cd.clampingTime} dk`, `${cd.unclampingTime} dk`, cd.notes || "-"];
+      y = drawTableRow(doc, y, margin, contentWidth, row, scaledClampCols, idx % 2 === 0);
+    });
+
+    if (analysis.totalClampingTime) {
+      doc.setFont("Roboto", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...BRAND.primary);
+      doc.text(`Toplam Bağlama Süresi: ${analysis.totalClampingTime} dk`, margin, y + 4);
+      y += 10;
+    }
+    y += 4;
+  }
+
   y += 3;
 
   // ── Operations Table ──
