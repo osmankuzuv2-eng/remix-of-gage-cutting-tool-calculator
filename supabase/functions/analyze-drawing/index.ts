@@ -82,7 +82,7 @@ KESME STRATEJISI: VERIMLI (PRODUCTIVE)
 - f (tornalama): YUKSEK deger - kaba islemlerde aralik ust yarisi, ince islemlerde aralik ortasi
 - fz (frezeleme): Dis basina ilerleme kullan, takim dis sayisina gore F_tablasi = fz × z × n
 - ap: MAKSIMUM derinlik, AZ PASO ile isle
-- KABA FREZELEME icin ap MAKSIMUM 5 mm! Asla 5 mm uzerinde ap kullanma.
+- KABA FREZELEME icin ap MAKSIMUM 2.5 mm! Asla 2.5 mm uzerinde ap kullanma.
 - KABA TORNALAMA icin ap MAKSIMUM 4 mm (celik), 5 mm (aluminyum)
 - INCE TORNALAMA icin ap = 0.2-0.5 mm
 - Paso sayisini MINIMIZE et, buyuk ap ile az paso tercih et
