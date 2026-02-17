@@ -1,20 +1,31 @@
 import jsPDF from "jspdf";
 import logoUrl from "@/assets/logo.png";
 
-// ── Font cache to avoid re-fetching ──
-const fontCache: { regular?: string; bold?: string } = {};
+// Font cache - cleared on module reload
+let fontCache: { regular?: string; bold?: string } = {};
 let fontsRegistered = false;
+
+// Force cache clear on HMR
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    fontCache = {};
+    fontsRegistered = false;
+  });
+}
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
+  // Use chunks to avoid call stack issues with large fonts
+  const chunkSize = 8192;
   let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
   }
   return btoa(binary);
 };
 
-/** Returns the font family name to use ("Roboto" or "helvetica") */
+/** Returns the font family name to use */
 export const registerFonts = async (doc: jsPDF): Promise<string> => {
   try {
     if (!fontCache.regular || !fontCache.bold) {
@@ -24,7 +35,6 @@ export const registerFonts = async (doc: jsPDF): Promise<string> => {
       ]);
 
       if (!regRes.ok || !boldRes.ok) {
-        console.warn("Font fetch failed, using default font");
         fontsRegistered = false;
         return "helvetica";
       }
@@ -34,8 +44,9 @@ export const registerFonts = async (doc: jsPDF): Promise<string> => {
         boldRes.arrayBuffer(),
       ]);
 
-      if (regBuf.byteLength === 0 || boldBuf.byteLength === 0) {
-        console.warn("Font files are empty, using default font");
+      // Valid Roboto TTF files are 100KB+. Smaller files are corrupted subsets.
+      if (regBuf.byteLength < 100000 || boldBuf.byteLength < 100000) {
+        console.warn(`Font files too small (Regular: ${regBuf.byteLength}B, Bold: ${boldBuf.byteLength}B) - using helvetica fallback`);
         fontsRegistered = false;
         return "helvetica";
       }
@@ -52,7 +63,7 @@ export const registerFonts = async (doc: jsPDF): Promise<string> => {
     fontsRegistered = true;
     return "Roboto";
   } catch (err) {
-    console.warn("Font registration failed, using default font:", err);
+    console.warn("Font registration failed:", err);
     fontsRegistered = false;
     return "helvetica";
   }
