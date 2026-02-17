@@ -245,11 +245,11 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
   );
 };
 
-const AnalysisResultCard = ({ item, t, onSave, canSave, userId }: { item: DrawingItem; t: (s: string, k: string) => string; onSave: (item: DrawingItem) => void; canSave: boolean; userId?: string }) => {
+const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName }: { item: DrawingItem; t: (s: string, k: string) => string; onSave: (item: DrawingItem) => void; canSave: boolean; userId?: string; customerName?: string }) => {
   const analysis = item.analysis!;
   return (
     <div className="space-y-4 pt-2">
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 flex-wrap">
         {userId && <FeedbackForm item={item} userId={userId} />}
         {canSave && (
           <Button variant="outline" size="sm" onClick={() => onSave(item)}>
@@ -259,7 +259,7 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId }: { item: Drawin
         <Button variant="outline" size="sm" onClick={async () => { await exportAnalysisPdf(analysis, t); toast.success(t("drawingAnalyzer", "reportDownloaded")); }}>
           <Download className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "downloadReport")}
         </Button>
-        <Button variant="outline" size="sm" onClick={async () => { await exportBomExcel(analysis); toast.success("Ürün ağacı Excel indirildi"); }} className="text-success border-success/30 hover:bg-success/10">
+        <Button variant="outline" size="sm" onClick={async () => { await exportBomExcel(analysis, undefined, customerName); toast.success("Ürün ağacı Excel indirildi"); }} className="text-success border-success/30 hover:bg-success/10">
           <FileSpreadsheet className="w-4 h-4 mr-2" />Ürün Ağacı (Excel)
         </Button>
       </div>
@@ -380,6 +380,7 @@ const DrawingAnalyzer = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<DrawingItem[]>([]);
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [selectedFactory, setSelectedFactory] = useState("Havacılık");
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [currentAnalyzing, setCurrentAnalyzing] = useState(0);
@@ -539,17 +540,29 @@ const DrawingAnalyzer = () => {
                 <div className="flex-1">
                   <Textarea placeholder={t("drawingAnalyzer", "additionalInfo")} value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} className="bg-secondary/30 border-border" rows={2} />
                 </div>
-                <div className="w-48 shrink-0">
-                  <p className="text-xs text-muted-foreground mb-1">Fabrika Seçimi</p>
-                  <Select value={selectedFactory} onValueChange={setSelectedFactory}>
-                    <SelectTrigger className="bg-secondary/30 border-border">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Havacılık">Havacılık</SelectItem>
-                      <SelectItem value="Raylı Sistemler">Raylı Sistemler</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="w-48 shrink-0 space-y-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Müşteri (opsiyonel)</p>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value.slice(0, 100))}
+                      placeholder="Müşteri adı..."
+                      className="w-full bg-secondary/30 border border-border rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Fabrika Seçimi</p>
+                    <Select value={selectedFactory} onValueChange={setSelectedFactory}>
+                      <SelectTrigger className="bg-secondary/30 border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Havacılık">Havacılık</SelectItem>
+                        <SelectItem value="Raylı Sistemler">Raylı Sistemler</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -620,7 +633,7 @@ const DrawingAnalyzer = () => {
                   </div>
                 )}
                 {item.status === "completed" && item.analysis && (
-                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} userId={user?.id} />
+                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} userId={user?.id} customerName={customerName} />
                 )}
               </div>
             </CollapsibleContent>
