@@ -74,25 +74,19 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   // ── Header ──
   let y = await drawHeader(doc, tr("pdf", "analysisReport"));
 
-  // ── Summary info box ──
+  // ── Summary info box (top row) ──
   y = drawInfoBox(doc, y, margin, contentWidth, [
     { label: tr("pdf", "part"), value: analysis.partName },
     { label: tr("common", "material"), value: analysis.material },
     { label: tr("pdf", "complexity"), value: analysis.complexity },
-    { label: tr("pdf", "totalTime"), value: `${analysis.totalEstimatedTime} ${minute}` },
-    { label: tr("pdf", "setupTime"), value: `${analysis.setupTime} ${minute}` },
   ]);
 
-  // ── Dimensions ──
-  doc.setFont("Roboto", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...BRAND.muted);
-  doc.text(
-    `${tr("pdf", "dimensions")}: ${analysis.overallDimensions}`,
-    margin,
-    y
-  );
-  y += 5;
+  // ── Time & dimension info row ──
+  y = drawInfoBox(doc, y - 2, margin, contentWidth, [
+    { label: tr("pdf", "totalTime"), value: `${analysis.totalEstimatedTime} ${minute}` },
+    { label: tr("pdf", "setupTime"), value: `${analysis.setupTime} ${minute}` },
+    { label: tr("pdf", "dimensions"), value: analysis.overallDimensions },
+  ]);
 
   // Clamping strategy
   if (analysis.clampingStrategy) {
@@ -104,16 +98,16 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
       contentWidth
     );
     doc.text(clampLines, margin, y);
-    y += clampLines.length * 3.5 + 4;
+    y += clampLines.length * 3.5 + 3;
   }
 
   // Clamping details table
   if (analysis.clampingDetails && analysis.clampingDetails.length > 0) {
     checkPage(20);
-    y = sectionTitle(doc, "Bağlama Detayları", y, margin);
+    y = sectionTitle(doc, "Baglama Detaylari", y, margin);
 
     const clampColWidths = [12, 30, 50, 18, 18, 40];
-    const clampHeaders = ["Setup", "Bağlama Tipi", "Açıklama", "Bağlama", "Çözme", "Notlar"];
+    const clampHeaders = ["Setup", "Baglama Tipi", "Aciklama", "Baglama", "Cozme", "Notlar"];
     const clampTotalW = clampColWidths.reduce((a, b) => a + b, 0);
     const clampScale = contentWidth / clampTotalW;
     const scaledClampCols = clampColWidths.map((w) => w * clampScale);
@@ -121,8 +115,19 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     y = drawTableHeader(doc, y, margin, contentWidth, clampHeaders, scaledClampCols);
 
     analysis.clampingDetails.forEach((cd, idx) => {
-      if (y + 7 > pageHeight - bottomMargin) { doc.addPage(); y = 16; y = drawTableHeader(doc, y, margin, contentWidth, clampHeaders, scaledClampCols); }
-      const row = [String(cd.setupNumber), cd.clampingType, cd.description, `${cd.clampingTime} dk`, `${cd.unclampingTime} dk`, cd.notes || "-"];
+      if (y + 7 > pageHeight - bottomMargin) {
+        doc.addPage();
+        y = 16;
+        y = drawTableHeader(doc, y, margin, contentWidth, clampHeaders, scaledClampCols);
+      }
+      const row = [
+        String(cd.setupNumber),
+        cd.clampingType,
+        cd.description,
+        `${cd.clampingTime} dk`,
+        `${cd.unclampingTime} dk`,
+        cd.notes || "-",
+      ];
       y = drawTableRow(doc, y, margin, contentWidth, row, scaledClampCols, idx % 2 === 0);
     });
 
@@ -130,19 +135,19 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
       doc.setFont("Roboto", "bold");
       doc.setFontSize(8);
       doc.setTextColor(...BRAND.primary);
-      doc.text(`Toplam Bağlama Süresi: ${analysis.totalClampingTime} dk`, margin, y + 4);
+      doc.text(`Toplam Baglama Suresi: ${analysis.totalClampingTime} dk`, margin, y + 4);
       y += 10;
     }
     y += 4;
   }
 
-  y += 3;
+  y += 2;
 
   // ── Operations Table ──
   checkPage(30);
   y = sectionTitle(doc, tr("pdf", "operationSteps"), y, margin);
 
-  const colWidths = [8, 34, 24, 28, 18, 18, 18, 16, 16];
+  const colWidths = [8, 32, 22, 26, 16, 16, 16, 14, 14];
   const headers = [
     "#",
     tr("pdf", "operation"),
@@ -184,52 +189,40 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     ];
     y = drawTableRow(doc, y, margin, contentWidth, row, scaledCols, idx % 2 === 0);
   });
-  y += 8;
+  y += 6;
 
-  // ── Machines & Tolerances (side by side) ──
-  checkPage(30);
-  const halfW = contentWidth / 2 - 4;
-
-  // Left column title - Machines
+  // ── Machines Required ──
+  checkPage(20);
   y = sectionTitle(doc, tr("pdf", "requiredMachines"), y, margin);
-
-  // Right column title - Tolerances (same Y level)
-  doc.setFont("Roboto", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...BRAND.dark);
-  doc.text(tr("pdf", "toleranceAndSurface"), margin + halfW + 8, y - 7);
-  const tolTextW = doc.getTextWidth(tr("pdf", "toleranceAndSurface"));
-  doc.setFillColor(...BRAND.primary);
-  doc.rect(margin + halfW + 8, y - 6, tolTextW, 0.7, "F");
-
-  // Left column content - machines
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(50, 50, 60);
   const machineLines = doc.splitTextToSize(
     analysis.machinesRequired.join(", "),
-    halfW
+    contentWidth
   );
   doc.text(machineLines, margin, y);
+  y += machineLines.length * 3.5 + 4;
 
-  // Right column content - tolerances & surface
+  // ── Tolerances & Surface ──
+  checkPage(20);
+  y = sectionTitle(doc, tr("pdf", "toleranceAndSurface"), y, margin);
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(50, 50, 60);
   const tolLines = doc.splitTextToSize(
     `${tr("pdf", "tolerances")}: ${analysis.tolerances}`,
-    halfW
+    contentWidth
   );
+  doc.text(tolLines, margin, y);
+  y += tolLines.length * 3.5 + 2;
+
   const surfLines = doc.splitTextToSize(
     `${tr("pdf", "surfaceQuality")}: ${analysis.surfaceFinish}`,
-    halfW
+    contentWidth
   );
-  doc.text(tolLines, margin + halfW + 8, y);
-  doc.text(surfLines, margin + halfW + 8, y + tolLines.length * 3.5 + 2);
-
-  const rightLineCount = tolLines.length + surfLines.length + 1;
-  const maxLines = Math.max(machineLines.length, rightLineCount);
-  y += maxLines * 3.5 + 8;
+  doc.text(surfLines, margin, y);
+  y += surfLines.length * 3.5 + 4;
 
   // ── Recommendations ──
   checkPage(20);
@@ -244,7 +237,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     doc.text(lines, margin + 2, y);
     y += lines.length * 3.5 + 2;
   });
-  y += 5;
+  y += 4;
 
   // ── Difficulty Notes ──
   checkPage(15);
