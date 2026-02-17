@@ -458,6 +458,13 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-foreground text-sm">{fb.part_name}</span>
                           <Badge variant="outline" className="text-[10px]">{feedbackTypeLabel(fb.feedback_type)}</Badge>
+                          {fb.rating && (
+                            <span className="flex items-center gap-0.5 text-[10px]">
+                              {[1,2,3,4,5].map(s => (
+                                <span key={s} className={s <= fb.rating ? "text-yellow-400" : "text-muted-foreground/30"}>★</span>
+                              ))}
+                            </span>
+                          )}
                           {feedbackStatusBadge(fb.status)}
                           {fb.applied_at && <Badge variant="outline" className="text-[10px] border-success/30 text-success">Uygulandı</Badge>}
                         </div>

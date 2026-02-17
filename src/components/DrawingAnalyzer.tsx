@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send } from "lucide-react";
+import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -146,10 +146,12 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
   const [showForm, setShowForm] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackType, setFeedbackType] = useState("correction");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!feedbackText.trim()) return;
+    if (!feedbackText.trim() || rating === 0) return;
     setSubmitting(true);
     try {
       const { error } = await supabase.from("analysis_feedback" as any).insert({
@@ -159,10 +161,12 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
         original_analysis: item.analysis as any,
         feedback_text: feedbackText.trim(),
         feedback_type: feedbackType,
+        rating,
       } as any);
       if (error) throw error;
       toast.success("Geri bildirim gönderildi");
       setFeedbackText("");
+      setRating(0);
       setShowForm(false);
     } catch (err: any) {
       toast.error("Geri bildirim gönderilemedi: " + err.message);
@@ -197,6 +201,30 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
             <SelectItem value="other">Diğer</SelectItem>
           </SelectContent>
         </Select>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Analiz Kalitesi</p>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                onMouseEnter={() => setHoverRating(star)}
+                onMouseLeave={() => setHoverRating(0)}
+                className="p-0.5 transition-transform hover:scale-110"
+              >
+                <Star
+                  className={`w-6 h-6 transition-colors ${
+                    star <= (hoverRating || rating)
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-muted-foreground/40"
+                  }`}
+                />
+              </button>
+            ))}
+            {rating > 0 && <span className="text-xs text-muted-foreground ml-2 self-center">{rating}/5</span>}
+          </div>
+        </div>
         <Textarea
           value={feedbackText}
           onChange={(e) => setFeedbackText(e.target.value)}
@@ -206,7 +234,7 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
         />
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>İptal</Button>
-          <Button size="sm" onClick={handleSubmit} disabled={submitting || !feedbackText.trim()}>
+          <Button size="sm" onClick={handleSubmit} disabled={submitting || !feedbackText.trim() || rating === 0}>
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
             Gönder
           </Button>
