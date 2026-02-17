@@ -15,13 +15,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import MenuManager from "@/components/MenuManager";
 import MachineManager from "@/components/MachineManager";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useCustomers } from "@/hooks/useCustomers";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // All available modules (ai-learn is always accessible, not listed here)
 const ALL_MODULES = [
@@ -74,6 +76,15 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [changePassword, setChangePassword] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Customers state
+  const { customers: allCustomers, reload: reloadCustomers } = useCustomers();
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
+  const [custName, setCustName] = useState("");
+  const [custFactory, setCustFactory] = useState("Havacılık");
+  const [custNotes, setCustNotes] = useState("");
+  const [custActive, setCustActive] = useState(true);
 
   // Feedback state
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -339,15 +350,63 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     }
   };
 
+  // ── Customer CRUD ──
+  const openCustomerCreate = () => {
+    setEditingCustomer(null);
+    setCustName(""); setCustFactory("Havacılık"); setCustNotes(""); setCustActive(true);
+    setShowCustomerDialog(true);
+  };
+
+  const openCustomerEdit = (c: any) => {
+    setEditingCustomer(c);
+    setCustName(c.name); setCustFactory(c.factory); setCustNotes(c.notes || ""); setCustActive(c.is_active);
+    setShowCustomerDialog(true);
+  };
+
+  const handleSaveCustomer = async () => {
+    if (!custName.trim()) return;
+    setSubmitting(true);
+    try {
+      if (editingCustomer) {
+        const { error } = await supabase.from("customers" as any).update({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, is_active: custActive } as any).eq("id", editingCustomer.id);
+        if (error) throw error;
+        toast({ title: t("common", "success"), description: "Müşteri güncellendi" });
+      } else {
+        const { error } = await supabase.from("customers" as any).insert({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, is_active: custActive } as any);
+        if (error) throw error;
+        toast({ title: t("common", "success"), description: "Müşteri eklendi" });
+      }
+      setShowCustomerDialog(false);
+      reloadCustomers();
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    if (!confirm("Bu müşteriyi silmek istediğinize emin misiniz?")) return;
+    try {
+      const { error } = await supabase.from("customers" as any).delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: t("common", "success"), description: "Müşteri silindi" });
+      reloadCustomers();
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
+          <TabsTrigger value="customers" className="gap-2"><Building2 className="w-4 h-4" /> Müşteriler</TabsTrigger>
           <TabsTrigger value="machines" className="gap-2"><Monitor className="w-4 h-4" /> Makine Parkı</TabsTrigger>
-          <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü Yönetimi</TabsTrigger>
+          <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
         </TabsList>
 
@@ -413,6 +472,79 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="customers" className="space-y-4 mt-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Müşteri tanımları tüm modüllerde ortak kullanılır.</p>
+            <Button onClick={openCustomerCreate} className="gap-2"><Plus className="w-4 h-4" /> Müşteri Ekle</Button>
+          </div>
+          <div className="grid gap-3">
+            {allCustomers.map((c) => (
+              <Card key={c.id} className="border-border bg-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Building2 className="w-5 h-5 text-primary" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{c.name}</span>
+                          <Badge variant="outline" className="text-xs">{c.factory}</Badge>
+                          {!c.is_active && <Badge variant="secondary" className="text-xs">Pasif</Badge>}
+                        </div>
+                        {c.notes && <p className="text-xs text-muted-foreground mt-0.5">{c.notes}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openCustomerEdit(c)}><Pencil className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteCustomer(c.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {allCustomers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Henüz müşteri tanımlanmamış.</p>}
+          </div>
+
+          {/* Customer Dialog */}
+          <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingCustomer ? "Müşteri Düzenle" : "Yeni Müşteri"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Müşteri Adı</Label>
+                  <Input value={custName} onChange={(e) => setCustName(e.target.value.slice(0, 100))} placeholder="Müşteri adı..." />
+                </div>
+                <div>
+                  <Label>Fabrika</Label>
+                  <Select value={custFactory} onValueChange={setCustFactory}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Havacılık">Havacılık</SelectItem>
+                      <SelectItem value="Raylı Sistemler">Raylı Sistemler</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Notlar (opsiyonel)</Label>
+                  <Textarea value={custNotes} onChange={(e) => setCustNotes(e.target.value.slice(0, 500))} placeholder="Ek bilgi..." rows={2} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={custActive} onCheckedChange={setCustActive} />
+                  <Label>Aktif</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowCustomerDialog(false)}>İptal</Button>
+                <Button onClick={handleSaveCustomer} disabled={submitting || !custName.trim()}>
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  {editingCustomer ? "Güncelle" : "Ekle"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="machines" className="mt-4">

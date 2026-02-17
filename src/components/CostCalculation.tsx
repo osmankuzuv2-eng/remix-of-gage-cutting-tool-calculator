@@ -8,8 +8,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-
-const customers = ["ASELSAN", "ROKETSAN", "TAI (TUSAŞ)", "TEI", "HAVELSAN", "BMC", "ALSTOM", "FAİVELEY", "QURİ", "LUKAS", "BAYKAR", "Diğer"];
+import { useCustomers } from "@/hooks/useCustomers";
 
 const CostCalculation = () => {
   const { t } = useLanguage();
@@ -17,6 +16,7 @@ const CostCalculation = () => {
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
   const { machines, getMachinesByType, getMachineLabel } = useMachines();
+  const { activeCustomers } = useCustomers();
   const [referenceNo, setReferenceNo] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [customer, setCustomer] = useState("");
@@ -143,7 +143,7 @@ const CostCalculation = () => {
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-card border border-border z-50" align="start">
                 <div className="max-h-60 overflow-y-auto">
-                  {customers.map((c) => (<button key={c} onClick={() => { setCustomer(c); setCustomerOpen(false); }} className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-accent/10 ${customer === c ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}>{c}</button>))}
+                  {activeCustomers.map((c) => (<button key={c.id} onClick={() => { setCustomer(c.name); setCustomerOpen(false); }} className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-accent/10 ${customer === c.name ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}>{c.name} <span className="text-xs text-muted-foreground ml-1">({c.factory})</span></button>))}
                 </div>
               </PopoverContent>
             </Popover>
