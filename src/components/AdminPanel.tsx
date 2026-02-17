@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ALL_MODULES = [
   "drawing", "costcalc", "cutting", "toollife", "threading",
   "drilling", "tolerance", "compare", "materials", "cost", "history",
-  "add_material", "salary",
+  "add_material",
 ];
 
 interface UserData {

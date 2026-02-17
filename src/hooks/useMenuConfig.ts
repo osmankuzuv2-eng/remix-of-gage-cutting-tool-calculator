@@ -20,7 +20,7 @@ const DEFAULT_CATEGORIES: MenuCategory[] = [
   { id: "machining", name: "İşleme", name_en: "Machining", name_fr: "Usinage", icon: "Wrench", color: "from-orange-500 to-amber-700", bg_color: "bg-orange-500/10", text_color: "text-orange-400", border_color: "border-orange-500/30", sort_order: 1, modules: [{ module_key: "cutting", sort_order: 0 }, { module_key: "toollife", sort_order: 1 }, { module_key: "threading", sort_order: 2 }, { module_key: "drilling", sort_order: 3 }, { module_key: "tolerance", sort_order: 4 }] },
   { id: "analysis", name: "Maliyet & Karşılaştırma", name_en: "Cost & Comparison", name_fr: "Coût & Comparaison", icon: "BarChart3", color: "from-emerald-500 to-green-700", bg_color: "bg-emerald-500/10", text_color: "text-emerald-400", border_color: "border-emerald-500/30", sort_order: 2, modules: [{ module_key: "costcalc", sort_order: 0 }, { module_key: "cost", sort_order: 1 }, { module_key: "compare", sort_order: 2 }] },
   { id: "data", name: "Veri", name_en: "Data", name_fr: "Données", icon: "FolderOpen", color: "from-sky-500 to-blue-700", bg_color: "bg-sky-500/10", text_color: "text-sky-400", border_color: "border-sky-500/30", sort_order: 3, modules: [{ module_key: "materials", sort_order: 0 }, { module_key: "history", sort_order: 1 }] },
-  { id: "hr", name: "İnsan Kaynakları", name_en: "Human Resources", name_fr: "Ressources Humaines", icon: "Users", color: "from-teal-500 to-cyan-700", bg_color: "bg-teal-500/10", text_color: "text-teal-400", border_color: "border-teal-500/30", sort_order: 4, modules: [{ module_key: "salary", sort_order: 0 }] },
+  
 ];
 
 export const useMenuConfig = () => {
