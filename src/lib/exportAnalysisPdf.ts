@@ -97,6 +97,7 @@ const drawDetail = (
 
 export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   const tr = t || ((_s: string, k: string) => k);
+  const min = tr("common", "minute");
   const doc = new jsPDF({ orientation: "portrait" });
   await registerFonts(doc);
   const ff = getFontFamily();
@@ -145,27 +146,27 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
 
   // Left info items
   const infoItems: { label: string; value: string }[] = [
-    { label: "PARCA ADI", value: analysis.partName || "-" },
-    { label: "MALZEME", value: analysis.material || "-" },
-    { label: "BOYUTLAR", value: analysis.overallDimensions || "-" },
+    { label: tr("pdf", "part").toUpperCase(), value: analysis.partName || "-" },
+    { label: tr("common", "material").toUpperCase(), value: analysis.material || "-" },
+    { label: tr("pdf", "dimensions").toUpperCase(), value: analysis.overallDimensions || "-" },
   ];
   if (analysis.rawMaterialDimensions) {
-    infoItems.push({ label: "HAM MALZEME", value: analysis.rawMaterialDimensions });
+    infoItems.push({ label: tr("pdf", "rawMaterial").toUpperCase(), value: analysis.rawMaterialDimensions });
   }
 
   // Right info items
   const rightItems: { label: string; value: string }[] = [
-    { label: "KARMASIKLIK", value: analysis.complexity || "-" },
-    { label: "TOPLAM ISLEME SURESI", value: `${analysis.totalEstimatedTime} dk` },
-    { label: "HAZIRLIK SURESI", value: `${analysis.setupTime} dk` },
+    { label: tr("pdf", "complexity").toUpperCase(), value: analysis.complexity || "-" },
+    { label: tr("pdf", "totalMachiningTime").toUpperCase(), value: `${analysis.totalEstimatedTime} ${min}` },
+    { label: tr("pdf", "setupTime").toUpperCase(), value: `${analysis.setupTime} ${min}` },
   ];
   if (analysis.weight) {
-    rightItems.push({ label: "AGIRLIK", value: analysis.weight });
+    rightItems.push({ label: tr("pdf", "weight").toUpperCase(), value: analysis.weight });
   }
 
   // Calculate card height based on content
   const rowCount = Math.max(infoItems.length, rightItems.length);
-  const itemH = 10; // height per info item
+  const itemH = 10;
   const cardH = Math.max(rowCount * itemH + 8, logoSize + 8);
 
   doc.setFillColor(245, 246, 252);
@@ -201,8 +202,8 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     const iy = cardY + 6 + i * itemH;
     doc.setFont(ff, "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
     doc.text(item.label, rightX, iy);
-    const isTime = item.label.includes("SURESI");
-    const isComplexity = item.label === "KARMASIKLIK";
+    const isTime = item.label.includes(tr("pdf", "setupTime").toUpperCase().split(" ").pop() || "SURESI");
+    const isComplexity = item.label === tr("pdf", "complexity").toUpperCase();
     doc.setFont(ff, "bold"); doc.setFontSize(isTime ? 9 : 8);
     doc.setTextColor(...(isComplexity ? BRAND.primary : BRAND.dark));
     doc.text(item.value, rightX, iy + 4.5);
@@ -214,19 +215,19 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   if (analysis.clampingStrategy) {
     checkPage(12);
     y += 1;
-    y += drawDetail(doc, "Baglama Stratejisi", analysis.clampingStrategy, margin, y, contentWidth);
+    y += drawDetail(doc, tr("pdf", "clampingStrategy"), analysis.clampingStrategy, margin, y, contentWidth);
   }
 
   // ── Clamping details table ──
   if (analysis.clampingDetails && analysis.clampingDetails.length > 0) {
     checkPage(20);
-    y = sectionTitle(doc, "Baglama Detaylari", y, margin);
+    y = sectionTitle(doc, tr("pdf", "clampingDetails"), y, margin);
 
     const clampCols = [14, 32, 70, 18, 18, 30];
     const clampTotalW = clampCols.reduce((a, b) => a + b, 0);
     const clampScale = contentWidth / clampTotalW;
     const sc = clampCols.map(w => w * clampScale);
-    const clampHeaders = ["Setup", "Tip", "Aciklama", "Baglama", "Cozme", "Notlar"];
+    const clampHeaders = [tr("pdf", "setup"), tr("pdf", "clampingType"), tr("pdf", "description"), tr("pdf", "clamping"), tr("pdf", "unclamping"), tr("pdf", "notes")];
 
     const drawClampHead = () => {
       doc.setFillColor(...BRAND.dark);
@@ -239,7 +240,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
     drawClampHead();
 
     analysis.clampingDetails.forEach((cd, idx) => {
-      const cells = [String(cd.setupNumber), cd.clampingType, cd.description, `${cd.clampingTime} dk`, `${cd.unclampingTime} dk`, cd.notes || "-"];
+      const cells = [String(cd.setupNumber), cd.clampingType, cd.description, `${cd.clampingTime} ${min}`, `${cd.unclampingTime} ${min}`, cd.notes || "-"];
       const rowH = Math.max(...cells.map((c, i) => measureCellH(doc, c, sc[i], lineH)));
 
       if (y + rowH > pageHeight - bottomMargin) { doc.addPage(); y = 14; drawClampHead(); }
@@ -253,7 +254,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
 
     if (analysis.totalClampingTime) {
       doc.setFont(ff, "bold"); doc.setFontSize(7.5); doc.setTextColor(...BRAND.primary);
-      doc.text(`Toplam Baglama Suresi: ${analysis.totalClampingTime} dk`, margin, y + 4);
+      doc.text(`${tr("pdf", "totalClampingTime")}: ${analysis.totalClampingTime} ${min}`, margin, y + 4);
       y += 8;
     }
     y += 3;
@@ -267,14 +268,15 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   const lPageH = doc.internal.pageSize.getHeight();
   const lContentW = lPageW - margin * 2;
 
+  const opStepsTitle = tr("pdf", "operationSteps");
   doc.setFont(ff, "bold"); doc.setFontSize(11); doc.setTextColor(...BRAND.dark);
-  doc.text("Operasyon Adimlari", margin, y);
+  doc.text(opStepsTitle, margin, y);
   doc.setFillColor(...BRAND.primary);
-  doc.rect(margin, y + 1.5, doc.getTextWidth("Operasyon Adimlari"), 0.7, "F");
+  doc.rect(margin, y + 1.5, doc.getTextWidth(opStepsTitle), 0.7, "F");
   y += 8;
 
   const opCols = [8, 42, 28, 40, 16, 16, 16, 12, 12, 14, 14, 30, 14];
-  const opHeaders = ["#", "Islem", "Tezgah", "Takim", "Vc", "n", "f/fz", "ap", "ae", "Paso", "Sogutma", "Hesaplama Notlari", "Sure"];
+  const opHeaders = ["#", tr("pdf", "operation"), tr("pdf", "machine"), tr("pdf", "tool"), "Vc", "n", "f/fz", "ap", "ae", tr("pdf", "passes"), tr("pdf", "coolant"), tr("pdf", "calculationNotes"), tr("pdf", "time")];
   const opTotalW = opCols.reduce((a, b) => a + b, 0);
   const opScale = lContentW / opTotalW;
   const opSc = opCols.map(w => w * opScale);
@@ -307,7 +309,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
       op.numberOfPasses ? String(op.numberOfPasses) : "-",
       op.coolant || "-",
       op.notes || "-",
-      `${op.estimatedTime} dk`,
+      `${op.estimatedTime} ${min}`,
     ];
 
     doc.setFont(ff, "normal"); doc.setFontSize(5.5);
@@ -336,12 +338,12 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   doc.setFillColor(...BRAND.dark);
   doc.rect(margin, y, lContentW, 7, "F");
   doc.setFont(ff, "bold"); doc.setFontSize(7); doc.setTextColor(...BRAND.white);
-  doc.text("TOPLAM ISLEME SURESI", margin + 4, y + 5);
+  doc.text(tr("pdf", "totalMachiningTime").toUpperCase(), margin + 4, y + 5);
   doc.setFont(ff, "bold"); doc.setFontSize(8); doc.setTextColor(...BRAND.primary);
-  doc.text(`${analysis.totalEstimatedTime} dk`, lContentW + margin - 4, y + 5, { align: "right" });
+  doc.text(`${analysis.totalEstimatedTime} ${min}`, lContentW + margin - 4, y + 5, { align: "right" });
   if (analysis.totalMachiningTime) {
     doc.setFont(ff, "normal"); doc.setFontSize(6); doc.setTextColor(180, 185, 200);
-    doc.text(`(Tezgah suresi: ${analysis.totalMachiningTime} dk)`, lContentW / 2 + margin, y + 5, { align: "center" });
+    doc.text(`(${tr("pdf", "machineTimeLabel")}: ${analysis.totalMachiningTime} ${min})`, lContentW / 2 + margin, y + 5, { align: "center" });
   }
   y += 10;
 
@@ -357,7 +359,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   };
 
   // ── Machines Required ──
-  y = sectionTitle(doc, "Kullanilan Tezgahlar", y, margin);
+  y = sectionTitle(doc, tr("pdf", "requiredMachines"), y, margin);
   doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
   analysis.machinesRequired.forEach(m => {
     checkPortrait(5);
@@ -369,7 +371,7 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   // ── Tool List ──
   if (analysis.toolList && analysis.toolList.length > 0) {
     checkPortrait(15);
-    y = sectionTitle(doc, "Takim Listesi", y, margin);
+    y = sectionTitle(doc, tr("pdf", "toolList"), y, margin);
     doc.setFont(ff, "normal"); doc.setFontSize(7); doc.setTextColor(50, 50, 60);
     analysis.toolList.forEach(tl => {
       const lines: string[] = doc.splitTextToSize(`• ${tl}`, cW - 4);
@@ -382,17 +384,17 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
 
   // ── Tolerances & Surface ──
   checkPortrait(20);
-  y = sectionTitle(doc, "Tolerans ve Yuzey Kalitesi", y, margin);
-  y += drawDetail(doc, "Toleranslar", analysis.tolerances || "-", margin, y, cW);
-  y += drawDetail(doc, "Yuzey Kalitesi", analysis.surfaceFinish || "-", margin, y, cW);
+  y = sectionTitle(doc, tr("pdf", "toleranceAndSurface"), y, margin);
+  y += drawDetail(doc, tr("pdf", "tolerances"), analysis.tolerances || "-", margin, y, cW);
+  y += drawDetail(doc, tr("pdf", "surfaceQuality"), analysis.surfaceFinish || "-", margin, y, cW);
   if (analysis.criticalFeatures) {
-    y += drawDetail(doc, "Kritik Olculer", analysis.criticalFeatures, margin, y, cW);
+    y += drawDetail(doc, tr("pdf", "criticalFeatures"), analysis.criticalFeatures, margin, y, cW);
   }
   y += 3;
 
   // ── Recommendations ──
   checkPortrait(15);
-  y = sectionTitle(doc, "Oneriler", y, margin);
+  y = sectionTitle(doc, tr("pdf", "recommendations"), y, margin);
   doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
   analysis.recommendations.forEach(r => {
     const lines: string[] = doc.splitTextToSize(`• ${r}`, cW - 4);
@@ -404,14 +406,14 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
 
   // ── Difficulty Notes ──
   checkPortrait(15);
-  y = sectionTitle(doc, "Zorluk Notlari", y, margin);
+  y = sectionTitle(doc, tr("pdf", "difficultyNotes"), y, margin);
   doc.setFont(ff, "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 60);
   const diffLines: string[] = doc.splitTextToSize(analysis.difficultyNotes || "-", cW);
   checkPortrait(diffLines.length * 3.5);
   doc.text(diffLines, margin, y);
 
   // ── Footer on all pages ──
-  drawFooter(doc, tr("pdf", "footer"));
+  drawFooter(doc, tr("pdf", "footer"), tr("pdf", "page"));
 
   const fileName = `${analysis.partName.replace(/\s+/g, "_")}_analiz_${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);

@@ -148,7 +148,7 @@ export const drawHeader = async (doc: jsPDF, title: string): Promise<number> => 
   return 34;
 };
 
-export const drawFooter = (doc: jsPDF, footerText: string) => {
+export const drawFooter = (doc: jsPDF, footerText: string, pageLabel: string = "Sayfa") => {
   const ff = getFontFamily();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -164,8 +164,7 @@ export const drawFooter = (doc: jsPDF, footerText: string) => {
     doc.setFontSize(6);
     doc.setTextColor(...BRAND.muted);
     doc.text(footerText, margin, pageHeight - 7);
-    doc.text(`Sayfa ${i}/${totalPages}`, pageWidth - margin, pageHeight - 7, { align: "right" });
-
+    doc.text(`${pageLabel} ${i}/${totalPages}`, pageWidth - margin, pageHeight - 7, { align: "right" });
     doc.setFontSize(6);
     doc.setTextColor(...BRAND.primary);
     doc.text("GAGE Confidence", pageWidth / 2, pageHeight - 7, { align: "center" });
