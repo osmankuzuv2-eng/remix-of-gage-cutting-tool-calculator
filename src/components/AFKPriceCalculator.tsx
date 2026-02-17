@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Circle, Percent, Package, Cpu, Clock } from "lucide-react";
+import { DollarSign, Circle, Percent, Package, Cpu, Clock, FileDown } from "lucide-react";
+import { exportAfkPricePdf } from "@/lib/exportAfkPricePdf";
 import { materials } from "@/data/materials";
 import { useMachines } from "@/hooks/useMachines";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -97,13 +98,45 @@ const AFKPriceCalculator = () => {
     };
   }, [grossWeight, netWeight, materialPrice, currentMaterial, currentMachine, hasHoles, smallHoles, largeHoles, profitMargin, quantity, machineRate]);
 
+  const handleExportPdf = () => {
+    exportAfkPricePdf({
+      material: getMaterialName(selectedMaterial),
+      materialPrice,
+      density: currentMaterial?.density ?? 7.85,
+      grossWeight,
+      netWeight,
+      chipWeight: calculations.chipWeight,
+      chipVolumeCm3: calculations.chipVolumeCm3,
+      machine: currentMachine?.label ?? "-",
+      machinePowerKw: currentMachine?.power_kw ?? 0,
+      mrrCm3PerMin: calculations.mrrCm3PerMin,
+      machiningTimeMin: calculations.machiningTimeMin,
+      machineRate,
+      hasHoles,
+      smallHoles,
+      largeHoles,
+      quantity,
+      profitMargin,
+      calculations,
+    }, t);
+  };
+
   return (
     <div className="industrial-card p-6 animate-fade-in">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 rounded-lg bg-amber-500/20">
-          <DollarSign className="w-5 h-5 text-amber-400" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/20">
+            <DollarSign className="w-5 h-5 text-amber-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground">{t("afkPrice", "title")}</h2>
         </div>
-        <h2 className="text-lg font-semibold text-foreground">{t("afkPrice", "title")}</h2>
+        <button
+          onClick={handleExportPdf}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-sm font-medium transition-colors"
+        >
+          <FileDown className="w-4 h-4" />
+          PDF
+        </button>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
