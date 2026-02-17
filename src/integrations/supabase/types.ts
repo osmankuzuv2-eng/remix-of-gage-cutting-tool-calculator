@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_panel_permissions: {
+        Row: {
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          id: string
+          panel_key: string
+          user_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          panel_key: string
+          user_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          panel_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       analysis_feedback: {
         Row: {
           applied_at: string | null
@@ -85,6 +112,33 @@ export type Database = {
           is_active?: boolean
           name?: string
           notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      factories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []

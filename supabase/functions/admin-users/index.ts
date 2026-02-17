@@ -61,12 +61,12 @@ Deno.serve(async (req) => {
         const { data, error } = await supabaseAdmin.auth.admin.listUsers();
         if (error) throw error;
 
-        // Get profiles, roles, permissions
         const userIds = data.users.map((u) => u.id);
-        const [profiles, roles, permissions] = await Promise.all([
+        const [profiles, roles, permissions, adminPerms] = await Promise.all([
           supabaseAdmin.from("profiles").select("*").in("user_id", userIds),
           supabaseAdmin.from("user_roles").select("*").in("user_id", userIds),
           supabaseAdmin.from("user_module_permissions").select("*").in("user_id", userIds),
+          supabaseAdmin.from("admin_panel_permissions").select("*").in("user_id", userIds),
         ]);
 
         const users = data.users.map((u) => {
@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
             profile,
             roles: roles.data?.filter((r) => r.user_id === u.id).map((r) => r.role) || [],
             permissions: permissions.data?.filter((p) => p.user_id === u.id) || [],
+            admin_permissions: adminPerms.data?.filter((p) => p.user_id === u.id) || [],
           };
         });
 
@@ -87,7 +88,7 @@ Deno.serve(async (req) => {
       }
 
       case "create_user": {
-        const { email, password, display_name, is_admin, module_permissions } = params;
+        const { email, password, display_name, is_admin, module_permissions, admin_panel_permissions } = params;
         
         if (!email || !password) {
           return new Response(JSON.stringify({ error: "Email and password required" }), {
@@ -104,12 +105,10 @@ Deno.serve(async (req) => {
         });
         if (createError) throw createError;
 
-        // Set admin role if requested
         if (is_admin) {
           await supabaseAdmin.from("user_roles").update({ role: "admin" }).eq("user_id", newUser.user.id);
         }
 
-        // Set module permissions
         if (module_permissions && Array.isArray(module_permissions)) {
           const perms = module_permissions.map((mp: { module_key: string; granted: boolean }) => ({
             user_id: newUser.user.id,
@@ -121,13 +120,26 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Set admin panel permissions
+        if (admin_panel_permissions && Array.isArray(admin_panel_permissions)) {
+          const ap = admin_panel_permissions.map((p: { panel_key: string; can_view: boolean; can_edit: boolean }) => ({
+            user_id: newUser.user.id,
+            panel_key: p.panel_key,
+            can_view: p.can_view,
+            can_edit: p.can_edit,
+          }));
+          if (ap.length > 0) {
+            await supabaseAdmin.from("admin_panel_permissions").insert(ap);
+          }
+        }
+
         return new Response(JSON.stringify({ user: newUser.user }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       case "update_user": {
-        const { user_id, email, display_name, is_admin, module_permissions, custom_title, title_color } = params;
+        const { user_id, email, display_name, is_admin, module_permissions, custom_title, title_color, admin_panel_permissions } = params;
 
         if (!user_id) {
           return new Response(JSON.stringify({ error: "user_id required" }), {
@@ -136,12 +148,10 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Update auth email if changed
         if (email) {
           await supabaseAdmin.auth.admin.updateUserById(user_id, { email });
         }
 
-        // Update profile (display_name, custom_title, title_color)
         const profileUpdate: Record<string, unknown> = {};
         if (display_name !== undefined) profileUpdate.display_name = display_name;
         if (custom_title !== undefined) profileUpdate.custom_title = custom_title || null;
@@ -150,14 +160,11 @@ Deno.serve(async (req) => {
           await supabaseAdmin.from("profiles").update(profileUpdate).eq("user_id", user_id);
         }
 
-        // Update role
         if (is_admin !== undefined) {
           await supabaseAdmin.from("user_roles").update({ role: is_admin ? "admin" : "user" }).eq("user_id", user_id);
         }
 
-        // Update module permissions
         if (module_permissions && Array.isArray(module_permissions)) {
-          // Delete existing then insert new
           await supabaseAdmin.from("user_module_permissions").delete().eq("user_id", user_id);
           const perms = module_permissions.map((mp: { module_key: string; granted: boolean }) => ({
             user_id,
@@ -166,6 +173,20 @@ Deno.serve(async (req) => {
           }));
           if (perms.length > 0) {
             await supabaseAdmin.from("user_module_permissions").insert(perms);
+          }
+        }
+
+        // Update admin panel permissions
+        if (admin_panel_permissions && Array.isArray(admin_panel_permissions)) {
+          await supabaseAdmin.from("admin_panel_permissions").delete().eq("user_id", user_id);
+          const ap = admin_panel_permissions.map((p: { panel_key: string; can_view: boolean; can_edit: boolean }) => ({
+            user_id,
+            panel_key: p.panel_key,
+            can_view: p.can_view,
+            can_edit: p.can_edit,
+          }));
+          if (ap.length > 0) {
+            await supabaseAdmin.from("admin_panel_permissions").insert(ap);
           }
         }
 

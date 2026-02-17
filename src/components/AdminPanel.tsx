@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2, Factory, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,8 @@ import MenuManager from "@/components/MenuManager";
 import MachineManager from "@/components/MachineManager";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useFactories } from "@/hooks/useFactories";
+import { useAdminPermissions, ADMIN_PANEL_KEYS, ADMIN_PANEL_LABELS, type AdminPanelKey } from "@/hooks/useAdminPermissions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // All available modules (ai-learn is always accessible, not listed here)
@@ -39,16 +41,25 @@ interface UserData {
   profile: { display_name: string | null; company: string | null; position: string | null; custom_title: string | null; title_color: string | null } | null;
   roles: string[];
   permissions: { module_key: string; granted: boolean }[];
+  admin_permissions?: { panel_key: string; can_view: boolean; can_edit: boolean }[];
 }
 
 interface AdminPanelProps {
   onMenuUpdated?: () => void;
 }
 
+const ReadOnlyBanner = () => (
+  <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border text-muted-foreground mb-4">
+    <Lock className="w-4 h-4" />
+    <span className="text-sm">Bu sekme salt okunur modda görüntüleniyor. Düzenleme yetkiniz bulunmamaktadır.</span>
+  </div>
+);
+
 const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const { t } = useLanguage();
   const { session } = useAuth();
   const { toast } = useToast();
+  const { canEdit } = useAdminPermissions();
 
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +74,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newIsAdmin, setNewIsAdmin] = useState(false);
   const [newPermissions, setNewPermissions] = useState<Record<string, boolean>>({});
+  const [newAdminPerms, setNewAdminPerms] = useState<Record<string, { can_view: boolean; can_edit: boolean }>>({});
 
   // Edit form
   const [editEmail, setEditEmail] = useState("");
@@ -71,6 +83,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [editPermissions, setEditPermissions] = useState<Record<string, boolean>>({});
   const [editCustomTitle, setEditCustomTitle] = useState("");
   const [editTitleColor, setEditTitleColor] = useState("");
+  const [editAdminPerms, setEditAdminPerms] = useState<Record<string, { can_view: boolean; can_edit: boolean }>>({});
 
   // Password form
   const [changePassword, setChangePassword] = useState("");
@@ -82,14 +95,23 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
   const [custName, setCustName] = useState("");
-  const [custFactory, setCustFactory] = useState("Havacılık");
+  const [custFactory, setCustFactory] = useState("");
   const [custNotes, setCustNotes] = useState("");
   const [custActive, setCustActive] = useState(true);
+
+  // Factories state
+  const { factories: allFactories, activeFactories, reload: reloadFactories } = useFactories();
+  const [showFactoryDialog, setShowFactoryDialog] = useState(false);
+  const [editingFactory, setEditingFactory] = useState<any | null>(null);
+  const [factName, setFactName] = useState("");
+  const [factActive, setFactActive] = useState(true);
+  const [factSortOrder, setFactSortOrder] = useState(0);
 
   // Feedback state
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [trainingInProgress, setTrainingInProgress] = useState(false);
+
   const callAdmin = async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", {
       body,
@@ -122,6 +144,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         module_key: m,
         granted: !!newPermissions[m],
       }));
+      const admin_panel_permissions = ADMIN_PANEL_KEYS.map((k) => ({
+        panel_key: k,
+        can_view: newAdminPerms[k]?.can_view ?? true,
+        can_edit: newAdminPerms[k]?.can_edit ?? false,
+      }));
       await callAdmin({
         action: "create_user",
         email: newEmail,
@@ -129,6 +156,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         display_name: newDisplayName,
         is_admin: newIsAdmin,
         module_permissions,
+        admin_panel_permissions,
       });
       toast({ title: t("common", "success"), description: t("admin", "userCreated") });
       setShowCreateDialog(false);
@@ -149,6 +177,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         module_key: m,
         granted: !!editPermissions[m],
       }));
+      const admin_panel_permissions = ADMIN_PANEL_KEYS.map((k) => ({
+        panel_key: k,
+        can_view: editAdminPerms[k]?.can_view ?? true,
+        can_edit: editAdminPerms[k]?.can_edit ?? false,
+      }));
       await callAdmin({
         action: "update_user",
         user_id: selectedUser.id,
@@ -156,6 +189,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         display_name: editDisplayName,
         is_admin: editIsAdmin,
         module_permissions,
+        admin_panel_permissions,
         custom_title: editCustomTitle,
         title_color: editTitleColor,
       });
@@ -212,6 +246,13 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
       perms[m] = found ? found.granted : false;
     });
     setEditPermissions(perms);
+    // Load admin panel permissions
+    const ap: Record<string, { can_view: boolean; can_edit: boolean }> = {};
+    ADMIN_PANEL_KEYS.forEach((k) => {
+      const found = user.admin_permissions?.find((p) => p.panel_key === k);
+      ap[k] = { can_view: found?.can_view ?? true, can_edit: found?.can_edit ?? false };
+    });
+    setEditAdminPerms(ap);
     setShowEditDialog(true);
   };
 
@@ -227,11 +268,13 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setNewDisplayName("");
     setNewIsAdmin(false);
     setNewPermissions({});
+    const ap: Record<string, { can_view: boolean; can_edit: boolean }> = {};
+    ADMIN_PANEL_KEYS.forEach((k) => { ap[k] = { can_view: true, can_edit: false }; });
+    setNewAdminPerms(ap);
   };
 
   const openCreate = () => {
     resetCreateForm();
-    // Default all modules to granted
     const perms: Record<string, boolean> = {};
     ALL_MODULES.forEach((m) => { perms[m] = true; });
     setNewPermissions(perms);
@@ -241,9 +284,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const ModulePermissionToggles = ({
     permissions,
     onChange,
+    disabled,
   }: {
     permissions: Record<string, boolean>;
     onChange: (key: string, value: boolean) => void;
+    disabled?: boolean;
   }) => (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
       {ALL_MODULES.map((m) => (
@@ -251,9 +296,47 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           <Switch
             checked={!!permissions[m]}
             onCheckedChange={(v) => onChange(m, v)}
+            disabled={disabled}
           />
           <span className="text-foreground">{t("tabs", m)}</span>
         </label>
+      ))}
+    </div>
+  );
+
+  const AdminPermissionToggles = ({
+    perms,
+    onChange,
+    disabled,
+  }: {
+    perms: Record<string, { can_view: boolean; can_edit: boolean }>;
+    onChange: (key: string, field: "can_view" | "can_edit", value: boolean) => void;
+    disabled?: boolean;
+  }) => (
+    <div className="space-y-2 mt-2">
+      <div className="grid grid-cols-[1fr_auto_auto] gap-2 text-xs text-muted-foreground px-2">
+        <span>Sekme</span>
+        <span className="w-16 text-center">Görüntüle</span>
+        <span className="w-16 text-center">Düzenle</span>
+      </div>
+      {ADMIN_PANEL_KEYS.map((k) => (
+        <div key={k} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center p-2 rounded-lg bg-secondary/30 border border-border text-sm">
+          <span className="text-foreground">{ADMIN_PANEL_LABELS[k]}</span>
+          <div className="w-16 flex justify-center">
+            <Switch
+              checked={perms[k]?.can_view ?? true}
+              onCheckedChange={(v) => onChange(k, "can_view", v)}
+              disabled={disabled}
+            />
+          </div>
+          <div className="w-16 flex justify-center">
+            <Switch
+              checked={perms[k]?.can_edit ?? false}
+              onCheckedChange={(v) => onChange(k, "can_edit", v)}
+              disabled={disabled}
+            />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -266,7 +349,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     );
   }
 
-
+  // ── Feedback ──
   const loadFeedbacks = async () => {
     setFeedbackLoading(true);
     try {
@@ -306,7 +389,6 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const trainAI = async () => {
     const approved = feedbacks.filter(f => f.status === "approved" && !f.applied_at);
     if (!approved.length) {
-      // Use all approved
       const allApproved = feedbacks.filter(f => f.status === "approved");
       if (!allApproved.length) {
         toast({ title: "Bilgi", description: "Onaylanmış geri bildirim yok.", variant: "destructive" });
@@ -319,7 +401,6 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         body: { action: "train", feedbacks: feedbacks.filter(f => f.status === "approved") },
       });
       if (error) throw error;
-      // Mark all approved as applied
       for (const fb of feedbacks.filter(f => f.status === "approved")) {
         await supabase.from("analysis_feedback" as any).update({ applied_at: new Date().toISOString() } as any).eq("id", fb.id);
       }
@@ -353,7 +434,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   // ── Customer CRUD ──
   const openCustomerCreate = () => {
     setEditingCustomer(null);
-    setCustName(""); setCustFactory("Havacılık"); setCustNotes(""); setCustActive(true);
+    setCustName(""); setCustFactory(activeFactories[0]?.name || ""); setCustNotes(""); setCustActive(true);
     setShowCustomerDialog(true);
   };
 
@@ -397,28 +478,87 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     }
   };
 
+  // ── Factory CRUD ──
+  const openFactoryCreate = () => {
+    setEditingFactory(null);
+    setFactName(""); setFactActive(true); setFactSortOrder(allFactories.length);
+    setShowFactoryDialog(true);
+  };
+
+  const openFactoryEdit = (f: any) => {
+    setEditingFactory(f);
+    setFactName(f.name); setFactActive(f.is_active); setFactSortOrder(f.sort_order);
+    setShowFactoryDialog(true);
+  };
+
+  const handleSaveFactory = async () => {
+    if (!factName.trim()) return;
+    setSubmitting(true);
+    try {
+      if (editingFactory) {
+        const { error } = await supabase.from("factories" as any).update({ name: factName.trim(), is_active: factActive, sort_order: factSortOrder } as any).eq("id", editingFactory.id);
+        if (error) throw error;
+        toast({ title: t("common", "success"), description: "Fabrika güncellendi" });
+      } else {
+        const { error } = await supabase.from("factories" as any).insert({ name: factName.trim(), is_active: factActive, sort_order: factSortOrder } as any);
+        if (error) throw error;
+        toast({ title: t("common", "success"), description: "Fabrika eklendi" });
+      }
+      setShowFactoryDialog(false);
+      reloadFactories();
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteFactory = async (id: string) => {
+    if (!confirm("Bu fabrikayı silmek istediğinize emin misiniz?")) return;
+    try {
+      const { error } = await supabase.from("factories" as any).delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: t("common", "success"), description: "Fabrika silindi" });
+      reloadFactories();
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    }
+  };
+
+  // Permission helpers
+  const canEditUsers = canEdit("admin_users");
+  const canEditCustomers = canEdit("admin_customers");
+  const canEditFactories = canEdit("admin_factories");
+  const canEditMachines = canEdit("admin_machines");
+  const canEditMenu = canEdit("admin_menu");
+  const canEditFeedback = canEdit("admin_feedback");
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Building2 className="w-4 h-4" /> Müşteriler</TabsTrigger>
+          <TabsTrigger value="factories" className="gap-2"><Factory className="w-4 h-4" /> Fabrikalar</TabsTrigger>
           <TabsTrigger value="machines" className="gap-2"><Monitor className="w-4 h-4" /> Makine Parkı</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
         </TabsList>
 
+        {/* ── Users Tab ── */}
         <TabsContent value="users" className="space-y-4 mt-4">
-          <div className="flex justify-end">
-            <Button onClick={openCreate} className="gap-2">
-              <Plus className="w-4 h-4" />
-              {t("admin", "createUser")}
-            </Button>
-          </div>
+          {!canEditUsers && <ReadOnlyBanner />}
+          {canEditUsers && (
+            <div className="flex justify-end">
+              <Button onClick={openCreate} className="gap-2">
+                <Plus className="w-4 h-4" />
+                {t("admin", "createUser")}
+              </Button>
+            </div>
+          )}
 
-          {/* Users List */}
           <div className="grid gap-4">
             {users.map((user) => (
               <Card key={user.id} className="border-border bg-card">
@@ -456,17 +596,19 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                           ))}
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={t("admin", "editUser")}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openPassword(user)} title={t("admin", "changePassword")}>
-                        <Key className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)} title={t("common", "delete")} className="text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {canEditUsers && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={t("admin", "editUser")}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openPassword(user)} title={t("admin", "changePassword")}>
+                          <Key className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)} title={t("common", "delete")} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -474,10 +616,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           </div>
         </TabsContent>
 
+        {/* ── Customers Tab ── */}
         <TabsContent value="customers" className="space-y-4 mt-4">
+          {!canEditCustomers && <ReadOnlyBanner />}
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Müşteri tanımları tüm modüllerde ortak kullanılır.</p>
-            <Button onClick={openCustomerCreate} className="gap-2"><Plus className="w-4 h-4" /> Müşteri Ekle</Button>
+            {canEditCustomers && <Button onClick={openCustomerCreate} className="gap-2"><Plus className="w-4 h-4" /> Müşteri Ekle</Button>}
           </div>
           <div className="grid gap-3">
             {allCustomers.map((c) => (
@@ -495,10 +639,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                         {c.notes && <p className="text-xs text-muted-foreground mt-0.5">{c.notes}</p>}
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openCustomerEdit(c)}><Pencil className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteCustomer(c.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
-                    </div>
+                    {canEditCustomers && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openCustomerEdit(c)}><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteCustomer(c.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -506,7 +652,6 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
             {allCustomers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Henüz müşteri tanımlanmamış.</p>}
           </div>
 
-          {/* Customer Dialog */}
           <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
             <DialogContent>
               <DialogHeader>
@@ -522,8 +667,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                   <Select value={custFactory} onValueChange={setCustFactory}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Havacılık">Havacılık</SelectItem>
-                      <SelectItem value="Raylı Sistemler">Raylı Sistemler</SelectItem>
+                      {activeFactories.map((f) => (
+                        <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -547,15 +693,86 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           </Dialog>
         </TabsContent>
 
+        {/* ── Factories Tab ── */}
+        <TabsContent value="factories" className="space-y-4 mt-4">
+          {!canEditFactories && <ReadOnlyBanner />}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Fabrika tanımları müşteri, makine ve analiz modüllerinde kullanılır.</p>
+            {canEditFactories && <Button onClick={openFactoryCreate} className="gap-2"><Plus className="w-4 h-4" /> Fabrika Ekle</Button>}
+          </div>
+          <div className="grid gap-3">
+            {allFactories.map((f) => (
+              <Card key={f.id} className="border-border bg-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Factory className="w-5 h-5 text-primary" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{f.name}</span>
+                          {!f.is_active && <Badge variant="secondary" className="text-xs">Pasif</Badge>}
+                          <Badge variant="outline" className="text-xs">Sıra: {f.sort_order}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    {canEditFactories && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openFactoryEdit(f)}><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteFactory(f.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {allFactories.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Henüz fabrika tanımlanmamış.</p>}
+          </div>
+
+          <Dialog open={showFactoryDialog} onOpenChange={setShowFactoryDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingFactory ? "Fabrika Düzenle" : "Yeni Fabrika"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Fabrika Adı</Label>
+                  <Input value={factName} onChange={(e) => setFactName(e.target.value.slice(0, 100))} placeholder="Fabrika adı..." />
+                </div>
+                <div>
+                  <Label>Sıralama</Label>
+                  <Input type="number" value={factSortOrder} onChange={(e) => setFactSortOrder(Number(e.target.value))} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={factActive} onCheckedChange={setFactActive} />
+                  <Label>Aktif</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowFactoryDialog(false)}>İptal</Button>
+                <Button onClick={handleSaveFactory} disabled={submitting || !factName.trim()}>
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  {editingFactory ? "Güncelle" : "Ekle"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+
+        {/* ── Machines Tab ── */}
         <TabsContent value="machines" className="mt-4">
-          <MachineManager />
+          {!canEditMachines && <ReadOnlyBanner />}
+          <MachineManager readOnly={!canEditMachines} />
         </TabsContent>
 
+        {/* ── Menu Tab ── */}
         <TabsContent value="menu" className="mt-4">
-          <MenuManager onUpdated={onMenuUpdated} />
+          {!canEditMenu && <ReadOnlyBanner />}
+          <MenuManager onUpdated={onMenuUpdated} readOnly={!canEditMenu} />
         </TabsContent>
 
+        {/* ── Feedback Tab ── */}
         <TabsContent value="feedback" className="space-y-4 mt-4">
+          {!canEditFeedback && <ReadOnlyBanner />}
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Teknik resim analizlerinden gelen geri bildirimler. Onaylanan bildirimler AI eğitimi için kullanılır.
@@ -565,10 +782,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                 {feedbackLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Yenile
               </Button>
-              <Button size="sm" onClick={trainAI} disabled={trainingInProgress || !feedbacks.some(f => f.status === "approved")} className="gap-1.5">
-                {trainingInProgress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-                AI'yı Eğit ({feedbacks.filter(f => f.status === "approved").length})
-              </Button>
+              {canEditFeedback && (
+                <Button size="sm" onClick={trainAI} disabled={trainingInProgress || !feedbacks.some(f => f.status === "approved")} className="gap-1.5">
+                  {trainingInProgress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
+                  AI'yı Eğit ({feedbacks.filter(f => f.status === "approved").length})
+                </Button>
+              )}
             </div>
           </div>
 
@@ -580,7 +799,6 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
             const approvedCount = feedbacks.filter(f => f.status === "approved").length;
             const rejectedCount = feedbacks.filter(f => f.status === "rejected").length;
 
-            // Group by day for trend chart
             const dayMap: Record<string, { date: string; count: number; avgRating: number; ratings: number[] }> = {};
             feedbacks.forEach((fb: any) => {
               const day = new Date(fb.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
@@ -593,13 +811,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               avgRating: d.ratings.length ? +(d.ratings.reduce((a, b) => a + b, 0) / d.ratings.length).toFixed(1) : 0,
             })).reverse().slice(-14);
 
-            // Rating distribution
             const distData = [1,2,3,4,5].map(r => ({
               star: `${r}★`,
               count: rated.filter((f: any) => f.rating === r).length,
             }));
 
-            // Top 10 feedback contributors
             const userFbCount: Record<string, number> = {};
             feedbacks.forEach((fb: any) => {
               userFbCount[fb.user_id] = (userFbCount[fb.user_id] || 0) + 1;
@@ -619,7 +835,6 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
 
             return (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Summary Cards */}
                 <Card className="bg-card border-border">
                   <CardContent className="p-4 text-center space-y-1">
                     <div className="flex items-center justify-center gap-1">
@@ -669,7 +884,6 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                   </CardContent>
                 </Card>
 
-                {/* Top 10 Contributors */}
                 <Card className="bg-card border-border md:col-span-3">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -693,7 +907,6 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                   </CardContent>
                 </Card>
 
-                {/* Trend Chart */}
                 {trendData.length > 1 && (
                   <Card className="bg-card border-border md:col-span-3">
                     <CardContent className="p-4">
@@ -761,21 +974,23 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                          <p className="text-sm text-foreground bg-secondary/30 p-2 rounded">{fb.feedback_text}</p>
                          <p className="text-xs text-muted-foreground">{new Date(fb.created_at).toLocaleString("tr-TR")}</p>
                       </div>
-                      <div className="flex gap-1 shrink-0">
-                        {fb.status === "pending" && (
-                          <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:text-success" onClick={() => updateFeedbackStatus(fb.id, "approved")} title="Onayla">
-                              <Check className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => updateFeedbackStatus(fb.id, "rejected")} title="Reddet">
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteFeedback(fb.id)} title="Sil">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      {canEditFeedback && (
+                        <div className="flex gap-1 shrink-0">
+                          {fb.status === "pending" && (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:text-success" onClick={() => updateFeedbackStatus(fb.id, "approved")} title="Onayla">
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => updateFeedbackStatus(fb.id, "rejected")} title="Reddet">
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteFeedback(fb.id)} title="Sil">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -815,6 +1030,15 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                 onChange={(k, v) => setNewPermissions((p) => ({ ...p, [k]: v }))}
               />
             </div>
+            {newIsAdmin && (
+              <div>
+                <Label>Yönetim Paneli Yetkileri</Label>
+                <AdminPermissionToggles
+                  perms={newAdminPerms}
+                  onChange={(k, field, v) => setNewAdminPerms((p) => ({ ...p, [k]: { ...p[k], [field]: v } }))}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>{t("common", "cancel")}</Button>
@@ -878,6 +1102,15 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                 onChange={(k, v) => setEditPermissions((p) => ({ ...p, [k]: v }))}
               />
             </div>
+            {editIsAdmin && (
+              <div>
+                <Label>Yönetim Paneli Yetkileri</Label>
+                <AdminPermissionToggles
+                  perms={editAdminPerms}
+                  onChange={(k, field, v) => setEditAdminPerms((p) => ({ ...p, [k]: { ...p[k], [field]: v } }))}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>{t("common", "cancel")}</Button>
