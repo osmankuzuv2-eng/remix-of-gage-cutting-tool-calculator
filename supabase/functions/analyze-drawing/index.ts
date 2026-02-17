@@ -13,7 +13,21 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, fileName, additionalInfo } = await req.json();
+    const body = await req.json();
+
+    // Handle training action - store approved feedbacks for future use
+    if (body.action === "train") {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabaseClient = createClient(supabaseUrl, supabaseKey);
+      
+      // Just mark feedbacks as applied - they'll be fetched during analysis
+      return new Response(JSON.stringify({ success: true, message: "Eğitim verileri güncellendi" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { imageUrl, fileName, additionalInfo } = body;
 
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "imageUrl is required" }), {
@@ -39,6 +53,17 @@ serve(async (req) => {
       .order("sort_order");
 
     const machines = machinesData || [];
+
+    // Fetch approved feedbacks for AI training context
+    const { data: feedbackData } = await supabaseClient
+      .from("analysis_feedback")
+      .select("part_name, feedback_text, feedback_type, original_analysis")
+      .eq("status", "approved")
+      .not("applied_at", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const approvedFeedbacks = feedbackData || [];
 
     // Build machine list for prompt
     const buildMachineSection = () => {
@@ -311,6 +336,17 @@ JSON formatinda dondur:
 
 Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift tirnak (") karakteri KULLANMA, bunun yerine tek tirnak (') kullan. JSON gecerli olmali.`;
 
+    // Append approved feedback context to system prompt
+    let feedbackContext = "";
+    if (approvedFeedbacks.length > 0) {
+      feedbackContext = "\n\nONEMLI - ONCEKI ANALIZLERDEN ALINAN DUZELTMELER (bunlara dikkat et):\n";
+      for (const fb of approvedFeedbacks) {
+        feedbackContext += `- [${fb.part_name}] ${fb.feedback_text}\n`;
+      }
+    }
+
+    const finalSystemPrompt = systemPrompt + feedbackContext;
+
     const userMessage = additionalInfo 
       ? `Bu teknik resmi analiz et. Tüm kritik ölçüleri ve toleransları dikkatlice oku. Ek bilgiler: ${additionalInfo}`
       : "Bu teknik resmi analiz et. Tüm kritik ölçüleri, toleransları ve yüzey pürüzlülük değerlerini dikkatlice oku ve detaylı işleme planı oluştur.";
@@ -324,7 +360,7 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: finalSystemPrompt },
           {
             role: "user",
             content: [

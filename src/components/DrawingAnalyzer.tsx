@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight } from "lucide-react";
+import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ─── File conversion helpers ───
 
@@ -141,11 +142,86 @@ const complexityColor = (c: string) => {
 
 // ─── Result Card (collapsible) ───
 
-const AnalysisResultCard = ({ item, t, onSave, canSave }: { item: DrawingItem; t: (s: string, k: string) => string; onSave: (item: DrawingItem) => void; canSave: boolean }) => {
+const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackType, setFeedbackType] = useState("correction");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!feedbackText.trim()) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("analysis_feedback" as any).insert({
+        user_id: userId,
+        part_name: item.analysis?.partName || item.file.name,
+        file_name: item.file.name,
+        original_analysis: item.analysis as any,
+        feedback_text: feedbackText.trim(),
+        feedback_type: feedbackType,
+      } as any);
+      if (error) throw error;
+      toast.success("Geri bildirim gönderildi");
+      setFeedbackText("");
+      setShowForm(false);
+    } catch (err: any) {
+      toast.error("Geri bildirim gönderilemedi: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!showForm) {
+    return (
+      <Button variant="outline" size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
+        <MessageSquarePlus className="w-4 h-4" /> Geri Bildirim
+      </Button>
+    );
+  }
+
+  return (
+    <Card className="bg-secondary/20 border-border">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-foreground">AI Eğitim Geri Bildirimi</p>
+          <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>✕</Button>
+        </div>
+        <Select value={feedbackType} onValueChange={setFeedbackType}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="correction">Düzeltme (Parametre/Süre Hatası)</SelectItem>
+            <SelectItem value="missing">Eksik İşlem/Detay</SelectItem>
+            <SelectItem value="strategy">Strateji Önerisi</SelectItem>
+            <SelectItem value="other">Diğer</SelectItem>
+          </SelectContent>
+        </Select>
+        <Textarea
+          value={feedbackText}
+          onChange={(e) => setFeedbackText(e.target.value)}
+          placeholder="Örn: Kaba tornalama için Vc=250 yerine 200 kullanılmalı, malzeme sert..."
+          rows={3}
+          className="bg-background"
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>İptal</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={submitting || !feedbackText.trim()}>
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
+            Gönder
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const AnalysisResultCard = ({ item, t, onSave, canSave, userId }: { item: DrawingItem; t: (s: string, k: string) => string; onSave: (item: DrawingItem) => void; canSave: boolean; userId?: string }) => {
   const analysis = item.analysis!;
   return (
     <div className="space-y-4 pt-2">
       <div className="flex justify-end gap-2">
+        {userId && <FeedbackForm item={item} userId={userId} />}
         {canSave && (
           <Button variant="outline" size="sm" onClick={() => onSave(item)}>
             <Save className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "saveResult")}
@@ -495,7 +571,7 @@ const DrawingAnalyzer = () => {
                   </div>
                 )}
                 {item.status === "completed" && item.analysis && (
-                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} />
+                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} userId={user?.id} />
                 )}
               </div>
             </CollapsibleContent>

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      analysis_feedback: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          feedback_text: string
+          feedback_type: string
+          file_name: string | null
+          id: string
+          original_analysis: Json
+          part_name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          feedback_text: string
+          feedback_type?: string
+          file_name?: string | null
+          id?: string
+          original_analysis: Json
+          part_name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          feedback_text?: string
+          feedback_type?: string
+          file_name?: string | null
+          id?: string
+          original_analysis?: Json
+          part_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       machines: {
         Row: {
           brand: string
