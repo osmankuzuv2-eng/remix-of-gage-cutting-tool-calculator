@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,12 +15,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import MenuManager from "@/components/MenuManager";
 import MachineManager from "@/components/MachineManager";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 // All available modules (ai-learn is always accessible, not listed here)
 const ALL_MODULES = [
@@ -438,6 +439,113 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               </Button>
             </div>
           </div>
+
+          {/* Analytics Dashboard */}
+          {feedbacks.length > 0 && (() => {
+            const rated = feedbacks.filter(f => f.rating);
+            const avgRating = rated.length ? (rated.reduce((s: number, f: any) => s + f.rating, 0) / rated.length) : 0;
+            const pendingCount = feedbacks.filter(f => f.status === "pending").length;
+            const approvedCount = feedbacks.filter(f => f.status === "approved").length;
+            const rejectedCount = feedbacks.filter(f => f.status === "rejected").length;
+
+            // Group by day for trend chart
+            const dayMap: Record<string, { date: string; count: number; avgRating: number; ratings: number[] }> = {};
+            feedbacks.forEach((fb: any) => {
+              const day = new Date(fb.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
+              if (!dayMap[day]) dayMap[day] = { date: day, count: 0, avgRating: 0, ratings: [] };
+              dayMap[day].count++;
+              if (fb.rating) dayMap[day].ratings.push(fb.rating);
+            });
+            const trendData = Object.values(dayMap).map(d => ({
+              ...d,
+              avgRating: d.ratings.length ? +(d.ratings.reduce((a, b) => a + b, 0) / d.ratings.length).toFixed(1) : 0,
+            })).reverse().slice(-14);
+
+            // Rating distribution
+            const distData = [1,2,3,4,5].map(r => ({
+              star: `${r}★`,
+              count: rated.filter((f: any) => f.rating === r).length,
+            }));
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Summary Cards */}
+                <Card className="bg-card border-border">
+                  <CardContent className="p-4 text-center space-y-1">
+                    <div className="flex items-center justify-center gap-1">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} className={`w-5 h-5 ${s <= Math.round(avgRating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                      ))}
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{avgRating.toFixed(1)}</p>
+                    <p className="text-xs text-muted-foreground">Ortalama Puan ({rated.length} değerlendirme)</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card border-border">
+                  <CardContent className="p-4 space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Durum Dağılımı</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden flex">
+                        {feedbacks.length > 0 && (
+                          <>
+                            <div className="bg-yellow-500 h-full" style={{ width: `${(pendingCount / feedbacks.length) * 100}%` }} />
+                            <div className="bg-success h-full" style={{ width: `${(approvedCount / feedbacks.length) * 100}%` }} />
+                            <div className="bg-destructive h-full" style={{ width: `${(rejectedCount / feedbacks.length) * 100}%` }} />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" /> Bekliyor: {pendingCount}</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success inline-block" /> Onaylı: {approvedCount}</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> Red: {rejectedCount}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card border-border">
+                  <CardContent className="p-4 space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Puan Dağılımı</p>
+                    <div className="space-y-1">
+                      {distData.reverse().map(d => (
+                        <div key={d.star} className="flex items-center gap-2 text-xs">
+                          <span className="w-6 text-muted-foreground">{d.star}</span>
+                          <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
+                            <div className="bg-yellow-400 h-full rounded-full" style={{ width: rated.length ? `${(d.count / rated.length) * 100}%` : '0%' }} />
+                          </div>
+                          <span className="w-4 text-muted-foreground text-right">{d.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Trend Chart */}
+                {trendData.length > 1 && (
+                  <Card className="bg-card border-border md:col-span-3">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <p className="text-sm font-medium text-foreground">Günlük Feedback Trendi</p>
+                      </div>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={trendData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                          <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                            labelStyle={{ color: "hsl(var(--foreground))" }}
+                          />
+                          <Bar dataKey="count" name="Feedback" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                          <Bar dataKey="avgRating" name="Ort. Puan" fill="#facc15" radius={[4,4,0,0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            );
+          })()}
 
           {feedbackLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
