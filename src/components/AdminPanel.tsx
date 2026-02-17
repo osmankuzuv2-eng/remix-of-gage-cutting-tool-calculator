@@ -353,7 +353,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const loadFeedbacks = async () => {
     setFeedbackLoading(true);
     try {
-      const { data, error } = await supabase.from("analysis_feedback" as any).select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("analysis_feedback" as any).select("*").order("created_at", { ascending: false }).limit(50);
       if (error) throw error;
       setFeedbacks((data as any[]) || []);
     } catch (e: any) {
@@ -365,7 +365,13 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
 
   const updateFeedbackStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase.from("analysis_feedback" as any).update({ status, ...(status === "approved" ? { applied_at: new Date().toISOString() } : {}) } as any).eq("id", id);
+      const reviewerId = session?.user?.id;
+      const { error } = await supabase.from("analysis_feedback" as any).update({
+        status,
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+        ...(status === "approved" ? { applied_at: new Date().toISOString() } : {}),
+      } as any).eq("id", id);
       if (error) throw error;
       toast({ title: t("common", "success"), description: status === "approved" ? "Onaylandı" : "Reddedildi" });
       loadFeedbacks();
@@ -965,11 +971,21 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                          </div>
                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                            <Users className="w-3 h-3" />
-                           <span>{(() => {
+                           <span>Gönderen: {(() => {
                              const u = users.find(u => u.id === fb.user_id);
                              return u?.profile?.display_name || u?.email || fb.user_id?.slice(0, 8) + "...";
                            })()}</span>
                          </div>
+                         {fb.reviewed_by && (
+                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                             <ShieldCheck className="w-3 h-3" />
+                             <span>{fb.status === "approved" ? "Onaylayan" : "Reddeden"}: {(() => {
+                               const u = users.find(u => u.id === fb.reviewed_by);
+                               return u?.profile?.display_name || u?.email || fb.reviewed_by?.slice(0, 8) + "...";
+                             })()}</span>
+                             {fb.reviewed_at && <span className="ml-1">({new Date(fb.reviewed_at).toLocaleString("tr-TR")})</span>}
+                           </div>
+                         )}
                          {fb.file_name && <p className="text-xs text-muted-foreground">Dosya: {fb.file_name}</p>}
                          <p className="text-sm text-foreground bg-secondary/30 p-2 rounded">{fb.feedback_text}</p>
                          <p className="text-xs text-muted-foreground">{new Date(fb.created_at).toLocaleString("tr-TR")}</p>
