@@ -202,7 +202,7 @@ Normal celik/aluminyum:
 - Delme (derin L>3D): 0.5-2 dk (peck drilling dahil)
 - Dis tornalama: 0.5-1.5 dk (paso sayisina bagli)
 - Kanal tornalama: 0.2-1.0 dk
-- Pah kirma: 0.1-0.3 dk
+- Pah kirma: 0.05-0.15 dk (basit pah 3-5 sn, buyuk pah 8-10 sn)
 - Kaba frezeleme: 2-8 dk (yuzey alanina gore)
 - Ince frezeleme: 1-4 dk
 - Cep frezeleme: 3-12 dk (hacme gore)
