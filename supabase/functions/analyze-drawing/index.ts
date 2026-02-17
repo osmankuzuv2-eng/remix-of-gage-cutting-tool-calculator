@@ -150,8 +150,8 @@ TORNALAMA PARAMETRELERI:
 - SUPER ALASIMLAR (Inconel 718, Waspaloy): Vc=15-30 m/dk, f=0.08-0.15 mm/dev (kaba), f=0.03-0.06 mm/dev (ince), ap=0.3-1.5 mm (kaba)
 
 FREZELEME PARAMETRELERI (fz = dis basina ilerleme):
-- Celik (St37, S235): Vc=200-260 m/dk, fz=0.10-0.18 mm/dis (kaba), fz=0.05-0.10 mm/dis (ince), ap=1-2.5 mm (kaba), ae=%50-70 Dc (kaba)
-- Celik (C45, 4140): Vc=160-220 m/dk, fz=0.08-0.15 mm/dis (kaba), fz=0.04-0.08 mm/dis (ince), ap=0.75-2 mm (kaba)
+- Celik (St37, S235): Vc=80-110 m/dk, fz=0.10-0.18 mm/dis (kaba), fz=0.05-0.10 mm/dis (ince), ap=1-2.5 mm (kaba), ae=%50-70 Dc (kaba)
+- Celik (C45, 4140): Vc=80-110 m/dk, fz=0.08-0.15 mm/dis (kaba), fz=0.04-0.08 mm/dis (ince), ap=0.75-2 mm (kaba)
 - Paslanmaz celik: Vc=120-160 m/dk, fz=0.06-0.12 mm/dis (kaba), fz=0.03-0.07 mm/dis (ince), ap=0.5-1.5 mm (kaba)
 - Aluminyum (6xxx): Vc=500-800 m/dk, fz=0.12-0.25 mm/dis (kaba), fz=0.05-0.12 mm/dis (ince), ap=0.75-1.5 mm (kaba), ae=%50-70 Dc
 - Aluminyum 7050/7075: Vc=350-500 m/dk, fz=0.10-0.20 mm/dis (kaba), fz=0.04-0.10 mm/dis (ince), ap=0.5-1.25 mm (kaba), ae=%40-60 Dc
