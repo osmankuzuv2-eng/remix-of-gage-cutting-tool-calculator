@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2, Factory, Lock } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2, Factory, Lock, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,6 +89,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [changePassword, setChangePassword] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(null);
+  const [uploadingEditAvatar, setUploadingEditAvatar] = useState(false);
+  const editAvatarRef = useRef<HTMLInputElement>(null);
 
   // Customers state
   const { customers: allCustomers, reload: reloadCustomers } = useCustomers();
@@ -240,6 +243,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setSelectedUser(user);
     setEditEmail(user.email);
     setEditDisplayName(user.profile?.display_name || "");
+    setEditAvatarUrl(user.profile?.avatar_url || null);
     setEditIsAdmin(user.roles.includes("admin"));
     setEditCustomTitle(user.profile?.custom_title || "");
     setEditTitleColor(user.profile?.title_color || "");
@@ -257,6 +261,45 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     });
     setEditAdminPerms(ap);
     setShowEditDialog(true);
+  };
+
+  const handleEditAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedUser) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Sadece resim dosyası yükleyebilirsiniz", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Dosya boyutu 2MB'dan küçük olmalı", variant: "destructive" });
+      return;
+    }
+    setUploadingEditAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${selectedUser.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      const publicUrl = urlData.publicUrl + "?t=" + Date.now();
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("user_id", selectedUser.id);
+      if (updateError) throw updateError;
+
+      setEditAvatarUrl(publicUrl);
+      toast({ title: t("common", "success") });
+    } catch (err: any) {
+      toast({ title: err.message, variant: "destructive" });
+    } finally {
+      setUploadingEditAvatar(false);
+      if (editAvatarRef.current) editAvatarRef.current.value = "";
+    }
   };
 
   const openPassword = (user: UserData) => {
@@ -1129,6 +1172,30 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
             <DialogTitle>{t("admin", "editUser")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Avatar Upload */}
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-border">
+                  {editAvatarUrl ? (
+                    <img src={editAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <Users className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <button
+                  onClick={() => editAvatarRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-md"
+                  disabled={uploadingEditAvatar}
+                >
+                  <Camera className="w-3.5 h-3.5 text-primary-foreground" />
+                </button>
+                <input ref={editAvatarRef} type="file" accept="image/*" className="hidden" onChange={handleEditAvatarUpload} />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">{editDisplayName || editEmail}</p>
+                <p>Profil fotoğrafını değiştirmek için kamera ikonuna tıklayın</p>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>{t("admin", "email")}</Label>
               <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} type="email" />
