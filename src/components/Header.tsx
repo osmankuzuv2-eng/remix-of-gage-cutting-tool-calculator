@@ -1,5 +1,5 @@
 import { Settings, LogOut, KeyRound, User, ChevronDown, Mail } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +67,25 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
   const { toast } = useToast();
   const current = languages.find((l) => l.code === language)!;
   const CurrentFlag = flagComponents[language];
+
+  // Fetch profile for custom_title and title_color
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
+  const [titleColor, setTitleColor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("custom_title, title_color")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setCustomTitle(data.custom_title);
+          setTitleColor(data.title_color);
+        }
+      });
+  }, [user]);
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -163,7 +182,14 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                         </span>
                         <span className="text-[10px] text-muted-foreground leading-tight">{user.email}</span>
                       </div>
-                      {isAdmin ? (
+                      {customTitle ? (
+                        <Badge
+                          className="text-[10px] px-1.5 py-0"
+                          style={titleColor ? { backgroundColor: titleColor, color: '#fff' } : undefined}
+                        >
+                          {customTitle}
+                        </Badge>
+                      ) : isAdmin ? (
                         <Badge variant="destructive" className="text-[10px] px-1.5 py-0 animate-pulse">Admin</Badge>
                       ) : (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Personel</Badge>

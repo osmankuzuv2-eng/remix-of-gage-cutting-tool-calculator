@@ -69,14 +69,17 @@ Deno.serve(async (req) => {
           supabaseAdmin.from("user_module_permissions").select("*").in("user_id", userIds),
         ]);
 
-        const users = data.users.map((u) => ({
-          id: u.id,
-          email: u.email,
-          created_at: u.created_at,
-          profile: profiles.data?.find((p) => p.user_id === u.id) || null,
-          roles: roles.data?.filter((r) => r.user_id === u.id).map((r) => r.role) || [],
-          permissions: permissions.data?.filter((p) => p.user_id === u.id) || [],
-        }));
+        const users = data.users.map((u) => {
+          const profile = profiles.data?.find((p) => p.user_id === u.id) || null;
+          return {
+            id: u.id,
+            email: u.email,
+            created_at: u.created_at,
+            profile,
+            roles: roles.data?.filter((r) => r.user_id === u.id).map((r) => r.role) || [],
+            permissions: permissions.data?.filter((p) => p.user_id === u.id) || [],
+          };
+        });
 
         return new Response(JSON.stringify({ users }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -124,7 +127,7 @@ Deno.serve(async (req) => {
       }
 
       case "update_user": {
-        const { user_id, email, display_name, is_admin, module_permissions } = params;
+        const { user_id, email, display_name, is_admin, module_permissions, custom_title, title_color } = params;
 
         if (!user_id) {
           return new Response(JSON.stringify({ error: "user_id required" }), {
@@ -138,9 +141,13 @@ Deno.serve(async (req) => {
           await supabaseAdmin.auth.admin.updateUserById(user_id, { email });
         }
 
-        // Update profile
-        if (display_name !== undefined) {
-          await supabaseAdmin.from("profiles").update({ display_name }).eq("user_id", user_id);
+        // Update profile (display_name, custom_title, title_color)
+        const profileUpdate: Record<string, unknown> = {};
+        if (display_name !== undefined) profileUpdate.display_name = display_name;
+        if (custom_title !== undefined) profileUpdate.custom_title = custom_title || null;
+        if (title_color !== undefined) profileUpdate.title_color = title_color || null;
+        if (Object.keys(profileUpdate).length > 0) {
+          await supabaseAdmin.from("profiles").update(profileUpdate).eq("user_id", user_id);
         }
 
         // Update role

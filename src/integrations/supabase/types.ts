@@ -170,27 +170,33 @@ export type Database = {
         Row: {
           company: string | null
           created_at: string
+          custom_title: string | null
           display_name: string | null
           id: string
           position: string | null
+          title_color: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           company?: string | null
           created_at?: string
+          custom_title?: string | null
           display_name?: string | null
           id?: string
           position?: string | null
+          title_color?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           company?: string | null
           created_at?: string
+          custom_title?: string | null
           display_name?: string | null
           id?: string
           position?: string | null
+          title_color?: string | null
           updated_at?: string
           user_id?: string
         }
