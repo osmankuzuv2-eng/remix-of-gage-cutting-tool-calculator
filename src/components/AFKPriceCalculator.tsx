@@ -3,6 +3,7 @@ import { DollarSign, Circle, Percent, Package, Cpu, Clock } from "lucide-react";
 import { materials } from "@/data/materials";
 import { useMachines } from "@/hooks/useMachines";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { safeGetItem } from "@/lib/safeStorage";
 
 // Specific cutting force (Kc) by material category (N/mm²)
 const getKc = (category: string): number => {
@@ -43,8 +44,9 @@ const AFKPriceCalculator = () => {
   const [selectedMachine, setSelectedMachine] = useState("");
   const [machineRate, setMachineRate] = useState(0);
 
+  const savedPrices = safeGetItem<Record<string, number>>("cnc_material_prices", {}) || {};
   const currentMaterial = materials.find((m) => m.id === selectedMaterial);
-  const materialPrice = currentMaterial?.pricePerKg ?? 0;
+  const materialPrice = savedPrices[selectedMaterial] ?? currentMaterial?.pricePerKg ?? 0;
   const currentMachine = machines.find((m) => m.id === selectedMachine);
 
   // Auto-select first machine when loaded
