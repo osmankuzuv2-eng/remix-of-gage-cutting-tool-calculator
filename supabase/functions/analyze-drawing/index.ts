@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    const { imageUrl, fileName, additionalInfo } = body;
+    const { imageUrl, fileName, additionalInfo, factory } = body;
 
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "imageUrl is required" }), {
@@ -42,15 +42,20 @@ serve(async (req) => {
       throw new Error("Server configuration error");
     }
 
-    // Fetch machines from database
+    // Fetch machines from database, filtered by factory if provided
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
-    const { data: machinesData } = await supabaseClient
+    let machinesQuery = supabaseClient
       .from("machines")
-      .select("code, type, designation, brand, model, year, max_diameter_mm, power_kw, max_rpm, taper, has_live_tooling, has_y_axis, has_c_axis, travel_x_mm, travel_y_mm, travel_z_mm")
-      .eq("is_active", true)
-      .order("sort_order");
+      .select("code, type, designation, brand, model, year, max_diameter_mm, power_kw, max_rpm, taper, has_live_tooling, has_y_axis, has_c_axis, travel_x_mm, travel_y_mm, travel_z_mm, factory")
+      .eq("is_active", true);
+    
+    if (factory) {
+      machinesQuery = machinesQuery.eq("factory", factory);
+    }
+    
+    const { data: machinesData } = await machinesQuery.order("sort_order");
 
     const machines = machinesData || [];
 
@@ -88,7 +93,7 @@ serve(async (req) => {
         return line;
       };
 
-      let section = "KULLANILABILIR MAKINE PARKI (SADECE bu tezgahlardan sec):\n";
+      let section = `KULLANILABILIR MAKINE PARKI${factory ? ` (${factory} Fabrikası)` : ""} (SADECE bu tezgahlardan sec):\n`;
       if (turning.length) section += `CNC TORNALAR:\n${turning.map(fmt).join("\n")}\n\n`;
       if (milling3.length) section += `3 EKSEN CNC FREZELER:\n${milling3.map(fmt).join("\n")}\n\n`;
       if (milling4.length) section += `4 EKSEN CNC FREZELER:\n${milling4.map(fmt).join("\n")}\n\n`;

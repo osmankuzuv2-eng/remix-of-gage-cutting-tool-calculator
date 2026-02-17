@@ -12,7 +12,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, Cog, Monitor } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Cog, Monitor, Factory } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { Machine } from "@/hooks/useMachines";
 
 const MACHINE_TYPES = [
@@ -22,6 +23,11 @@ const MACHINE_TYPES = [
   { value: "milling-5axis", label: "5 Eksen CNC Freze" },
 ];
 
+const FACTORIES = [
+  { value: "Havacılık", label: "Havacılık" },
+  { value: "Raylı Sistemler", label: "Raylı Sistemler" },
+];
+
 const emptyForm = {
   code: "", type: "turning", designation: "", brand: "", model: "",
   year: 0, label: "", max_diameter_mm: null as number | null,
@@ -29,6 +35,7 @@ const emptyForm = {
   taper: "", has_live_tooling: false, has_y_axis: false, has_c_axis: false,
   travel_x_mm: null as number | null, travel_y_mm: null as number | null,
   travel_z_mm: null as number | null, is_active: true, sort_order: 0,
+  factory: "Raylı Sistemler",
 };
 
 const MachineManager = () => {
@@ -40,6 +47,7 @@ const MachineManager = () => {
   const [form, setForm] = useState({ ...emptyForm });
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [factoryFilter, setFactoryFilter] = useState("all");
 
   const load = async () => {
     setLoading(true);
@@ -67,6 +75,7 @@ const MachineManager = () => {
       has_c_axis: m.has_c_axis, travel_x_mm: m.travel_x_mm,
       travel_y_mm: m.travel_y_mm, travel_z_mm: m.travel_z_mm,
       is_active: m.is_active, sort_order: m.sort_order,
+      factory: m.factory || "Raylı Sistemler",
     });
     setShowDialog(true);
   };
@@ -87,6 +96,7 @@ const MachineManager = () => {
         has_c_axis: form.has_c_axis, travel_x_mm: form.travel_x_mm,
         travel_y_mm: form.travel_y_mm, travel_z_mm: form.travel_z_mm,
         is_active: form.is_active, sort_order: form.sort_order,
+        factory: form.factory,
       };
       if (editingId) {
         const { error } = await supabase.from("machines").update(payload).eq("id", editingId);
@@ -113,7 +123,11 @@ const MachineManager = () => {
     else { toast({ title: "Silindi" }); load(); }
   };
 
-  const filtered = filter === "all" ? machines : machines.filter(m => m.type === filter);
+  const filtered = machines.filter(m => {
+    if (filter !== "all" && m.type !== filter) return false;
+    if (factoryFilter !== "all" && m.factory !== factoryFilter) return false;
+    return true;
+  });
   const typeLabel = (t: string) => MACHINE_TYPES.find(mt => mt.value === t)?.label ?? t;
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
@@ -127,7 +141,17 @@ const MachineManager = () => {
         <Button onClick={openCreate} size="sm" className="gap-1"><Plus className="w-4 h-4" /> Tezgah Ekle</Button>
       </div>
 
-      {/* Filter */}
+      {/* Factory Filter */}
+      <div className="flex gap-2 flex-wrap">
+        {[{ value: "all", label: "Tüm Fabrikalar" }, ...FACTORIES].map(f => (
+          <button key={f.value} onClick={() => setFactoryFilter(f.value)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${factoryFilter === f.value ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+            {f.label} {f.value === "all" ? `(${machines.length})` : `(${machines.filter(m => m.factory === f.value).length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Type Filter */}
       <div className="flex gap-2 flex-wrap">
         {[{ value: "all", label: "Tümü" }, ...MACHINE_TYPES].map(t => (
           <button key={t.value} onClick={() => setFilter(t.value)}
@@ -147,6 +171,9 @@ const MachineManager = () => {
                   <span className="font-mono text-sm font-bold text-primary">{m.code}</span>
                   <span className="font-medium text-foreground text-sm truncate">{m.brand} {m.model}</span>
                   {m.year > 0 && <span className="text-xs text-muted-foreground">({m.year})</span>}
+                  <Badge variant="outline" className={`text-[10px] ${m.factory === "Havacılık" ? "border-primary/40 text-primary" : "border-muted-foreground/40 text-muted-foreground"}`}>
+                    {m.factory}
+                  </Badge>
                   {!m.is_active && <span className="text-xs text-destructive">(Pasif)</span>}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
@@ -181,6 +208,13 @@ const MachineManager = () => {
                   <SelectContent>{MACHINE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div>
+              <Label>Fabrika *</Label>
+              <Select value={form.factory} onValueChange={v => setForm(f => ({ ...f, factory: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{FACTORIES.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div><Label>Tanım</Label><Input value={form.designation} onChange={e => setForm(f => ({ ...f, designation: e.target.value }))} placeholder="CNC Torna" /></div>
             <div className="grid grid-cols-2 gap-3">

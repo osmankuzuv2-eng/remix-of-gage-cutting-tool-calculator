@@ -22,6 +22,7 @@ export interface Machine {
   travel_z_mm: number | null;
   is_active: boolean;
   sort_order: number;
+  factory: string;
 }
 
 export const useMachines = () => {
