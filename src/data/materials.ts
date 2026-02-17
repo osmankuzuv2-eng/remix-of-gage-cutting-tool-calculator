@@ -4,6 +4,7 @@ export interface Material {
   category: string;
   hardness: string;
   density: number; // g/cm³
+  pricePerKg?: number; // EUR/kg
   cuttingSpeed: { min: number; max: number; unit: string };
   feedRate: { min: number; max: number; unit: string };
   taylorN: number;

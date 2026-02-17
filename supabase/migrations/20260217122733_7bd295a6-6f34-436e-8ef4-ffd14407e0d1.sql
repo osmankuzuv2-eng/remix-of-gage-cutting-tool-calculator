@@ -1,0 +1,1 @@
+ALTER TABLE public.saved_materials ADD COLUMN IF NOT EXISTS price_per_kg numeric DEFAULT 0;

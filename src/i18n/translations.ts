@@ -411,6 +411,7 @@ export const translations = {
     color: { tr: "Renk", en: "Color", fr: "Couleur" },
     min: { tr: "Min", en: "Min", fr: "Min" },
     max: { tr: "Max", en: "Max", fr: "Max" },
+    pricePerKg: { tr: "Fiyat (EUR/kg)", en: "Price (EUR/kg)", fr: "Prix (EUR/kg)" },
   },
 
   // ─── Tolerance Guide ───

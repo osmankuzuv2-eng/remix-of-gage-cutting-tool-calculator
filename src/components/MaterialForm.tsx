@@ -15,6 +15,7 @@ const MaterialForm = ({ onAddMaterial, onClose }: MaterialFormProps) => {
     cuttingSpeedMin: 100, cuttingSpeedMax: 200,
     feedRateMin: 0.1, feedRateMax: 0.3,
     taylorN: 0.2, taylorC: 250,
+    pricePerKg: 0,
   });
 
   const colors = ["bg-blue-500", "bg-green-500", "bg-red-500", "bg-yellow-500", "bg-purple-500", "bg-orange-500", "bg-pink-500", "bg-cyan-500"];
@@ -27,6 +28,7 @@ const MaterialForm = ({ onAddMaterial, onClose }: MaterialFormProps) => {
       cuttingSpeed: { min: formData.cuttingSpeedMin, max: formData.cuttingSpeedMax, unit: "m/dk" },
       feedRate: { min: formData.feedRateMin, max: formData.feedRateMax, unit: "mm/dev" },
       taylorN: formData.taylorN, taylorC: formData.taylorC, density: 7.85, color: selectedColor,
+      pricePerKg: formData.pricePerKg || undefined,
     };
     onAddMaterial(newMaterial);
     onClose();
@@ -56,6 +58,10 @@ const MaterialForm = ({ onAddMaterial, onClose }: MaterialFormProps) => {
             <div>
               <label className="label-industrial block mb-2">{t("materialForm", "hardness")}</label>
               <input type="text" required value={formData.hardness} onChange={(e) => setFormData({ ...formData, hardness: e.target.value })} className="input-industrial w-full" placeholder={t("materialForm", "hardnessPlaceholder")} />
+            </div>
+            <div className="col-span-2">
+              <label className="label-industrial block mb-2">{t("materialForm", "pricePerKg")}</label>
+              <input type="number" step="0.01" min="0" value={formData.pricePerKg} onChange={(e) => setFormData({ ...formData, pricePerKg: Number(e.target.value) })} className="input-industrial w-full" placeholder="EUR/kg" />
             </div>
           </div>
 
