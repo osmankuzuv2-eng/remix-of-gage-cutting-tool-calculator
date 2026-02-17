@@ -80,6 +80,7 @@ export const translations = {
     smallHoles: { tr: "Küçük Delik", en: "Small Holes", fr: "Petits trous" },
     largeHoles: { tr: "Büyük Delik", en: "Large Holes", fr: "Grands trous" },
     rawMaterialCost: { tr: "Ham Malzeme Maliyeti", en: "Raw Material Cost", fr: "Coût matière brute" },
+    rawMaterialMarkupNote: { tr: "Hammadde fiyatına %10 fire/işleme payı eklenerek hesaplanmıştır.", en: "Calculated with a 10% waste/processing markup on raw material price.", fr: "Calculé avec une majoration de 10 % pour déchets/usinage." },
     chipCost: { tr: "Talaş Maliyeti", en: "Chip Cost", fr: "Coût copeaux" },
     totalHoleCost: { tr: "Toplam Delik Maliyeti", en: "Total Hole Cost", fr: "Coût total trous" },
     subtotal: { tr: "Ara Toplam", en: "Subtotal", fr: "Sous-total" },
