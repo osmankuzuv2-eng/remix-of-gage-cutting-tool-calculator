@@ -1,5 +1,5 @@
-import { Settings, LogOut, KeyRound, User, ChevronDown, Mail } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Settings, LogOut, KeyRound, User, ChevronDown, Mail, Camera } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,24 +68,69 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
   const current = languages.find((l) => l.code === language)!;
   const CurrentFlag = flagComponents[language];
 
-  // Fetch profile for custom_title and title_color
+  // Fetch profile for custom_title, title_color, avatar_url
   const [customTitle, setCustomTitle] = useState<string | null>(null);
   const [titleColor, setTitleColor] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("custom_title, title_color")
+      .select("custom_title, title_color, avatar_url")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
         if (data) {
           setCustomTitle(data.custom_title);
           setTitleColor(data.title_color);
+          setAvatarUrl(data.avatar_url);
         }
       });
   }, [user]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Sadece resim dosyası yükleyebilirsiniz", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Dosya boyutu 2MB'dan küçük olmalı", variant: "destructive" });
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl + "?t=" + Date.now();
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("user_id", user.id);
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast({ title: t("common", "success") });
+    } catch (err: any) {
+      toast({ title: err.message, variant: "destructive" });
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -173,8 +218,12 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors">
-                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-                        <User className="w-4 h-4 text-primary" />
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-4 h-4 text-primary" />
+                        )}
                       </div>
                       <div className="hidden sm:flex flex-col items-start">
                         <span className="text-xs font-medium text-foreground leading-tight">
@@ -200,8 +249,28 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                   <DropdownMenuContent align="end" className="w-64 bg-popover border border-border z-50">
                     <DropdownMenuLabel className="px-3 py-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                          <User className="w-5 h-5 text-primary" />
+                        <div className="relative group">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-5 h-5 text-primary" />
+                            )}
+                          </div>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); avatarInputRef.current?.click(); }}
+                            className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            disabled={uploadingAvatar}
+                          >
+                            <Camera className="w-3 h-3 text-primary-foreground" />
+                          </button>
+                          <input
+                            ref={avatarInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAvatarUpload}
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate">
