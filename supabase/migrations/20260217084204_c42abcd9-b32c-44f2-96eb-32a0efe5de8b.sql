@@ -1,0 +1,1 @@
+ALTER TABLE public.analysis_feedback ADD COLUMN rating integer DEFAULT NULL CHECK (rating >= 1 AND rating <= 5);
