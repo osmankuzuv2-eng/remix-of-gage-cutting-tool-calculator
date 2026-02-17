@@ -15,9 +15,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import MenuManager from "@/components/MenuManager";
 import MachineManager from "@/components/MachineManager";
 
@@ -73,6 +74,10 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
 
   const [submitting, setSubmitting] = useState(false);
 
+  // Feedback state
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [trainingInProgress, setTrainingInProgress] = useState(false);
   const callAdmin = async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", {
       body,
@@ -249,15 +254,100 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     );
   }
 
+
+  const loadFeedbacks = async () => {
+    setFeedbackLoading(true);
+    try {
+      const { data, error } = await supabase.from("analysis_feedback" as any).select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      setFeedbacks((data as any[]) || []);
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const updateFeedbackStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase.from("analysis_feedback" as any).update({ status, ...(status === "approved" ? { applied_at: new Date().toISOString() } : {}) } as any).eq("id", id);
+      if (error) throw error;
+      toast({ title: t("common", "success"), description: status === "approved" ? "Onaylandı" : "Reddedildi" });
+      loadFeedbacks();
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    }
+  };
+
+  const deleteFeedback = async (id: string) => {
+    if (!confirm("Bu geri bildirimi silmek istediğinize emin misiniz?")) return;
+    try {
+      const { error } = await supabase.from("analysis_feedback" as any).delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: t("common", "success"), description: "Silindi" });
+      loadFeedbacks();
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    }
+  };
+
+  const trainAI = async () => {
+    const approved = feedbacks.filter(f => f.status === "approved" && !f.applied_at);
+    if (!approved.length) {
+      // Use all approved
+      const allApproved = feedbacks.filter(f => f.status === "approved");
+      if (!allApproved.length) {
+        toast({ title: "Bilgi", description: "Onaylanmış geri bildirim yok.", variant: "destructive" });
+        return;
+      }
+    }
+    setTrainingInProgress(true);
+    try {
+      const { error } = await supabase.functions.invoke("analyze-drawing", {
+        body: { action: "train", feedbacks: feedbacks.filter(f => f.status === "approved") },
+      });
+      if (error) throw error;
+      // Mark all approved as applied
+      for (const fb of feedbacks.filter(f => f.status === "approved")) {
+        await supabase.from("analysis_feedback" as any).update({ applied_at: new Date().toISOString() } as any).eq("id", fb.id);
+      }
+      toast({ title: t("common", "success"), description: "AI eğitim verileri güncellendi!" });
+      loadFeedbacks();
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    } finally {
+      setTrainingInProgress(false);
+    }
+  };
+
+  const feedbackTypeLabel = (type: string) => {
+    switch (type) {
+      case "correction": return "Düzeltme";
+      case "missing": return "Eksik";
+      case "strategy": return "Strateji";
+      default: return "Diğer";
+    }
+  };
+
+  const feedbackStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending": return <Badge variant="secondary">Bekliyor</Badge>;
+      case "approved": return <Badge className="bg-success/20 text-success border-success/30">Onaylı</Badge>;
+      case "rejected": return <Badge variant="destructive">Reddedildi</Badge>;
+      default: return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
           <TabsTrigger value="machines" className="gap-2"><Monitor className="w-4 h-4" /> Makine Parkı</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü Yönetimi</TabsTrigger>
+          <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4 mt-4">
@@ -330,6 +420,72 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
 
         <TabsContent value="menu" className="mt-4">
           <MenuManager onUpdated={onMenuUpdated} />
+        </TabsContent>
+
+        <TabsContent value="feedback" className="space-y-4 mt-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Teknik resim analizlerinden gelen geri bildirimler. Onaylanan bildirimler AI eğitimi için kullanılır.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={loadFeedbacks} disabled={feedbackLoading}>
+                {feedbackLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                Yenile
+              </Button>
+              <Button size="sm" onClick={trainAI} disabled={trainingInProgress || !feedbacks.some(f => f.status === "approved")} className="gap-1.5">
+                {trainingInProgress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
+                AI'yı Eğit ({feedbacks.filter(f => f.status === "approved").length})
+              </Button>
+            </div>
+          </div>
+
+          {feedbackLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          ) : feedbacks.length === 0 ? (
+            <Card className="bg-card border-border">
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>Henüz geri bildirim yok.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {feedbacks.map((fb) => (
+                <Card key={fb.id} className="bg-card border-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-foreground text-sm">{fb.part_name}</span>
+                          <Badge variant="outline" className="text-[10px]">{feedbackTypeLabel(fb.feedback_type)}</Badge>
+                          {feedbackStatusBadge(fb.status)}
+                          {fb.applied_at && <Badge variant="outline" className="text-[10px] border-success/30 text-success">Uygulandı</Badge>}
+                        </div>
+                        {fb.file_name && <p className="text-xs text-muted-foreground">Dosya: {fb.file_name}</p>}
+                        <p className="text-sm text-foreground bg-secondary/30 p-2 rounded">{fb.feedback_text}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(fb.created_at).toLocaleString("tr-TR")}</p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        {fb.status === "pending" && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:text-success" onClick={() => updateFeedbackStatus(fb.id, "approved")} title="Onayla">
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => updateFeedbackStatus(fb.id, "rejected")} title="Reddet">
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteFeedback(fb.id)} title="Sil">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
