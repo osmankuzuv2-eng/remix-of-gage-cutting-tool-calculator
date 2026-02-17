@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import {
   registerFonts,
   drawHeader,
@@ -130,77 +131,135 @@ export const exportAnalysisPdf = async (analysis: AnalysisResult, t?: TFn) => {
   // ═══════════════════════════════════════════
   let y = await drawHeader(doc, tr("pdf", "analysisReport"));
 
+  // ── Load GAGE logo for summary card ──
+  let gageLogo = "";
+  try {
+    const logoImg = new Image();
+    logoImg.crossOrigin = "anonymous";
+    await new Promise<void>((resolve) => {
+      logoImg.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = logoImg.width;
+        canvas.height = logoImg.height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(logoImg, 0, 0);
+        gageLogo = canvas.toDataURL("image/png");
+        resolve();
+      };
+      logoImg.onerror = () => resolve();
+      logoImg.src = "/images/gage-logo-pdf.png";
+    });
+  } catch { /* ignore */ }
+
+  // ── Generate QR code ──
+  let qrDataUrl = "";
+  try {
+    const qrContent = `GAGE Confidence ToolSense\nParca: ${analysis.partName}\nMalzeme: ${analysis.material}\nSure: ${analysis.totalEstimatedTime} dk\nTarih: ${new Date().toLocaleDateString("tr-TR")}`;
+    qrDataUrl = await QRCode.toDataURL(qrContent, {
+      width: 200,
+      margin: 1,
+      color: { dark: "#1e2332", light: "#f5f6fc" },
+      errorCorrectionLevel: "M",
+    });
+  } catch { /* ignore */ }
+
   // ── Summary card ──
   const cardY = y;
   const cardPad = 4;
+  const cardH = 48;
+  const logoSize = 28;
+  const qrSize = 28;
+
+  // Card background
   doc.setFillColor(245, 246, 252);
   doc.setDrawColor(200, 200, 220);
-  doc.roundedRect(margin, cardY, contentWidth, 44, 2, 2, "FD");
+  doc.roundedRect(margin, cardY, contentWidth, cardH, 2, 2, "FD");
   doc.setFillColor(...BRAND.primary);
   doc.rect(margin, cardY, contentWidth, 1.5, "F");
 
-  let cy = cardY + 6;
-  const halfW = contentWidth / 2 - cardPad;
+  // Logo on left side of card
+  const logoAreaW = gageLogo ? logoSize + 6 : 0;
+  if (gageLogo) {
+    try {
+      doc.addImage(gageLogo, "PNG", margin + 3, cardY + (cardH - logoSize) / 2, logoSize, logoSize);
+    } catch { /* ignore */ }
+  }
 
-  // Left column
-  const leftX = margin + cardPad;
-  cy = cardY + 6;
-  doc.setFont("Roboto", "bold"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
-  doc.text("PARCA ADI", leftX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(11); doc.setTextColor(...BRAND.dark);
-  const partNameTrunc = analysis.partName.length > 30 ? analysis.partName.substring(0, 28) + ".." : analysis.partName;
-  doc.text(partNameTrunc, leftX, cy + 5);
+  // QR code on right side of card
+  const qrAreaW = qrDataUrl ? qrSize + 6 : 0;
+  if (qrDataUrl) {
+    try {
+      const qrX = margin + contentWidth - qrSize - 3;
+      const qrY = cardY + (cardH - qrSize) / 2;
+      doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+      doc.setFont("Roboto", "normal"); doc.setFontSize(5); doc.setTextColor(...BRAND.muted);
+      doc.text("QR Rapor", qrX + qrSize / 2, qrY + qrSize + 3, { align: "center" });
+    } catch { /* ignore */ }
+  }
+
+  // Content area between logo and QR
+  const infoLeftX = margin + logoAreaW + cardPad;
+  const infoWidth = contentWidth - logoAreaW - qrAreaW - cardPad * 2;
+  const colW = infoWidth / 2;
+
+  // Left info column
+  let cy = cardY + 6;
+  doc.setFont("Roboto", "bold"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.text("PARCA ADI", infoLeftX, cy);
+  doc.setFont("Roboto", "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
+  const partNameTrunc = analysis.partName.length > 26 ? analysis.partName.substring(0, 24) + ".." : analysis.partName;
+  doc.text(partNameTrunc, infoLeftX, cy + 5);
 
   cy = cardY + 18;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
-  doc.text("MALZEME", leftX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(8.5); doc.setTextColor(50, 50, 70);
-  const matTrunc = analysis.material.length > 35 ? analysis.material.substring(0, 33) + ".." : analysis.material;
-  doc.text(matTrunc, leftX, cy + 4.5);
+  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.text("MALZEME", infoLeftX, cy);
+  doc.setFont("Roboto", "bold"); doc.setFontSize(8); doc.setTextColor(50, 50, 70);
+  const matTrunc = analysis.material.length > 30 ? analysis.material.substring(0, 28) + ".." : analysis.material;
+  doc.text(matTrunc, infoLeftX, cy + 4.5);
 
   cy = cardY + 28;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
-  doc.text("BOYUTLAR", leftX, cy);
-  doc.setFont("Roboto", "normal"); doc.setFontSize(8); doc.setTextColor(50, 50, 70);
-  doc.text(analysis.overallDimensions || "-", leftX, cy + 4.5);
+  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+  doc.text("BOYUTLAR", infoLeftX, cy);
+  doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
+  doc.text(analysis.overallDimensions || "-", infoLeftX, cy + 4.5);
 
   cy = cardY + 38;
   if (analysis.rawMaterialDimensions) {
-    doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
-    doc.text("HAM MALZEME", leftX, cy);
-    doc.setFont("Roboto", "normal"); doc.setFontSize(8); doc.setTextColor(50, 50, 70);
-    doc.text(analysis.rawMaterialDimensions, leftX, cy + 4.5);
+    doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
+    doc.text("HAM MALZEME", infoLeftX, cy);
+    doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
+    doc.text(analysis.rawMaterialDimensions, infoLeftX, cy + 4.5);
   }
 
-  // Right column - times
-  const rightX = margin + contentWidth / 2 + cardPad;
+  // Right info column
+  const rightX = infoLeftX + colW;
   cy = cardY + 6;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
+  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("KARMASIKLIK", rightX, cy);
   doc.setFont("Roboto", "bold"); doc.setFontSize(9); doc.setTextColor(...BRAND.primary);
   doc.text(analysis.complexity || "-", rightX, cy + 5);
 
   cy = cardY + 18;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
+  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("TOPLAM ISLEME SURESI", rightX, cy);
   doc.setFont("Roboto", "bold"); doc.setFontSize(10); doc.setTextColor(...BRAND.dark);
   doc.text(`${analysis.totalEstimatedTime} dk`, rightX, cy + 5);
 
   cy = cardY + 28;
-  doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
+  doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
   doc.text("HAZIRLIK SURESI", rightX, cy);
-  doc.setFont("Roboto", "bold"); doc.setFontSize(9); doc.setTextColor(50, 50, 70);
+  doc.setFont("Roboto", "bold"); doc.setFontSize(8.5); doc.setTextColor(50, 50, 70);
   doc.text(`${analysis.setupTime} dk`, rightX, cy + 4.5);
 
   cy = cardY + 38;
   if (analysis.weight) {
-    doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...BRAND.muted);
+    doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...BRAND.muted);
     doc.text("AGIRLIK", rightX, cy);
-    doc.setFont("Roboto", "normal"); doc.setFontSize(8); doc.setTextColor(50, 50, 70);
+    doc.setFont("Roboto", "normal"); doc.setFontSize(7.5); doc.setTextColor(50, 50, 70);
     doc.text(analysis.weight, rightX, cy + 4.5);
   }
 
-  y = cardY + 48;
+  y = cardY + 52;
 
   // ── Clamping strategy ──
   if (analysis.clampingStrategy) {
