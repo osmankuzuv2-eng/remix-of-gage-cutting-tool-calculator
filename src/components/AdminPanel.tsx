@@ -15,7 +15,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MenuManager from "@/components/MenuManager";
 import MachineManager from "@/components/MachineManager";
@@ -31,7 +32,7 @@ interface UserData {
   id: string;
   email: string;
   created_at: string;
-  profile: { display_name: string | null; company: string | null; position: string | null } | null;
+  profile: { display_name: string | null; company: string | null; position: string | null; custom_title: string | null; title_color: string | null } | null;
   roles: string[];
   permissions: { module_key: string; granted: boolean }[];
 }
@@ -64,6 +65,8 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editIsAdmin, setEditIsAdmin] = useState(false);
   const [editPermissions, setEditPermissions] = useState<Record<string, boolean>>({});
+  const [editCustomTitle, setEditCustomTitle] = useState("");
+  const [editTitleColor, setEditTitleColor] = useState("");
 
   // Password form
   const [changePassword, setChangePassword] = useState("");
@@ -136,6 +139,8 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         display_name: editDisplayName,
         is_admin: editIsAdmin,
         module_permissions,
+        custom_title: editCustomTitle,
+        title_color: editTitleColor,
       });
       toast({ title: t("common", "success"), description: t("admin", "userUpdated") });
       setShowEditDialog(false);
@@ -182,6 +187,8 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setEditEmail(user.email);
     setEditDisplayName(user.profile?.display_name || "");
     setEditIsAdmin(user.roles.includes("admin"));
+    setEditCustomTitle(user.profile?.custom_title || "");
+    setEditTitleColor(user.profile?.title_color || "");
     const perms: Record<string, boolean> = {};
     ALL_MODULES.forEach((m) => {
       const found = user.permissions.find((p) => p.module_key === m);
@@ -274,6 +281,18 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                           <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
                         ) : (
                           <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                        {user.profile?.custom_title ? (
+                          <Badge
+                            className="text-[10px] px-1.5 py-0"
+                            style={user.profile?.title_color ? { backgroundColor: user.profile.title_color, color: '#fff' } : undefined}
+                          >
+                            {user.profile.custom_title}
+                          </Badge>
+                        ) : (
+                          <Badge variant={user.roles.includes("admin") ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
+                            {user.roles.includes("admin") ? "Admin" : "Personel"}
+                          </Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground truncate">{user.email}</p>
@@ -374,6 +393,32 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               <Switch checked={editIsAdmin} onCheckedChange={setEditIsAdmin} />
               <span className="text-foreground font-medium">{t("admin", "adminRole")}</span>
             </label>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Palette className="w-4 h-4" /> Özel Ünvan (Badge)</Label>
+              <Input value={editCustomTitle} onChange={(e) => setEditCustomTitle(e.target.value)} placeholder="Örn: CNC Operatör, Kalite Kontrol..." />
+              <p className="text-xs text-muted-foreground">Boş bırakılırsa yetkiye göre "Admin" veya "Personel" gösterilir.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Badge Rengi</Label>
+              <div className="flex items-center gap-3">
+                <input type="color" value={editTitleColor || "#6366f1"} onChange={(e) => setEditTitleColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer border border-border" />
+                <Input value={editTitleColor} onChange={(e) => setEditTitleColor(e.target.value)} placeholder="#6366f1" className="flex-1" />
+                {editTitleColor && (
+                  <Button variant="ghost" size="sm" onClick={() => setEditTitleColor("")}>Temizle</Button>
+                )}
+              </div>
+              {editCustomTitle && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-muted-foreground">Önizleme:</span>
+                  <Badge
+                    className="text-[10px] px-1.5 py-0"
+                    style={editTitleColor ? { backgroundColor: editTitleColor, color: '#fff' } : undefined}
+                  >
+                    {editCustomTitle}
+                  </Badge>
+                </div>
+              )}
+            </div>
             <div>
               <Label>{t("admin", "modulePermissions")}</Label>
               <ModulePermissionToggles
