@@ -48,7 +48,7 @@ interface MenuManagerProps {
   readOnly?: boolean;
 }
 
-const MenuManager = ({ onUpdated }: MenuManagerProps) => {
+const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [categories, setCategories] = useState<CategoryData[]>([]);
@@ -221,9 +221,11 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">Menü Yönetimi</h3>
-        <Button onClick={openCreate} size="sm" className="gap-1.5">
-          <Plus className="w-4 h-4" /> Kategori Ekle
-        </Button>
+        {!readOnly && (
+          <Button onClick={openCreate} size="sm" className="gap-1.5">
+            <Plus className="w-4 h-4" /> Kategori Ekle
+          </Button>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -234,10 +236,10 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
               <CardContent className="p-3">
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-5 w-5" disabled={idx === 0} onClick={() => moveCategory(cat.id, "up")}>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" disabled={idx === 0 || readOnly} onClick={() => moveCategory(cat.id, "up")}>
                       <ArrowUp className="w-3 h-3" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" disabled={idx === categories.length - 1} onClick={() => moveCategory(cat.id, "down")}>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" disabled={idx === categories.length - 1 || readOnly} onClick={() => moveCategory(cat.id, "down")}>
                       <ArrowDown className="w-3 h-3" />
                     </Button>
                   </div>
@@ -255,10 +257,12 @@ const MenuManager = ({ onUpdated }: MenuManagerProps) => {
                       {cat.modules.length === 0 && <span className="text-xs text-muted-foreground italic">Modül atanmamış</span>}
                     </div>
                   </div>
+                  {!readOnly && (
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEdit(cat)}><Pencil className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(cat.id)}><Trash2 className="w-4 h-4" /></Button>
                   </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
