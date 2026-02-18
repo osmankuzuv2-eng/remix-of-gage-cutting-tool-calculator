@@ -12,9 +12,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ArrowUp, ArrowDown, Languages } from "lucide-react";
 import { iconMap, getIcon } from "@/lib/iconMap";
 import { useAllModules } from "@/hooks/useAllModules";
+import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
 const COLOR_PRESETS = [
   { label: "Mor", color: "from-violet-500 to-purple-700", bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/30" },
@@ -47,6 +48,7 @@ interface MenuManagerProps {
 const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
   const { t } = useLanguage();
   const { modules: ALL_MODULES } = useAllModules();
+  const { translations: moduleTrans, getModuleName, upsertTranslation } = useModuleTranslations();
   const { toast } = useToast();
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,13 +56,21 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
   const [editingCat, setEditingCat] = useState<CategoryData | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
+  // Category form state
   const [formName, setFormName] = useState("");
   const [formNameEn, setFormNameEn] = useState("");
   const [formNameFr, setFormNameFr] = useState("");
   const [formIcon, setFormIcon] = useState("Cpu");
   const [formColorIdx, setFormColorIdx] = useState(0);
   const [formModules, setFormModules] = useState<string[]>([]);
+
+  // Module translation dialog
+  const [showModuleTransDialog, setShowModuleTransDialog] = useState(false);
+  const [editingModuleKey, setEditingModuleKey] = useState("");
+  const [modNameTr, setModNameTr] = useState("");
+  const [modNameEn, setModNameEn] = useState("");
+  const [modNameFr, setModNameFr] = useState("");
+  const [savingModTrans, setSavingModTrans] = useState(false);
 
   const loadCategories = async () => {
     setLoading(true);
@@ -87,7 +97,6 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
 
   useEffect(() => { loadCategories(); }, []);
 
-  // Get modules already assigned to other categories (excluding current editing)
   const assignedModules = categories
     .filter((c) => c.id !== editingCat?.id)
     .flatMap((c) => c.modules.map((m) => m.module_key));
@@ -96,12 +105,8 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
 
   const openCreate = () => {
     setEditingCat(null);
-    setFormName("");
-    setFormNameEn("");
-    setFormNameFr("");
-    setFormIcon("Cpu");
-    setFormColorIdx(0);
-    setFormModules([]);
+    setFormName(""); setFormNameEn(""); setFormNameFr("");
+    setFormIcon("Cpu"); setFormColorIdx(0); setFormModules([]);
     setShowDialog(true);
   };
 
@@ -124,19 +129,12 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
 
     try {
       if (editingCat) {
-        // Update category
         await supabase.from("menu_categories").update({
-          name: formName,
-          name_en: formNameEn || null,
-          name_fr: formNameFr || null,
-          icon: formIcon,
-          color: preset.color,
-          bg_color: preset.bg,
-          text_color: preset.text,
-          border_color: preset.border,
+          name: formName, name_en: formNameEn || null, name_fr: formNameFr || null,
+          icon: formIcon, color: preset.color, bg_color: preset.bg,
+          text_color: preset.text, border_color: preset.border,
         }).eq("id", editingCat.id);
 
-        // Delete old modules and re-insert
         await supabase.from("menu_category_modules").delete().eq("category_id", editingCat.id);
         if (formModules.length > 0) {
           await supabase.from("menu_category_modules").insert(
@@ -144,18 +142,11 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
           );
         }
       } else {
-        // Create new category
         const maxOrder = categories.length > 0 ? Math.max(...categories.map((c) => c.sort_order)) + 1 : 0;
         const { data: newCat } = await supabase.from("menu_categories").insert({
-          name: formName,
-          name_en: formNameEn || null,
-          name_fr: formNameFr || null,
-          icon: formIcon,
-          color: preset.color,
-          bg_color: preset.bg,
-          text_color: preset.text,
-          border_color: preset.border,
-          sort_order: maxOrder,
+          name: formName, name_en: formNameEn || null, name_fr: formNameFr || null,
+          icon: formIcon, color: preset.color, bg_color: preset.bg,
+          text_color: preset.text, border_color: preset.border, sort_order: maxOrder,
         }).select().single();
 
         if (newCat && formModules.length > 0) {
@@ -227,6 +218,28 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
     setFormModules((prev) => prev.filter((m) => m !== moduleKey));
   };
 
+  // Module translation edit
+  const openModuleTransEdit = (moduleKey: string) => {
+    const existing = moduleTrans.find((t) => t.module_key === moduleKey);
+    setEditingModuleKey(moduleKey);
+    setModNameTr(existing?.name_tr || "");
+    setModNameEn(existing?.name_en || "");
+    setModNameFr(existing?.name_fr || "");
+    setShowModuleTransDialog(true);
+  };
+
+  const saveModuleTranslation = async () => {
+    setSavingModTrans(true);
+    const error = await upsertTranslation(editingModuleKey, modNameTr, modNameEn, modNameFr);
+    if (error) {
+      toast({ title: t("common", "error"), description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: t("common", "success") });
+      setShowModuleTransDialog(false);
+    }
+    setSavingModTrans(false);
+  };
+
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
@@ -240,6 +253,7 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
         )}
       </div>
 
+      {/* Category list */}
       <div className="space-y-2">
         {categories.map((cat, idx) => {
           const CatIcon = getIcon(cat.icon);
@@ -262,8 +276,17 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
                     <p className={`font-medium ${cat.text_color}`}>{cat.name}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {cat.modules.map((m) => (
-                        <span key={m.module_key} className={`text-xs px-1.5 py-0.5 rounded ${cat.bg_color} ${cat.text_color} border ${cat.border_color}`}>
-                          {t("tabs", m.module_key)}
+                        <span key={m.module_key} className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${cat.bg_color} ${cat.text_color} border ${cat.border_color}`}>
+                          {getModuleName(m.module_key)}
+                          {!readOnly && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openModuleTransEdit(m.module_key); }}
+                              className="hover:opacity-70 transition-opacity"
+                              title="Dil çevirilerini düzenle"
+                            >
+                              <Languages className="w-3 h-3" />
+                            </button>
+                          )}
                         </span>
                       ))}
                       {cat.modules.length === 0 && <span className="text-xs text-muted-foreground italic">Modül atanmamış</span>}
@@ -282,7 +305,42 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
         })}
       </div>
 
-      {/* Create/Edit Dialog */}
+      {/* Module translations section */}
+      {!readOnly && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+            <Languages className="w-4 h-4" /> Modül Dil Çevirileri
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {ALL_MODULES.map((mk) => {
+              const trans = moduleTrans.find((t) => t.module_key === mk);
+              return (
+                <Card key={mk} className="border border-border bg-card/50">
+                  <CardContent className="p-2.5 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{getModuleName(mk)}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{mk}</p>
+                      <div className="flex gap-2 mt-0.5">
+                        {trans?.name_tr && <span className="text-[10px] text-muted-foreground">🇹🇷 ✓</span>}
+                        {trans?.name_en && <span className="text-[10px] text-muted-foreground">🇬🇧 ✓</span>}
+                        {trans?.name_fr && <span className="text-[10px] text-muted-foreground">🇫🇷 ✓</span>}
+                        {!trans?.name_tr && !trans?.name_en && !trans?.name_fr && (
+                          <span className="text-[10px] text-destructive">Çeviri eksik</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openModuleTransEdit(mk)}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Category Create/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -340,7 +398,6 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
 
             <div className="space-y-2">
               <Label>Modüller</Label>
-              {/* Add new module input */}
               <div className="flex gap-2">
                 <Input
                   value={newModuleKey}
@@ -353,7 +410,6 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
                   <Plus className="w-4 h-4 mr-1" /> Ekle
                 </Button>
               </div>
-              {/* Module selection grid */}
               <div className="grid grid-cols-2 gap-2">
                 {Array.from(new Set([...availableModules, ...formModules])).map((m) => {
                   const selected = formModules.includes(m);
@@ -369,7 +425,7 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
                         }`}
                       >
                         <div className={`w-3 h-3 rounded-sm border ${selected ? `${preset.border} bg-current` : "border-muted-foreground"}`} />
-                        {t("tabs", m)}
+                        {getModuleName(m)}
                       </button>
                       {selected && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => removeModule(m)}>
@@ -386,6 +442,39 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
             <Button variant="outline" onClick={() => setShowDialog(false)}>{t("common", "cancel")}</Button>
             <Button onClick={handleSave} disabled={submitting || !formName.trim()}>
               {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {t("common", "save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Module Translation Edit Dialog */}
+      <Dialog open={showModuleTransDialog} onOpenChange={setShowModuleTransDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Languages className="w-5 h-5" />
+              Modül Çevirisi: <span className="font-mono text-sm text-muted-foreground">{editingModuleKey}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">🇹🇷 Türkçe Ad</Label>
+              <Input value={modNameTr} onChange={(e) => setModNameTr(e.target.value)} placeholder="Türkçe modül adı..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">🇬🇧 English Name</Label>
+              <Input value={modNameEn} onChange={(e) => setModNameEn(e.target.value)} placeholder="English module name..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">🇫🇷 Nom Français</Label>
+              <Input value={modNameFr} onChange={(e) => setModNameFr(e.target.value)} placeholder="Nom du module en français..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowModuleTransDialog(false)}>{t("common", "cancel")}</Button>
+            <Button onClick={saveModuleTranslation} disabled={savingModTrans}>
+              {savingModTrans && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               {t("common", "save")}
             </Button>
           </DialogFooter>

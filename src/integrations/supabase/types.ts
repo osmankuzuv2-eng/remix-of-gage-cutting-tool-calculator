@@ -337,6 +337,36 @@ export type Database = {
           },
         ]
       }
+      module_translations: {
+        Row: {
+          created_at: string
+          id: string
+          module_key: string
+          name_en: string | null
+          name_fr: string | null
+          name_tr: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_key: string
+          name_en?: string | null
+          name_fr?: string | null
+          name_tr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_key?: string
+          name_en?: string | null
+          name_fr?: string | null
+          name_tr?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
