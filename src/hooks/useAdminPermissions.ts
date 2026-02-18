@@ -7,6 +7,7 @@ export const ADMIN_PANEL_KEYS = [
   "admin_customers",
   "admin_factories",
   "admin_machines",
+  "admin_modules",
   "admin_menu",
   "admin_feedback",
 ] as const;
@@ -18,6 +19,7 @@ export const ADMIN_PANEL_LABELS: Record<AdminPanelKey, string> = {
   admin_customers: "Müşteriler",
   admin_factories: "Fabrikalar",
   admin_machines: "Makine Parkı",
+  admin_modules: "Modüller",
   admin_menu: "Menü Yönetimi",
   admin_feedback: "AI Eğitim",
 };
