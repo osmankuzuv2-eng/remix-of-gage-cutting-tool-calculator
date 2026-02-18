@@ -206,10 +206,25 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
     }
   };
 
+  const [newModuleKey, setNewModuleKey] = useState("");
+
   const toggleModule = (moduleKey: string) => {
     setFormModules((prev) =>
       prev.includes(moduleKey) ? prev.filter((m) => m !== moduleKey) : [...prev, moduleKey]
     );
+  };
+
+  const addCustomModule = () => {
+    const key = newModuleKey.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!key) return;
+    if (!formModules.includes(key)) {
+      setFormModules((prev) => [...prev, key]);
+    }
+    setNewModuleKey("");
+  };
+
+  const removeModule = (moduleKey: string) => {
+    setFormModules((prev) => prev.filter((m) => m !== moduleKey));
   };
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
@@ -325,23 +340,43 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
 
             <div className="space-y-2">
               <Label>Modüller</Label>
+              {/* Add new module input */}
+              <div className="flex gap-2">
+                <Input
+                  value={newModuleKey}
+                  onChange={(e) => setNewModuleKey(e.target.value)}
+                  placeholder="Yeni modül key'i (ör: gcode)..."
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomModule())}
+                  className="flex-1"
+                />
+                <Button type="button" size="sm" onClick={addCustomModule} disabled={!newModuleKey.trim()}>
+                  <Plus className="w-4 h-4 mr-1" /> Ekle
+                </Button>
+              </div>
+              {/* Module selection grid */}
               <div className="grid grid-cols-2 gap-2">
-                {availableModules.concat(formModules.filter((m) => !availableModules.includes(m))).map((m) => {
+                {Array.from(new Set([...availableModules, ...formModules])).map((m) => {
                   const selected = formModules.includes(m);
                   const preset = COLOR_PRESETS[formColorIdx];
                   return (
-                    <button
-                      key={m}
-                      onClick={() => toggleModule(m)}
-                      className={`flex items-center gap-2 p-2 rounded-lg border text-sm transition-all ${
-                        selected
-                          ? `${preset.bg} ${preset.text} ${preset.border}`
-                          : "bg-card border-border text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <div className={`w-3 h-3 rounded-sm border ${selected ? `${preset.border} bg-current` : "border-muted-foreground"}`} />
-                      {t("tabs", m)}
-                    </button>
+                    <div key={m} className="flex items-center gap-1">
+                      <button
+                        onClick={() => toggleModule(m)}
+                        className={`flex-1 flex items-center gap-2 p-2 rounded-lg border text-sm transition-all ${
+                          selected
+                            ? `${preset.bg} ${preset.text} ${preset.border}`
+                            : "bg-card border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <div className={`w-3 h-3 rounded-sm border ${selected ? `${preset.border} bg-current` : "border-muted-foreground"}`} />
+                        {t("tabs", m)}
+                      </button>
+                      {selected && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => removeModule(m)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
