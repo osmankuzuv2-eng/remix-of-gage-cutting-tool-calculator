@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
+import { useMaterialSettings } from "@/hooks/useMaterialSettings";
 import { Lock, Plus, ChevronDown } from "lucide-react";
 import Header from "@/components/Header";
 import LiveTicker from "@/components/LiveTicker";
@@ -30,19 +31,17 @@ type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "c
 
 const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
-const MATERIAL_PRICES_KEY = "cnc_material_prices";
-const AFK_MULTIPLIERS_KEY = "cnc_afk_multipliers";
+// Prices and AFK multipliers are now stored in the database via useMaterialSettings
 
 const Index = () => {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const { categories, reload: reloadMenu } = useMenuConfig();
+  const { materialPrices, afkMultipliers, updatePrice, updateAfkMultiplier } = useMaterialSettings();
   const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
-  const [materialPrices, setMaterialPrices] = useState<Record<string, number>>({});
-  const [afkMultipliers, setAfkMultipliers] = useState<Record<string, number>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -57,10 +56,6 @@ const Index = () => {
   useEffect(() => {
     const stored = safeGetItem<Material[]>(CUSTOM_MATERIALS_KEY, []);
     if (isValidArray(stored)) setCustomMaterials(stored);
-    const storedPrices = safeGetItem<Record<string, number>>(MATERIAL_PRICES_KEY, {});
-    if (storedPrices && typeof storedPrices === "object") setMaterialPrices(storedPrices);
-    const storedAfk = safeGetItem<Record<string, number>>(AFK_MULTIPLIERS_KEY, {});
-    if (storedAfk && typeof storedAfk === "object") setAfkMultipliers(storedAfk);
   }, []);
 
   useEffect(() => {
@@ -222,9 +217,7 @@ const Index = () => {
               onDeleteCustom={handleDeleteMaterial}
               isAdmin={isAdmin}
               onUpdatePrice={(id, price) => {
-                const updatedPrices = { ...materialPrices, [id]: price };
-                setMaterialPrices(updatedPrices);
-                safeSetItem(MATERIAL_PRICES_KEY, updatedPrices);
+                updatePrice(id, price);
                 if (id.startsWith("custom-")) {
                   const updated = customMaterials.map((m) =>
                     m.id === id ? { ...m, pricePerKg: price } : m
@@ -234,9 +227,7 @@ const Index = () => {
                 }
               }}
               onUpdateAfkMultiplier={(id, multiplier) => {
-                const updated = { ...afkMultipliers, [id]: multiplier };
-                setAfkMultipliers(updated);
-                safeSetItem(AFK_MULTIPLIERS_KEY, updated);
+                updateAfkMultiplier(id, multiplier);
               }}
             />
           )}

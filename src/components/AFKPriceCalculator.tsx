@@ -4,7 +4,7 @@ import { exportAfkPricePdf } from "@/lib/exportAfkPricePdf";
 import { materials } from "@/data/materials";
 import { useMachines } from "@/hooks/useMachines";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { safeGetItem } from "@/lib/safeStorage";
+import { useMaterialSettings } from "@/hooks/useMaterialSettings";
 
 // Specific cutting force (Kc) by material category (N/mm²)
 const getKc = (category: string): number => {
@@ -45,8 +45,7 @@ const AFKPriceCalculator = () => {
   const [selectedMachine, setSelectedMachine] = useState("");
   const [machineRate, setMachineRate] = useState(0);
 
-  const savedPrices = safeGetItem<Record<string, number>>("cnc_material_prices", {}) || {};
-  const savedAfkMultipliers = safeGetItem<Record<string, number>>("cnc_afk_multipliers", {}) || {};
+  const { materialPrices: savedPrices, afkMultipliers: savedAfkMultipliers } = useMaterialSettings();
   const currentMaterial = materials.find((m) => m.id === selectedMaterial);
   const materialPrice = savedPrices[selectedMaterial] ?? currentMaterial?.pricePerKg ?? 0;
   const afkMultiplier = savedAfkMultipliers[selectedMaterial] ?? 1.0;

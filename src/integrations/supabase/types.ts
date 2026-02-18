@@ -230,6 +230,36 @@ export type Database = {
         }
         Relationships: []
       }
+      material_settings: {
+        Row: {
+          afk_multiplier: number | null
+          created_at: string
+          id: string
+          material_id: string
+          price_per_kg: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          afk_multiplier?: number | null
+          created_at?: string
+          id?: string
+          material_id: string
+          price_per_kg?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          afk_multiplier?: number | null
+          created_at?: string
+          id?: string
+          material_id?: string
+          price_per_kg?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           bg_color: string
