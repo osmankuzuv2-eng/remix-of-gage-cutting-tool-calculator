@@ -18,6 +18,7 @@ import AILearningModule from "@/components/AILearningModule";
 import DrawingAnalyzer from "@/components/DrawingAnalyzer";
 import ToleranceGuide from "@/components/ToleranceGuide";
 import AFKPriceCalculator from "@/components/AFKPriceCalculator";
+import CurrencyRateTracker from "@/components/CurrencyRateTracker";
 
 import AdminPanel from "@/components/AdminPanel";
 import { Material, materials as defaultMaterials } from "@/data/materials";
@@ -28,7 +29,7 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "history" | "drawing" | "tolerance" | "admin";
+type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "history" | "drawing" | "tolerance" | "admin";
 
 const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
@@ -236,6 +237,7 @@ const Index = () => {
           {activeTab === "cost" && hasAccess("cost") && <CostAnalyzer />}
           {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation />}
           {activeTab === "afkprice" && hasAccess("afkprice") && <AFKPriceCalculator />}
+          {activeTab === "currency-tracker" && hasAccess("currency-tracker") && <CurrencyRateTracker />}
           
           {activeTab === "drawing" && hasAccess("drawing") && <DrawingAnalyzer />}
           {activeTab === "tolerance" && hasAccess("tolerance") && <ToleranceGuide />}
