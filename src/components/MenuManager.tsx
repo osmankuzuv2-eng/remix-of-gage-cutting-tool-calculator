@@ -305,41 +305,6 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
         })}
       </div>
 
-      {/* Module translations section */}
-      {!readOnly && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-            <Languages className="w-4 h-4" /> Modül Dil Çevirileri
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {ALL_MODULES.map((mk) => {
-              const trans = moduleTrans.find((t) => t.module_key === mk);
-              return (
-                <Card key={mk} className="border border-border bg-card/50">
-                  <CardContent className="p-2.5 flex items-center justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{getModuleName(mk)}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{mk}</p>
-                      <div className="flex gap-2 mt-0.5">
-                        {trans?.name_tr && <span className="text-[10px] text-muted-foreground">🇹🇷 ✓</span>}
-                        {trans?.name_en && <span className="text-[10px] text-muted-foreground">🇬🇧 ✓</span>}
-                        {trans?.name_fr && <span className="text-[10px] text-muted-foreground">🇫🇷 ✓</span>}
-                        {!trans?.name_tr && !trans?.name_en && !trans?.name_fr && (
-                          <span className="text-[10px] text-destructive">Çeviri eksik</span>
-                        )}
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openModuleTransEdit(mk)}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Category Create/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
