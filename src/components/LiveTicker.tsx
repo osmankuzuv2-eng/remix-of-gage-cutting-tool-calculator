@@ -44,7 +44,7 @@ const LiveTicker = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5 * 60 * 1000); // 5 dk
+    const interval = setInterval(fetchData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -70,21 +70,19 @@ const LiveTicker = () => {
     },
   ];
 
-  const tickerContent = items.map((item, i) => (
-    <span key={i} className="inline-flex items-center gap-1.5 mx-6 whitespace-nowrap">
-      <span className={item.color}>{item.icon}</span>
-      <span className="text-muted-foreground font-medium">{item.label}:</span>
-      <span className="text-foreground font-bold">{item.value}</span>
-      {item.extra && (
-        <span className="text-muted-foreground text-[10px]">({item.extra})</span>
-      )}
-    </span>
-  ));
-
   return (
-    <div className="w-full overflow-hidden bg-card/80 backdrop-blur border-b border-border py-1.5">
-      <div className="ticker-track flex items-center text-xs">
-        <div className="ticker-content">{tickerContent}{tickerContent}</div>
+    <div className="w-full bg-card/80 backdrop-blur border-b border-border py-1.5">
+      <div className="flex items-center justify-center gap-8 text-xs">
+        {items.map((item, i) => (
+          <span key={i} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className={item.color}>{item.icon}</span>
+            <span className="text-muted-foreground font-medium">{item.label}:</span>
+            <span className="text-foreground font-bold">{item.value}</span>
+            {item.extra && (
+              <span className="text-muted-foreground text-[10px]">({item.extra})</span>
+            )}
+          </span>
+        ))}
       </div>
     </div>
   );
