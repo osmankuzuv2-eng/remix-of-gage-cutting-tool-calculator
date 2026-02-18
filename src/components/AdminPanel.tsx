@@ -27,6 +27,7 @@ import { useFactories } from "@/hooks/useFactories";
 import { useAdminPermissions, ADMIN_PANEL_KEYS, ADMIN_PANEL_LABELS, type AdminPanelKey } from "@/hooks/useAdminPermissions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAllModules } from "@/hooks/useAllModules";
+import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
 // All available modules loaded dynamically from DB via useAllModules hook
 
@@ -57,6 +58,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const { toast } = useToast();
   const { canEdit } = useAdminPermissions();
   const { modules: ALL_MODULES, reload: reloadModules } = useAllModules();
+  const { getModuleName } = useModuleTranslations();
 
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -341,7 +343,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
             onCheckedChange={(v) => onChange(m, v)}
             disabled={disabled}
           />
-          <span className="text-foreground">{t("tabs", m)}</span>
+          <span className="text-foreground">{getModuleName(m)}</span>
         </label>
       ))}
     </div>
@@ -663,7 +665,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                               .filter((p) => p.granted)
                               .map((p) => (
                                 <span key={p.module_key} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                                  {t("tabs", p.module_key)}
+                                  {getModuleName(p.module_key)}
                                 </span>
                               ))}
                           </div>

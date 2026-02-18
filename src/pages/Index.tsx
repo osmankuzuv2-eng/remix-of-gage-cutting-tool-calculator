@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
+import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
 type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "history" | "drawing" | "tolerance" | "admin";
 
@@ -37,6 +38,7 @@ const Index = () => {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const { categories, reload: reloadMenu } = useMenuConfig();
+  const { getModuleName } = useModuleTranslations();
   const { materialPrices, afkMultipliers, updatePrice, updateAfkMultiplier } = useMaterialSettings();
   const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
   const [openCategory, setOpenCategory] = useState<string | null>(null);
@@ -188,7 +190,7 @@ const Index = () => {
                       <span className={`text-xs font-medium text-center leading-tight transition-colors duration-300 ${
                         isActive ? cat.text_color : accessible ? "text-foreground" : "text-muted-foreground/30"
                       }`}>
-                        {t("tabs", mod.module_key)}
+                        {getModuleName(mod.module_key)}
                       </span>
                       {isActive && (
                         <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-gradient-to-r ${cat.color} animate-scale-in`} />
