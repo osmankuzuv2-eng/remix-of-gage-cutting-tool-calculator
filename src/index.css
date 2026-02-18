@@ -129,4 +129,19 @@
       linear-gradient(90deg, hsl(220 15% 15%) 1px, transparent 1px);
     background-size: 20px 20px;
   }
+
+  .ticker-track {
+    display: flex;
+    justify-content: center;
+  }
+
+  .ticker-content {
+    display: inline-flex;
+    animation: ticker-scroll 20s linear infinite;
+  }
+
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
 }
