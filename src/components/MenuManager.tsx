@@ -14,11 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Plus, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { iconMap, getIcon } from "@/lib/iconMap";
-
-const ALL_MODULES = [
-  "ai-learn", "drawing", "cutting", "toollife", "threading",
-  "drilling", "tolerance", "costcalc", "cost", "compare", "materials", "history",
-];
+import { useAllModules } from "@/hooks/useAllModules";
 
 const COLOR_PRESETS = [
   { label: "Mor", color: "from-violet-500 to-purple-700", bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/30" },
@@ -50,6 +46,7 @@ interface MenuManagerProps {
 
 const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
   const { t } = useLanguage();
+  const { modules: ALL_MODULES } = useAllModules();
   const { toast } = useToast();
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [loading, setLoading] = useState(true);

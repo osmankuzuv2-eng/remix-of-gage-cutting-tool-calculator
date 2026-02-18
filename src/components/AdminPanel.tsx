@@ -26,13 +26,9 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useFactories } from "@/hooks/useFactories";
 import { useAdminPermissions, ADMIN_PANEL_KEYS, ADMIN_PANEL_LABELS, type AdminPanelKey } from "@/hooks/useAdminPermissions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAllModules } from "@/hooks/useAllModules";
 
-// All available modules (ai-learn is always accessible, not listed here)
-const ALL_MODULES = [
-  "drawing", "costcalc", "cutting", "toollife", "threading",
-  "drilling", "tolerance", "compare", "materials", "cost", "history",
-  "add_material",
-];
+// All available modules loaded dynamically from DB via useAllModules hook
 
 interface UserData {
   id: string;
@@ -60,6 +56,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const { session } = useAuth();
   const { toast } = useToast();
   const { canEdit } = useAdminPermissions();
+  const { modules: ALL_MODULES, reload: reloadModules } = useAllModules();
 
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -843,7 +840,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         {/* ── Menu Tab ── */}
         <TabsContent value="menu" className="mt-4">
           {!canEditMenu && <ReadOnlyBanner />}
-          <MenuManager onUpdated={onMenuUpdated} readOnly={!canEditMenu} />
+          <MenuManager onUpdated={() => { onMenuUpdated?.(); reloadModules(); }} readOnly={!canEditMenu} />
         </TabsContent>
 
         {/* ── Feedback Tab ── */}
