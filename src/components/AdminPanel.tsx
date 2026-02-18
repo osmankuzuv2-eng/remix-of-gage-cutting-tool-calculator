@@ -15,11 +15,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2, Factory, Lock, Camera } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2, Factory, Lock, Camera, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import MenuManager from "@/components/MenuManager";
+import ModuleManager from "@/components/ModuleManager";
 import MachineManager from "@/components/MachineManager";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useCustomers } from "@/hooks/useCustomers";
@@ -596,6 +597,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const canEditCustomers = canEdit("admin_customers");
   const canEditFactories = canEdit("admin_factories");
   const canEditMachines = canEdit("admin_machines");
+  const canEditModules = canEdit("admin_modules");
   const canEditMenu = canEdit("admin_menu");
   const canEditFeedback = canEdit("admin_feedback");
 
@@ -604,11 +606,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
       <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Building2 className="w-4 h-4" /> Müşteriler</TabsTrigger>
           <TabsTrigger value="factories" className="gap-2"><Factory className="w-4 h-4" /> Fabrikalar</TabsTrigger>
           <TabsTrigger value="machines" className="gap-2"><Monitor className="w-4 h-4" /> Makine Parkı</TabsTrigger>
+          <TabsTrigger value="modules" className="gap-2"><Package className="w-4 h-4" /> Modüller</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
         </TabsList>
@@ -837,6 +840,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         <TabsContent value="machines" className="mt-4">
           {!canEditMachines && <ReadOnlyBanner />}
           <MachineManager readOnly={!canEditMachines} />
+        </TabsContent>
+
+        {/* ── Modules Tab ── */}
+        <TabsContent value="modules" className="mt-4">
+          {!canEditModules && <ReadOnlyBanner />}
+          <ModuleManager onUpdated={() => { reloadModules(); }} readOnly={!canEditModules} />
         </TabsContent>
 
         {/* ── Menu Tab ── */}
