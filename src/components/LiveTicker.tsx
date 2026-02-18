@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DollarSign, Euro, Thermometer } from "lucide-react";
+import { DollarSign, Euro, Thermometer, Clock } from "lucide-react";
 
 interface TickerData {
   usdTry: number | null;
@@ -15,6 +15,8 @@ const LiveTicker = () => {
     temperature: null,
     weatherDesc: null,
   });
+
+  const [now, setNow] = useState(new Date());
 
   const fetchData = async () => {
     try {
@@ -44,8 +46,9 @@ const LiveTicker = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    const dataInterval = setInterval(fetchData, 5 * 60 * 1000);
+    const clockInterval = setInterval(() => setNow(new Date()), 1000);
+    return () => { clearInterval(dataInterval); clearInterval(clockInterval); };
   }, []);
 
   const items = [
@@ -71,18 +74,32 @@ const LiveTicker = () => {
   ];
 
   return (
-    <div className="w-full bg-card/80 backdrop-blur border-b border-border py-1.5">
-      <div className="flex items-center justify-center gap-8 text-xs">
-        {items.map((item, i) => (
-          <span key={i} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span className={item.color}>{item.icon}</span>
-            <span className="text-muted-foreground font-medium">{item.label}:</span>
-            <span className="text-foreground font-bold">{item.value}</span>
-            {item.extra && (
-              <span className="text-muted-foreground text-[10px]">({item.extra})</span>
-            )}
+    <div className="w-full bg-card/80 backdrop-blur border-b border-border py-1.5 px-4">
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex-1" />
+        <div className="flex items-center gap-8">
+          {items.map((item, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <span className={item.color}>{item.icon}</span>
+              <span className="text-muted-foreground font-medium">{item.label}:</span>
+              <span className="text-foreground font-bold">{item.value}</span>
+              {item.extra && (
+                <span className="text-muted-foreground text-[10px]">({item.extra})</span>
+              )}
+            </span>
+          ))}
+        </div>
+        <div className="flex-1 flex justify-end">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-muted-foreground">
+            <Clock className="w-3.5 h-3.5 text-primary" />
+            <span className="font-medium">
+              {now.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+            </span>
+            <span className="font-bold text-foreground">
+              {now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
           </span>
-        ))}
+        </div>
       </div>
     </div>
   );
