@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import { Lock, Plus, ChevronDown } from "lucide-react";
 import Header from "@/components/Header";
+import LiveTicker from "@/components/LiveTicker";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
 import MaterialList from "@/components/MaterialList";
@@ -115,6 +116,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background grid-pattern">
       <Header isAdmin={isAdmin} onAdminClick={() => setActiveTab("admin")} adminActive={activeTab === "admin"} />
+      <LiveTicker />
       
       <main className="container mx-auto px-4 py-6">
         {/* Grouped Mega Menu */}
