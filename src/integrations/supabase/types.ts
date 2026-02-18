@@ -95,6 +95,42 @@ export type Database = {
         }
         Relationships: []
       }
+      currency_rates: {
+        Row: {
+          created_at: string
+          id: string
+          is_forecast: boolean
+          month: number
+          rate_type: string
+          source: string | null
+          updated_at: string
+          value: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_forecast?: boolean
+          month: number
+          rate_type: string
+          source?: string | null
+          updated_at?: string
+          value: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_forecast?: boolean
+          month?: number
+          rate_type?: string
+          source?: string | null
+          updated_at?: string
+          value?: number
+          year?: number
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
