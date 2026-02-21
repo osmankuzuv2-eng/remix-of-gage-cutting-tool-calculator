@@ -23,6 +23,7 @@ export interface Machine {
   is_active: boolean;
   sort_order: number;
   factory: string;
+  minute_rate: number;
 }
 
 export const useMachines = () => {
