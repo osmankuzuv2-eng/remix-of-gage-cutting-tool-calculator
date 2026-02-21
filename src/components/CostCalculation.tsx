@@ -9,6 +9,7 @@ import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useCoatings } from "@/hooks/useCoatings";
 
 interface CostCalculationProps {
   customMaterials?: Material[];
@@ -21,6 +22,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
   const { saveCalculation } = useSupabaseSync();
   const { machines, getMachinesByType, getMachineLabel } = useMachines();
   const { activeCustomers } = useCustomers();
+  const { activeCoatings } = useCoatings();
 
   const allMaterials = useMemo(() => [...materials, ...customMaterials], [customMaterials]);
   const getMaterialName = (id: string) => { const tr = t("materialNames", id); return tr !== id ? tr : allMaterials.find(m => m.id === id)?.name || id; };
@@ -80,7 +82,9 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
   const [materialPricePerKg, setMaterialPricePerKg] = useState(0);
   const [toolCost, setToolCost] = useState(0);
   const [shippingRate, setShippingRate] = useState(5);
+  const [selectedCoating, setSelectedCoating] = useState("");
   const [coatingCost, setCoatingCost] = useState(0);
+  const [coatingOpen, setCoatingOpen] = useState(false);
   const [heatTreatmentCost, setHeatTreatmentCost] = useState(0);
   const [scrapRate, setScrapRate] = useState(0);
   const [profitMargin, setProfitMargin] = useState(0);
@@ -99,6 +103,16 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
       setMaterialPricePerKg(0);
     }
   }, [selectedMaterial, materialPrices, currentMaterial]);
+
+  // Auto-fill coating price from database when coating changes
+  useEffect(() => {
+    if (selectedCoating) {
+      const coating = activeCoatings.find(c => c.id === selectedCoating);
+      setCoatingCost(coating?.price ?? 0);
+    } else {
+      setCoatingCost(0);
+    }
+  }, [selectedCoating, activeCoatings]);
 
   const calculations = useMemo(() => {
     const density = currentMaterial?.density ?? 7.85;
@@ -249,7 +263,30 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
                 </label>
                 <input type="number" value={shippingRate} onChange={(e) => setShippingRate(Number(e.target.value))} className="input-industrial w-full" />
               </div>
-              <div><label className="label-industrial block mb-2 flex items-center gap-1"><Shield className="w-3 h-3" /> {t("costCalc", "coating")}</label><input type="number" value={coatingCost} onChange={(e) => setCoatingCost(Number(e.target.value))} className="input-industrial w-full" /></div>
+              <div>
+                <label className="label-industrial block mb-2 flex items-center gap-1"><Shield className="w-3 h-3" /> {t("costCalc", "coating")}</label>
+                <Popover open={coatingOpen} onOpenChange={setCoatingOpen}>
+                  <PopoverTrigger asChild>
+                    <button className="input-industrial w-full text-left flex items-center justify-between text-sm">
+                      <span className={selectedCoating ? "text-foreground" : "text-muted-foreground"}>
+                        {selectedCoating ? activeCoatings.find(c => c.id === selectedCoating)?.name || "Seçiniz" : "Kaplama Seçiniz"}
+                      </span>
+                      <svg className="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-card border border-border z-50" align="start">
+                    <div className="max-h-48 overflow-y-auto">
+                      <button onClick={() => { setSelectedCoating(""); setCoatingOpen(false); }} className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-accent/10 ${!selectedCoating ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}>Kaplama Yok</button>
+                      {activeCoatings.map((c) => (
+                        <button key={c.id} onClick={() => { setSelectedCoating(c.id); setCoatingOpen(false); }} className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-accent/10 ${selectedCoating === c.id ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}>
+                          {c.name} <span className="text-xs text-muted-foreground ml-1">€{c.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <input type="number" value={coatingCost} onChange={(e) => setCoatingCost(Number(e.target.value))} className="input-industrial w-full text-sm mt-1" placeholder="€" />
+              </div>
               <div><label className="label-industrial block mb-2 flex items-center gap-1"><Flame className="w-3 h-3" /> {t("costCalc", "heatTreatment")}</label><input type="number" value={heatTreatmentCost} onChange={(e) => setHeatTreatmentCost(Number(e.target.value))} className="input-industrial w-full" /></div>
             </div>
           </div>
