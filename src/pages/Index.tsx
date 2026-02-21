@@ -291,7 +291,7 @@ const Index = () => {
             />
           )}
           {activeTab === "cost" && hasAccess("cost") && <CostAnalyzer customMaterials={customMaterials} />}
-          {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation customMaterials={customMaterials} />}
+          {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation customMaterials={customMaterials} materialPrices={materialPrices} />}
           {activeTab === "afkprice" && hasAccess("afkprice") && <AFKPriceCalculator />}
           {activeTab === "currency-tracker" && hasAccess("currency-tracker") && <CurrencyRateTracker />}
           
