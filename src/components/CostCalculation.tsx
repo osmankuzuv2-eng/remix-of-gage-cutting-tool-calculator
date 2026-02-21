@@ -9,40 +9,17 @@ import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useCustomers } from "@/hooks/useCustomers";
-import { supabase } from "@/integrations/supabase/client";
 
-const CostCalculation = () => {
+interface CostCalculationProps {
+  customMaterials?: Material[];
+}
+
+const CostCalculation = ({ customMaterials = [] }: CostCalculationProps) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
   const { machines, getMachinesByType, getMachineLabel } = useMachines();
   const { activeCustomers } = useCustomers();
-
-  // Fetch custom saved materials from DB and merge with hardcoded ones
-  const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
-  useEffect(() => {
-    if (!user) return;
-    const fetchCustomMaterials = async () => {
-      const { data } = await supabase.from("saved_materials").select("*").eq("user_id", user.id);
-      if (data) {
-        const mapped: Material[] = data.map((m: any) => ({
-          id: `custom-${m.id}`,
-          name: m.name,
-          category: m.category,
-          hardness: m.hardness_min && m.hardness_max ? `${m.hardness_min}-${m.hardness_max} HB` : "N/A",
-          density: 7.85, // default density for custom materials
-          pricePerKg: m.price_per_kg || 0,
-          cuttingSpeed: { min: m.cutting_speed_min, max: m.cutting_speed_max, unit: "m/dk" },
-          feedRate: { min: m.feed_rate_min, max: m.feed_rate_max, unit: "mm/dev" },
-          taylorN: 0.20,
-          taylorC: 300,
-          color: "bg-emerald-500",
-        }));
-        setCustomMaterials(mapped);
-      }
-    };
-    fetchCustomMaterials();
-  }, [user]);
 
   const allMaterials = useMemo(() => [...materials, ...customMaterials], [customMaterials]);
   const getMaterialName = (id: string) => { const tr = t("materialNames", id); return tr !== id ? tr : allMaterials.find(m => m.id === id)?.name || id; };
