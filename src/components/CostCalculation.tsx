@@ -109,17 +109,17 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
     const materialCostPerPart = weightKg * materialPricePerKg;
     const totalMaterialCost = materialCostPerPart * orderQuantity;
     const machineCost = (turningRate * turningTime + millingRate * millingTime + fiveAxisRate * fiveAxisTime) * orderQuantity;
+    const setupCost = setupTime * laborRate;
     const totalMachiningMinutes = setupTime + (turningTime + millingTime + fiveAxisTime) * orderQuantity;
     const totalMachiningHours = totalMachiningMinutes / 60;
-    const laborCost = totalMachiningMinutes * laborRate;
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
-    const subtotal = laborCost + machineCost + totalMaterialCost + additionalCosts;
+    const subtotal = setupCost + machineCost + totalMaterialCost + additionalCosts;
     const scrapCost = subtotal * (scrapRate / 100);
     const totalBeforeProfit = subtotal + scrapCost;
     const profit = totalBeforeProfit * (profitMargin / 100);
     const grandTotal = totalBeforeProfit + profit;
     const costPerPart = orderQuantity > 0 ? grandTotal / orderQuantity : 0;
-    return { volumeCm3: volumeCm3.toFixed(2), weightKg: weightKg.toFixed(3), materialCostPerPart: materialCostPerPart.toFixed(2), totalMaterialCost: totalMaterialCost.toFixed(2), totalMachiningHours: totalMachiningHours.toFixed(1), laborCost: laborCost.toFixed(2), machineCost: machineCost.toFixed(2), additionalCosts: additionalCosts.toFixed(2), scrapCost: scrapCost.toFixed(2), profit: profit.toFixed(2), grandTotal: grandTotal.toFixed(2), costPerPart: costPerPart.toFixed(2) };
+    return { volumeCm3: volumeCm3.toFixed(2), weightKg: weightKg.toFixed(3), materialCostPerPart: materialCostPerPart.toFixed(2), totalMaterialCost: totalMaterialCost.toFixed(2), totalMachiningHours: totalMachiningHours.toFixed(1), setupCost: setupCost.toFixed(2), machineCost: machineCost.toFixed(2), additionalCosts: additionalCosts.toFixed(2), scrapCost: scrapCost.toFixed(2), profit: profit.toFixed(2), grandTotal: grandTotal.toFixed(2), costPerPart: costPerPart.toFixed(2) };
   }, [setupTime, turningTime, millingTime, fiveAxisTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, shapeType, diameter, length, width, height, materialPricePerKg, currentMaterial]);
 
   return (
@@ -190,7 +190,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
             </Popover>
           </div>
           <div>
-            <label className="label-industrial block mb-2">{t("costCalc", "laborRateMin")}</label>
+            <label className="label-industrial block mb-2">{t("costCalc", "setupRate") || "Setup Ücreti (€/dk)"}</label>
             <input type="number" value={laborRate} onChange={(e) => setLaborRate(Number(e.target.value))} className="input-industrial w-full" />
           </div>
           <div className="space-y-3">
@@ -254,7 +254,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
           <div className="space-y-2">
             <ResultRow label={`${t("costCalc", "totalMachining")} ${t("common", "time")}`} value={`${calculations.totalMachiningHours} ${t("common", "hour")}`} />
             <ResultRow label={`${t("costCalc", "materialCost")} (${calculations.weightKg} kg × €${materialPricePerKg})`} value={`€${calculations.totalMaterialCost}`} />
-            <ResultRow label={t("costCalc", "laborRateMin")} value={`€${calculations.laborCost}`} />
+            <ResultRow label={`${t("costCalc", "setupRate") || "Setup Maliyeti"} (${setupTime} dk × €${laborRate})`} value={`€${calculations.setupCost}`} />
             <ResultRow label={t("costCalc", "machineCostLabel")} value={`€${calculations.machineCost}`} />
             <ResultRow label={t("costCalc", "totalAdditional")} value={`€${calculations.additionalCosts}`} />
             <ResultRow label={`${t("costCalc", "scrapCost")} (%${scrapRate})`} value={`€${calculations.scrapCost}`} />
@@ -311,7 +311,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
                     weightKg: calculations.weightKg,
                     costPerPart: `€${calculations.costPerPart}`,
                     grandTotal: `€${calculations.grandTotal}`,
-                    laborCost: `€${calculations.laborCost}`,
+                    setupCost: `€${calculations.setupCost}`,
                     machineCost: `€${calculations.machineCost}`,
                     materialCost: `€${calculations.totalMaterialCost}`,
                     profit: `€${calculations.profit}`,

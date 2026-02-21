@@ -31,7 +31,7 @@ export interface CostPdfData {
   profitMargin: number;
   calculations: {
     totalMachiningHours: string;
-    laborCost: string;
+    setupCost: string;
     machineCost: string;
     totalMaterialCost: string;
     additionalCosts: string;
@@ -124,7 +124,7 @@ export const exportCostPdf = async (data: CostPdfData, t?: TFn) => {
 
   const summaryRows = [
     [tr("pdf", "materialCost"), `${data.calculations.totalMaterialCost} EUR`],
-    [tr("pdf", "laborCost"), `${data.calculations.laborCost} EUR`],
+    [tr("pdf", "setupCost") || "Setup Maliyeti", `${data.calculations.setupCost} EUR`],
     [tr("pdf", "machineCost"), `${data.calculations.machineCost} EUR`],
     [tr("pdf", "totalAdditional"), `${data.calculations.additionalCosts} EUR`],
     [`${tr("pdf", "scrapCost")} (%${data.scrapRate})`, `${data.calculations.scrapCost} EUR`],
