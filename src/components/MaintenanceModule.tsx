@@ -55,6 +55,7 @@ interface RecordFormProps {
 }
 
 const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     machine_id: initial?.machine_id || "",
     maintenance_type: initial?.maintenance_type || "preventive",
@@ -91,7 +92,7 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
         .upload(filePath, file, { upsert: true });
 
       if (error) {
-        toast({ title: "Yükleme hatası", description: error.message, variant: "destructive" });
+        toast({ title: t("maintenance", "uploadError"), description: error.message, variant: "destructive" });
         continue;
       }
 
@@ -118,97 +119,97 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
 
   const handleSubmit = async () => {
     if (!form.machine_id || !form.title) {
-      toast({ title: "Hata", description: "Makine ve başlık gerekli", variant: "destructive" });
+      toast({ title: t("common", "error"), description: t("maintenance", "machineAndTitleRequired"), variant: "destructive" });
       return;
     }
     setSaving(true);
     const err = await onSave({ ...form, photos } as any);
     setSaving(false);
     if (!err) {
-      toast({ title: "Başarılı", description: initial ? "Kayıt güncellendi" : "Bakım kaydı oluşturuldu" });
+      toast({ title: t("common", "success"), description: initial ? t("maintenance", "recordUpdated") : t("maintenance", "recordCreated") });
       onClose();
     } else {
-      toast({ title: "Hata", description: err.message, variant: "destructive" });
+      toast({ title: t("common", "error"), description: err.message, variant: "destructive" });
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
-        <h3 className="text-lg font-bold text-foreground">{initial ? "Bakım Kaydı Düzenle" : "Yeni Bakım Kaydı"}</h3>
+        <h3 className="text-lg font-bold text-foreground">{initial ? t("maintenance", "editRecord") : t("maintenance", "newRecordTitle")}</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Makine *</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "machine")} *</label>
             <select value={form.machine_id} onChange={e => setForm(p => ({ ...p, machine_id: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="">Seçin...</option>
+              <option value="">{t("maintenance", "select")}</option>
               {machines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Bakım Türü</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "maintenanceType")}</label>
             <select value={form.maintenance_type} onChange={e => setForm(p => ({ ...p, maintenance_type: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="preventive">Önleyici</option>
-              <option value="predictive">Kestirici</option>
-              <option value="corrective">Düzeltici</option>
+              <option value="preventive">{t("maintenance", "preventive")}</option>
+              <option value="predictive">{t("maintenance", "predictive")}</option>
+              <option value="corrective">{t("maintenance", "corrective")}</option>
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-muted-foreground mb-1 block">Başlık *</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "titleField")} *</label>
             <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-muted-foreground mb-1 block">Açıklama</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "descriptionField")}</label>
             <textarea rows={2} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground resize-none" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Durum</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "status")}</label>
             <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="planned">Planlandı</option>
-              <option value="in_progress">Devam Ediyor</option>
-              <option value="completed">Tamamlandı</option>
-              <option value="cancelled">İptal</option>
+              <option value="planned">{t("maintenance", "planned")}</option>
+              <option value="in_progress">{t("maintenance", "inProgress")}</option>
+              <option value="completed">{t("maintenance", "completed")}</option>
+              <option value="cancelled">{t("maintenance", "cancelled")}</option>
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Öncelik</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "priority")}</label>
             <select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="low">Düşük</option>
-              <option value="normal">Normal</option>
-              <option value="high">Yüksek</option>
-              <option value="critical">Kritik</option>
+              <option value="low">{t("maintenance", "low")}</option>
+              <option value="normal">{t("maintenance", "normal")}</option>
+              <option value="high">{t("maintenance", "high")}</option>
+              <option value="critical">{t("maintenance", "critical")}</option>
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Teknisyen</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "technician")}</label>
             <input value={form.technician_name} onChange={e => setForm(p => ({ ...p, technician_name: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Planlanan Tarih</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "scheduledDate")}</label>
             <input type="date" value={form.scheduled_date} onChange={e => setForm(p => ({ ...p, scheduled_date: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Maliyet (€)</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "cost")}</label>
             <input type="number" min={0} value={form.cost} onChange={e => setForm(p => ({ ...p, cost: Number(e.target.value) }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Süre (dk)</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "duration")}</label>
             <input type="number" min={0} value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: Number(e.target.value) }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-muted-foreground mb-1 block">Notlar</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "notes")}</label>
             <textarea rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground resize-none" />
           </div>
         </div>
 
         {/* Photo Upload Section */}
         <div className="space-y-3">
-          <label className="text-xs text-muted-foreground font-semibold block">Fotoğraflar (Öncesi / Sonrası)</label>
+          <label className="text-xs text-muted-foreground font-semibold block">{t("maintenance", "photos")}</label>
           
           <div className="flex items-center gap-2">
             <select value={uploadType} onChange={e => setUploadType(e.target.value as "before" | "after")} className="rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="before">Öncesi</option>
-              <option value="after">Sonrası</option>
+              <option value="before">{t("maintenance", "before")}</option>
+              <option value="after">{t("maintenance", "after")}</option>
             </select>
             <button
               type="button"
@@ -217,9 +218,9 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary text-sm font-medium hover:bg-primary/30 transition-colors disabled:opacity-50"
             >
               {uploading ? (
-                <><Upload className="w-4 h-4 animate-pulse" /> Yükleniyor...</>
+                <><Upload className="w-4 h-4 animate-pulse" /> {t("maintenance", "uploading")}</>
               ) : (
-                <><Camera className="w-4 h-4" /> Fotoğraf Ekle</>
+                <><Camera className="w-4 h-4" /> {t("maintenance", "addPhoto")}</>
               )}
             </button>
             <input
@@ -236,10 +237,10 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {photos.map((photo, idx) => (
                 <div key={idx} className="relative group rounded-xl overflow-hidden border border-border aspect-video bg-background">
-                  <img src={photo.url} alt={photo.caption || `Fotoğraf ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={photo.url} alt={photo.caption || `${t("maintenance", "maintenancePhoto")} ${idx + 1}`} className="w-full h-full object-cover" />
                   <div className="absolute top-1 left-1">
                     <Badge className={`text-[10px] ${photo.type === "before" ? "bg-blue-500/80 text-white" : "bg-emerald-500/80 text-white"}`}>
-                      {photo.type === "before" ? "Öncesi" : "Sonrası"}
+                      {photo.type === "before" ? t("maintenance", "before") : t("maintenance", "after")}
                     </Badge>
                   </div>
                   <button
@@ -255,9 +256,9 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">İptal</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">{t("maintenance", "cancelled")}</button>
           <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
-            {saving ? "Kaydediliyor..." : initial ? "Güncelle" : "Kaydet"}
+            {saving ? t("common", "saving") : initial ? t("maintenance", "update") : t("common", "save")}
           </button>
         </div>
       </div>
@@ -273,6 +274,7 @@ interface ScheduleFormProps {
 }
 
 const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     machine_id: initial?.machine_id || "",
     title: initial?.title || "",
@@ -297,7 +299,7 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
 
   const handleSubmit = async () => {
     if (!form.machine_id || !form.title) {
-      toast({ title: "Hata", description: "Makine ve başlık gerekli", variant: "destructive" });
+      toast({ title: t("common", "error"), description: t("maintenance", "machineAndTitleRequired"), variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -312,58 +314,58 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
     const err = await onSave(payload);
     setSaving(false);
     if (!err) {
-      toast({ title: "Başarılı", description: "Bakım planı kaydedildi" });
+      toast({ title: t("common", "success"), description: t("maintenance", "planSaved") });
       onClose();
     } else {
-      toast({ title: "Hata", description: err.message, variant: "destructive" });
+      toast({ title: t("common", "error"), description: err.message, variant: "destructive" });
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
-        <h3 className="text-lg font-bold text-foreground">{initial ? "Bakım Planı Düzenle" : "Yeni Bakım Planı"}</h3>
+        <h3 className="text-lg font-bold text-foreground">{initial ? t("maintenance", "editPlan") : t("maintenance", "newPlanTitle")}</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Makine *</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "machine")} *</label>
             <select value={form.machine_id} onChange={e => setForm(p => ({ ...p, machine_id: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="">Seçin...</option>
+              <option value="">{t("maintenance", "select")}</option>
               {machines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Bakım Türü</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "maintenanceType")}</label>
             <select value={form.maintenance_type} onChange={e => setForm(p => ({ ...p, maintenance_type: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="preventive">Önleyici</option>
-              <option value="predictive">Kestirici</option>
+              <option value="preventive">{t("maintenance", "preventive")}</option>
+              <option value="predictive">{t("maintenance", "predictive")}</option>
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-muted-foreground mb-1 block">Başlık *</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "titleField")} *</label>
             <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Periyot (Saat)</label>
-            <input type="number" min={0} value={form.interval_hours} onChange={e => setForm(p => ({ ...p, interval_hours: e.target.value }))} placeholder="örn. 500" className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "intervalHours")}</label>
+            <input type="number" min={0} value={form.interval_hours} onChange={e => setForm(p => ({ ...p, interval_hours: e.target.value }))} placeholder="500" className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Periyot (Gün)</label>
-            <input type="number" min={0} value={form.interval_days} onChange={e => setForm(p => ({ ...p, interval_days: e.target.value }))} placeholder="örn. 90" className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "intervalDays")}</label>
+            <input type="number" min={0} value={form.interval_days} onChange={e => setForm(p => ({ ...p, interval_days: e.target.value }))} placeholder="90" className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Mevcut Çalışma Saati</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "currentHours")}</label>
             <input type="number" min={0} value={form.current_hours} onChange={e => setForm(p => ({ ...p, current_hours: Number(e.target.value) }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Sonraki Bakım Tarihi</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "nextDueDate")}</label>
             <input type="date" value={form.next_due_date} onChange={e => setForm(p => ({ ...p, next_due_date: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
         </div>
 
         {/* Checklist builder */}
         <div>
-          <label className="text-xs text-muted-foreground mb-2 block font-semibold">Kontrol Listesi (Checklist)</label>
+          <label className="text-xs text-muted-foreground mb-2 block font-semibold">{t("maintenance", "checklist")}</label>
           <div className="space-y-1 mb-2">
             {checklistItems.map((item, i) => (
               <div key={i} className="flex items-center gap-2 p-2 bg-background rounded-lg border border-border">
@@ -376,15 +378,15 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
             ))}
           </div>
           <div className="flex gap-2">
-            <input value={newItem} onChange={e => setNewItem(e.target.value)} onKeyDown={e => e.key === "Enter" && addChecklistItem()} placeholder="Madde ekle (ör: Yağ kontrolü)" className="flex-1 rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
-            <button onClick={addChecklistItem} className="px-3 py-2 rounded-lg bg-primary/20 text-primary text-sm font-medium hover:bg-primary/30 transition-colors">Ekle</button>
+            <input value={newItem} onChange={e => setNewItem(e.target.value)} onKeyDown={e => e.key === "Enter" && addChecklistItem()} placeholder={t("maintenance", "addItemPlaceholder")} className="flex-1 rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
+            <button onClick={addChecklistItem} className="px-3 py-2 rounded-lg bg-primary/20 text-primary text-sm font-medium hover:bg-primary/30 transition-colors">{t("maintenance", "addItem")}</button>
           </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">İptal</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">{t("maintenance", "cancelled")}</button>
           <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
-            {saving ? "Kaydediliyor..." : "Kaydet"}
+            {saving ? t("common", "saving") : t("common", "save")}
           </button>
         </div>
       </div>
@@ -401,6 +403,7 @@ interface ChecklistExecProps {
 }
 
 const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: ChecklistExecProps) => {
+  const { t } = useLanguage();
   const [items, setItems] = useState<ChecklistItem[]>(
     schedule.checklist.map(c => ({ ...c, checked: false, note: "" }))
   );
@@ -423,7 +426,7 @@ const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: Checklist
     const err = await onComplete(items, duration, notes);
     setSaving(false);
     if (!err) {
-      toast({ title: "Başarılı", description: "Bakım checklist tamamlandı" });
+      toast({ title: t("common", "success"), description: t("maintenance", "checklistComplete") });
       onClose();
     }
   };
@@ -432,7 +435,7 @@ const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: Checklist
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
         <div>
-          <h3 className="text-lg font-bold text-foreground">Bakım Checklist</h3>
+          <h3 className="text-lg font-bold text-foreground">{t("maintenance", "checklistTitle")}</h3>
           <p className="text-sm text-muted-foreground">{schedule.title} — {machineName}</p>
         </div>
 
@@ -443,31 +446,31 @@ const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: Checklist
                 {item.checked ? <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> : <CircleDot className="w-5 h-5 text-muted-foreground shrink-0" />}
                 <span className={`text-sm font-medium ${item.checked ? "text-emerald-400 line-through" : "text-foreground"}`}>{item.item}</span>
               </div>
-              <input placeholder="Not (opsiyonel)" value={item.note || ""} onChange={e => setNote(i, e.target.value)} className="mt-2 w-full rounded-lg bg-background/50 border border-border/50 px-3 py-1.5 text-xs text-foreground" onClick={e => e.stopPropagation()} />
+              <input placeholder={t("maintenance", "noteOptional")} value={item.note || ""} onChange={e => setNote(i, e.target.value)} className="mt-2 w-full rounded-lg bg-background/50 border border-border/50 px-3 py-1.5 text-xs text-foreground" onClick={e => e.stopPropagation()} />
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Süre (dk)</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "duration")}</label>
             <input type="number" min={0} value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Tamamlanan</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "completedItems")}</label>
             <div className="flex items-center h-[38px] text-sm font-mono text-primary">{items.filter(i => i.checked).length} / {items.length}</div>
           </div>
         </div>
 
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Genel Not</label>
+          <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "generalNote")}</label>
           <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground resize-none" />
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">İptal</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">{t("maintenance", "cancelled")}</button>
           <button onClick={handleSubmit} disabled={saving || !allChecked} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-50">
-            {saving ? "Kaydediliyor..." : "Tamamla"}
+            {saving ? t("common", "saving") : t("maintenance", "complete")}
           </button>
         </div>
       </div>
@@ -477,6 +480,7 @@ const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: Checklist
 
 // ---- Main Module ----
 const MaintenanceModule = () => {
+  const { t, language } = useLanguage();
   const { records, schedules, checklistLogs, loading, addRecord, updateRecord, deleteRecord, addSchedule, updateSchedule, deleteSchedule, completeChecklist, getAlerts } = useMaintenance();
   const { machines } = useMachines();
   const [showRecordForm, setShowRecordForm] = useState(false);
@@ -488,6 +492,7 @@ const MaintenanceModule = () => {
   const [filterType, setFilterType] = useState<string>("all");
   const [search, setSearch] = useState("");
 
+  const locale = language === "fr" ? "fr-FR" : language === "en" ? "en-US" : "tr-TR";
   const alerts = getAlerts();
   const getMachineName = (id: string) => machines.find(m => m.id === id)?.label || "—";
 
@@ -524,22 +529,22 @@ const MaintenanceModule = () => {
     const completedCount = records.filter(r => r.status === "completed").length;
 
     const typeData = [
-      { name: "Önleyici", value: records.filter(r => r.maintenance_type === "preventive").length, color: "hsl(var(--chart-1))" },
-      { name: "Kestirici", value: records.filter(r => r.maintenance_type === "predictive").length, color: "hsl(var(--chart-2))" },
-      { name: "Düzeltici", value: records.filter(r => r.maintenance_type === "corrective").length, color: "hsl(var(--chart-3))" },
+      { name: t("maintenance", "preventive"), value: records.filter(r => r.maintenance_type === "preventive").length, color: "hsl(var(--chart-1))" },
+      { name: t("maintenance", "predictive"), value: records.filter(r => r.maintenance_type === "predictive").length, color: "hsl(var(--chart-2))" },
+      { name: t("maintenance", "corrective"), value: records.filter(r => r.maintenance_type === "corrective").length, color: "hsl(var(--chart-3))" },
     ].filter(d => d.value > 0);
 
     const statusData = [
-      { name: "Planlandı", value: records.filter(r => r.status === "planned").length, color: "hsl(var(--chart-4))" },
-      { name: "Devam Ediyor", value: records.filter(r => r.status === "in_progress").length, color: "hsl(var(--chart-5))" },
-      { name: "Tamamlandı", value: completedCount, color: "hsl(var(--chart-1))" },
-      { name: "İptal", value: records.filter(r => r.status === "cancelled").length, color: "hsl(var(--chart-3))" },
+      { name: t("maintenance", "planned"), value: records.filter(r => r.status === "planned").length, color: "hsl(var(--chart-4))" },
+      { name: t("maintenance", "inProgress"), value: records.filter(r => r.status === "in_progress").length, color: "hsl(var(--chart-5))" },
+      { name: t("maintenance", "completed"), value: completedCount, color: "hsl(var(--chart-1))" },
+      { name: t("maintenance", "cancelled"), value: records.filter(r => r.status === "cancelled").length, color: "hsl(var(--chart-3))" },
     ].filter(d => d.value > 0);
 
     return { perMachine, totalCount, totalCost, avgDuration, totalDuration, completedCount, typeData, statusData };
-  }, [records, machines]);
+  }, [records, machines, t]);
 
-  if (loading) return <div className="text-center py-12 text-muted-foreground">Yükleniyor...</div>;
+  if (loading) return <div className="text-center py-12 text-muted-foreground">{t("common", "loading")}</div>;
 
   return (
     <div className="space-y-6">
@@ -549,12 +554,12 @@ const MaintenanceModule = () => {
           <Wrench className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">Bakım Onarım</h2>
-          <p className="text-xs text-muted-foreground">Önleyici ve Kestirici Bakım Yönetimi</p>
+          <h2 className="text-xl font-bold text-foreground">{t("maintenance", "title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("maintenance", "subtitle")}</p>
         </div>
         {alerts.length > 0 && (
           <Badge className="ml-auto bg-red-500/20 text-red-400 border-red-500/30 border animate-pulse">
-            <AlertTriangle className="w-3 h-3 mr-1" />{alerts.length} Uyarı
+            <AlertTriangle className="w-3 h-3 mr-1" />{alerts.length} {t("maintenance", "alertCount")}
           </Badge>
         )}
       </div>
@@ -563,16 +568,16 @@ const MaintenanceModule = () => {
       {alerts.length > 0 && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 space-y-2">
           <h4 className="text-sm font-semibold text-red-400 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" /> Bakım Uyarıları
+            <AlertTriangle className="w-4 h-4" /> {t("maintenance", "alerts")}
           </h4>
           {alerts.map((a, i) => (
             <div key={i} className="flex items-center gap-3 text-sm">
               <Badge className={a.type === "overdue" ? "bg-red-500/30 text-red-300" : "bg-yellow-500/30 text-yellow-300"}>
-                {a.type === "overdue" ? "Gecikmiş" : a.type === "hours_warning" ? "Saat Uyarısı" : "Yaklaşıyor"}
+                {a.type === "overdue" ? t("maintenance", "overdue") : a.type === "hours_warning" ? t("maintenance", "hoursWarning") : t("maintenance", "upcoming")}
               </Badge>
               <span className="text-foreground font-medium">{a.schedule.title}</span>
               <span className="text-muted-foreground">— {getMachineName(a.schedule.machine_id)}</span>
-              {a.schedule.next_due_date && <span className="text-xs text-muted-foreground ml-auto">{new Date(a.schedule.next_due_date).toLocaleDateString("tr-TR")}</span>}
+              {a.schedule.next_due_date && <span className="text-xs text-muted-foreground ml-auto">{new Date(a.schedule.next_due_date).toLocaleDateString(locale)}</span>}
             </div>
           ))}
         </div>
@@ -580,10 +585,10 @@ const MaintenanceModule = () => {
 
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid grid-cols-4 w-full max-w-lg bg-background border border-border">
-          <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
-          <TabsTrigger value="records" className="text-xs">Bakım Kayıtları</TabsTrigger>
-          <TabsTrigger value="schedules" className="text-xs">Bakım Planları</TabsTrigger>
-          <TabsTrigger value="logs" className="text-xs">Checklist Geçmişi</TabsTrigger>
+          <TabsTrigger value="dashboard" className="text-xs">{t("maintenance", "dashboard")}</TabsTrigger>
+          <TabsTrigger value="records" className="text-xs">{t("maintenance", "records")}</TabsTrigger>
+          <TabsTrigger value="schedules" className="text-xs">{t("maintenance", "schedules")}</TabsTrigger>
+          <TabsTrigger value="logs" className="text-xs">{t("maintenance", "checklistHistory")}</TabsTrigger>
         </TabsList>
 
         {/* ---- Dashboard Tab ---- */}
@@ -595,7 +600,7 @@ const MaintenanceModule = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                   <BarChart3 className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-xs text-muted-foreground">Toplam Bakım</span>
+                <span className="text-xs text-muted-foreground">{t("maintenance", "totalMaintenance")}</span>
               </div>
               <p className="text-2xl font-bold text-foreground">{dashboardData.totalCount}</p>
             </div>
@@ -604,25 +609,25 @@ const MaintenanceModule = () => {
                 <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
                   <DollarSign className="w-4 h-4 text-accent-foreground" />
                 </div>
-                <span className="text-xs text-muted-foreground">Toplam Maliyet</span>
+                <span className="text-xs text-muted-foreground">{t("maintenance", "totalCost")}</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">€{dashboardData.totalCost.toLocaleString("tr-TR")}</p>
+              <p className="text-2xl font-bold text-foreground">€{dashboardData.totalCost.toLocaleString(locale)}</p>
             </div>
             <div className="p-4 rounded-xl bg-card border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center">
                   <Clock className="w-4 h-4 text-secondary-foreground" />
                 </div>
-                <span className="text-xs text-muted-foreground">Ort. Arıza Süresi</span>
+                <span className="text-xs text-muted-foreground">{t("maintenance", "avgDowntime")}</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{dashboardData.avgDuration} <span className="text-sm font-normal text-muted-foreground">dk</span></p>
+              <p className="text-2xl font-bold text-foreground">{dashboardData.avgDuration} <span className="text-sm font-normal text-muted-foreground">{language === "en" ? "min" : language === "fr" ? "min" : "dk"}</span></p>
             </div>
             <div className="p-4 rounded-xl bg-card border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4 text-foreground" />
                 </div>
-                <span className="text-xs text-muted-foreground">Tamamlanan</span>
+                <span className="text-xs text-muted-foreground">{t("maintenance", "completedCount")}</span>
               </div>
               <p className="text-2xl font-bold text-foreground">{dashboardData.completedCount}</p>
             </div>
@@ -634,7 +639,7 @@ const MaintenanceModule = () => {
             {dashboardData.typeData.length > 0 && (
               <div className="p-4 rounded-xl bg-card border border-border">
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-primary" /> Bakım Türü Dağılımı
+                  <Activity className="w-4 h-4 text-primary" /> {t("maintenance", "typeDistribution")}
                 </h4>
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
@@ -654,7 +659,7 @@ const MaintenanceModule = () => {
             {dashboardData.statusData.length > 0 && (
               <div className="p-4 rounded-xl bg-card border border-border">
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" /> Durum Dağılımı
+                  <TrendingUp className="w-4 h-4 text-primary" /> {t("maintenance", "statusDistribution")}
                 </h4>
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
@@ -675,7 +680,7 @@ const MaintenanceModule = () => {
           {dashboardData.perMachine.length > 0 && (
             <div className="p-4 rounded-xl bg-card border border-border">
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-primary" /> Makine Bazlı Bakım Sayısı & Maliyet
+                <BarChart3 className="w-4 h-4 text-primary" /> {t("maintenance", "machineMaintenanceChart")}
               </h4>
               <ResponsiveContainer width="100%" height={Math.max(250, dashboardData.perMachine.length * 40)}>
                 <BarChart data={dashboardData.perMachine} layout="vertical" margin={{ left: 10, right: 20 }}>
@@ -684,9 +689,9 @@ const MaintenanceModule = () => {
                   <YAxis dataKey="name" type="category" width={120} tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }} />
                   <RechartsTooltip
                     contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }}
-                    formatter={(value: number, name: string) => [name === "cost" ? `€${value}` : `${value}`, name === "cost" ? "Maliyet" : name === "count" ? "Bakım Sayısı" : "Süre (dk)"]}
+                    formatter={(value: number, name: string) => [name === "cost" ? `€${value}` : `${value}`, name === "cost" ? t("maintenance", "costLabel") : name === "count" ? t("maintenance", "maintenanceCount") : t("maintenance", "durationLabel")]}
                   />
-                  <Legend formatter={(value) => value === "count" ? "Bakım Sayısı" : value === "cost" ? "Maliyet (€)" : "Süre (dk)"} />
+                  <Legend formatter={(value) => value === "count" ? t("maintenance", "maintenanceCount") : value === "cost" ? t("maintenance", "costLabel") : t("maintenance", "durationLabel")} />
                   <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} name="count" />
                   <Bar dataKey="cost" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} name="cost" />
                 </BarChart>
@@ -697,17 +702,17 @@ const MaintenanceModule = () => {
           {/* Per-Machine Detail Table */}
           {dashboardData.perMachine.length > 0 && (
             <div className="p-4 rounded-xl bg-card border border-border overflow-x-auto">
-              <h4 className="text-sm font-semibold text-foreground mb-3">Makine Özet Tablosu</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">{t("maintenance", "machineSummaryTable")}</h4>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">Makine</th>
-                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Toplam</th>
-                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Önleyici</th>
-                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Kestirici</th>
-                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Düzeltici</th>
-                    <th className="text-right py-2 px-3 text-muted-foreground font-medium">Maliyet</th>
-                    <th className="text-right py-2 px-3 text-muted-foreground font-medium">Ort. Süre</th>
+                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "machine")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "total")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "preventive")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "predictive")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "corrective")}</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "costLabel")}</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "avgDuration")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -718,8 +723,8 @@ const MaintenanceModule = () => {
                       <td className="py-2 px-3 text-center text-foreground">{m.preventive}</td>
                       <td className="py-2 px-3 text-center text-foreground">{m.predictive}</td>
                       <td className="py-2 px-3 text-center text-foreground">{m.corrective}</td>
-                      <td className="py-2 px-3 text-right text-foreground">€{m.cost.toLocaleString("tr-TR")}</td>
-                      <td className="py-2 px-3 text-right text-foreground">{m.count > 0 ? Math.round(m.totalDuration / m.count) : 0} dk</td>
+                      <td className="py-2 px-3 text-right text-foreground">€{m.cost.toLocaleString(locale)}</td>
+                      <td className="py-2 px-3 text-right text-foreground">{m.count > 0 ? Math.round(m.totalDuration / m.count) : 0} {language === "en" || language === "fr" ? "min" : "dk"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -730,7 +735,7 @@ const MaintenanceModule = () => {
           {dashboardData.totalCount === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>Henüz bakım kaydı yok. Dashboard verisi bakım kayıtları oluştukça dolacaktır.</p>
+              <p>{t("maintenance", "noDashboardData")}</p>
             </div>
           )}
         </TabsContent>
@@ -740,23 +745,23 @@ const MaintenanceModule = () => {
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Ara..." className="w-full rounded-lg bg-background border border-border pl-9 pr-3 py-2 text-sm text-foreground" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("maintenance", "search")} className="w-full rounded-lg bg-background border border-border pl-9 pr-3 py-2 text-sm text-foreground" />
             </div>
             <select value={filterType} onChange={e => setFilterType(e.target.value)} className="rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="all">Tümü</option>
-              <option value="preventive">Önleyici</option>
-              <option value="predictive">Kestirici</option>
-              <option value="corrective">Düzeltici</option>
+              <option value="all">{t("maintenance", "all")}</option>
+              <option value="preventive">{t("maintenance", "preventive")}</option>
+              <option value="predictive">{t("maintenance", "predictive")}</option>
+              <option value="corrective">{t("maintenance", "corrective")}</option>
             </select>
             <button onClick={() => { setEditingRecord(null); setShowRecordForm(true); }} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
-              <Plus className="w-4 h-4" /> Yeni Kayıt
+              <Plus className="w-4 h-4" /> {t("maintenance", "newRecord")}
             </button>
           </div>
 
           {filteredRecords.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Wrench className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>Henüz bakım kaydı yok.</p>
+              <p>{t("maintenance", "noRecords")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -788,7 +793,7 @@ const MaintenanceModule = () => {
                               </div>
                               <div className="absolute bottom-0 left-0 right-0">
                                 <div className={`text-[8px] text-center text-white font-medium py-0.5 ${photo.type === "before" ? "bg-blue-500/80" : "bg-emerald-500/80"}`}>
-                                  {photo.type === "before" ? "Önce" : "Sonra"}
+                                  {photo.type === "before" ? t("maintenance", "before") : t("maintenance", "after")}
                                 </div>
                               </div>
                             </button>
@@ -802,15 +807,15 @@ const MaintenanceModule = () => {
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                         {r.technician_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{r.technician_name}</span>}
                         {r.cost > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />€{r.cost}</span>}
-                        {r.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{r.duration_minutes} dk</span>}
-                        {r.scheduled_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(r.scheduled_date).toLocaleDateString("tr-TR")}</span>}
+                        {r.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{r.duration_minutes} {language === "en" || language === "fr" ? "min" : "dk"}</span>}
+                        {r.scheduled_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(r.scheduled_date).toLocaleDateString(locale)}</span>}
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <button onClick={() => { setEditingRecord(r); setShowRecordForm(true); }} className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
                         <Wrench className="w-4 h-4" />
                       </button>
-                      <button onClick={async () => { if (confirm("Bu kaydı silmek istediğinize emin misiniz?")) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
+                      <button onClick={async () => { if (confirm(t("maintenance", "confirmDeleteRecord"))) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -825,14 +830,14 @@ const MaintenanceModule = () => {
         <TabsContent value="schedules" className="space-y-4">
           <div className="flex justify-end">
             <button onClick={() => { setEditingSchedule(null); setShowScheduleForm(true); }} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
-              <Plus className="w-4 h-4" /> Yeni Plan
+              <Plus className="w-4 h-4" /> {t("maintenance", "newPlan")}
             </button>
           </div>
 
           {schedules.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Calendar className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>Henüz bakım planı yok.</p>
+              <p>{t("maintenance", "noSchedules")}</p>
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -848,13 +853,13 @@ const MaintenanceModule = () => {
                         <TypeBadge type={s.maintenance_type} />
                       </div>
                       <div className="flex gap-1">
-                        <button onClick={() => setChecklistSchedule(s)} className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors" title="Checklist Uygula">
+                        <button onClick={() => setChecklistSchedule(s)} className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors" title={t("maintenance", "applyChecklist")}>
                           <ClipboardCheck className="w-4 h-4" />
                         </button>
                         <button onClick={() => { setEditingSchedule(s); setShowScheduleForm(true); }} className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground transition-colors">
                           <Wrench className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={async () => { if (confirm("Bu planı silmek istediğinize emin misiniz?")) await deleteSchedule(s.id); }} className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
+                        <button onClick={async () => { if (confirm(t("maintenance", "confirmDeletePlan"))) await deleteSchedule(s.id); }} className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -863,23 +868,23 @@ const MaintenanceModule = () => {
                     <p className="text-sm text-muted-foreground mb-2">{getMachineName(s.machine_id)}</p>
 
                     <div className="space-y-1.5 text-xs text-muted-foreground">
-                      {s.interval_days && <div className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Her {s.interval_days} günde bir</div>}
-                      {s.interval_hours && <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> Her {s.interval_hours} saatte bir</div>}
+                      {s.interval_days && <div className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {t("maintenance", "every")} {s.interval_days} {t("maintenance", "everyXDays")}</div>}
+                      {s.interval_hours && <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> {t("maintenance", "every")} {s.interval_hours} {t("maintenance", "everyXHours")}</div>}
                       {s.next_due_date && (
                         <div className={`flex items-center gap-1 font-medium ${isOverdue ? "text-red-400" : ""}`}>
-                          <Calendar className="w-3 h-3" /> Sonraki: {new Date(s.next_due_date).toLocaleDateString("tr-TR")}
-                          {isOverdue && <span className="text-red-400 ml-1">(Gecikmiş!)</span>}
+                          <Calendar className="w-3 h-3" /> {t("maintenance", "next")}: {new Date(s.next_due_date).toLocaleDateString(locale)}
+                          {isOverdue && <span className="text-red-400 ml-1">({t("maintenance", "overdueExcl")})</span>}
                         </div>
                       )}
-                      {s.last_performed_at && <div>Son bakım: {new Date(s.last_performed_at).toLocaleDateString("tr-TR")}</div>}
+                      {s.last_performed_at && <div>{t("maintenance", "lastMaintenance")}: {new Date(s.last_performed_at).toLocaleDateString(locale)}</div>}
                     </div>
 
                     {/* Hours progress bar */}
                     {hoursPercent !== null && (
                       <div className="mt-3">
                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>Çalışma saati</span>
-                          <span>{Math.round(s.current_hours - s.last_performed_hours)} / {s.interval_hours} saat</span>
+                          <span>{t("maintenance", "workingHours")}</span>
+                          <span>{Math.round(s.current_hours - s.last_performed_hours)} / {s.interval_hours} {t("maintenance", "hour")}</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
                           <div className={`h-full rounded-full transition-all duration-500 ${hoursPercent >= 100 ? "bg-red-500" : hoursPercent >= 90 ? "bg-yellow-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, hoursPercent)}%` }} />
@@ -891,7 +896,7 @@ const MaintenanceModule = () => {
                     {s.checklist.length > 0 && (
                       <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
                         <ClipboardCheck className="w-3 h-3" />
-                        {s.checklist.length} kontrol maddesi
+                        {s.checklist.length} {t("maintenance", "checklistItems")}
                       </div>
                     )}
                   </div>
@@ -906,7 +911,7 @@ const MaintenanceModule = () => {
           {checklistLogs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ClipboardCheck className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>Henüz tamamlanan checklist yok.</p>
+              <p>{t("maintenance", "noChecklists")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -914,11 +919,11 @@ const MaintenanceModule = () => {
                 <div key={log.id} className="p-4 rounded-xl bg-card border border-border">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-foreground text-sm">{getMachineName(log.machine_id)}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(log.completion_date).toLocaleString("tr-TR")}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(log.completion_date).toLocaleString(locale)}</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                     <span className="flex items-center gap-1"><User className="w-3 h-3" />{log.completed_by_name}</span>
-                    {log.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{log.duration_minutes} dk</span>}
+                    {log.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{log.duration_minutes} {language === "en" || language === "fr" ? "min" : "dk"}</span>}
                   </div>
                   <div className="grid grid-cols-2 gap-1">
                     {(log.checklist_results || []).map((item: ChecklistItem, i: number) => (
@@ -968,7 +973,7 @@ const MaintenanceModule = () => {
           <button onClick={() => setLightboxPhoto(null)} className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors">
             <X className="w-6 h-6" />
           </button>
-          <img src={lightboxPhoto} alt="Bakım fotoğrafı" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain" onClick={e => e.stopPropagation()} />
+          <img src={lightboxPhoto} alt={t("maintenance", "maintenancePhoto")} className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain" onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>
