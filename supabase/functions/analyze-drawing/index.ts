@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    const { imageUrl, fileName, additionalInfo, factory, material } = body;
+    const { imageUrl, fileName, additionalInfo, factory, material, customerSpecs } = body;
 
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "imageUrl is required" }), {
@@ -360,6 +360,9 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
     }
     if (additionalInfo) {
       userMessage += ` Ek bilgiler: ${additionalInfo}`;
+    }
+    if (customerSpecs) {
+      userMessage += ` MÜŞTERİ SPECLERİ (bu gereksinimlere kesinlikle uymalısın): ${customerSpecs}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

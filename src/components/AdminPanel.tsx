@@ -100,6 +100,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [custName, setCustName] = useState("");
   const [custFactory, setCustFactory] = useState("");
   const [custNotes, setCustNotes] = useState("");
+  const [custSpecs, setCustSpecs] = useState("");
   const [custActive, setCustActive] = useState(true);
 
   // Factories state
@@ -501,13 +502,13 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   // ── Customer CRUD ──
   const openCustomerCreate = () => {
     setEditingCustomer(null);
-    setCustName(""); setCustFactory(activeFactories[0]?.name || ""); setCustNotes(""); setCustActive(true);
+    setCustName(""); setCustFactory(activeFactories[0]?.name || ""); setCustNotes(""); setCustSpecs(""); setCustActive(true);
     setShowCustomerDialog(true);
   };
 
   const openCustomerEdit = (c: any) => {
     setEditingCustomer(c);
-    setCustName(c.name); setCustFactory(c.factory); setCustNotes(c.notes || ""); setCustActive(c.is_active);
+    setCustName(c.name); setCustFactory(c.factory); setCustNotes(c.notes || ""); setCustSpecs(c.specs || ""); setCustActive(c.is_active);
     setShowCustomerDialog(true);
   };
 
@@ -516,11 +517,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setSubmitting(true);
     try {
       if (editingCustomer) {
-        const { error } = await supabase.from("customers" as any).update({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, is_active: custActive } as any).eq("id", editingCustomer.id);
+        const { error } = await supabase.from("customers" as any).update({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, specs: custSpecs.trim() || null, is_active: custActive } as any).eq("id", editingCustomer.id);
         if (error) throw error;
         toast({ title: t("common", "success"), description: "Müşteri güncellendi" });
       } else {
-        const { error } = await supabase.from("customers" as any).insert({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, is_active: custActive } as any);
+        const { error } = await supabase.from("customers" as any).insert({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, specs: custSpecs.trim() || null, is_active: custActive } as any);
         if (error) throw error;
         toast({ title: t("common", "success"), description: "Müşteri eklendi" });
       }
@@ -715,6 +716,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                           {!c.is_active && <Badge variant="secondary" className="text-xs">Pasif</Badge>}
                         </div>
                         {c.notes && <p className="text-xs text-muted-foreground mt-0.5">{c.notes}</p>}
+                        {c.specs && <p className="text-xs text-primary/80 mt-0.5">📋 Spec tanımlı</p>}
                       </div>
                     </div>
                     {canEditCustomers && (
@@ -754,6 +756,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                 <div>
                   <Label>Notlar (opsiyonel)</Label>
                   <Textarea value={custNotes} onChange={(e) => setCustNotes(e.target.value.slice(0, 500))} placeholder="Ek bilgi..." rows={2} />
+                </div>
+                <div>
+                  <Label>Müşteri Specleri (opsiyonel)</Label>
+                  <Textarea value={custSpecs} onChange={(e) => setCustSpecs(e.target.value.slice(0, 2000))} placeholder="Müşteri özel gereksinimleri, tolerans standartları, yüzey kalitesi beklentileri, malzeme tercihleri vb." rows={4} />
+                  <p className="text-xs text-muted-foreground mt-1">Bu specler teknik resim analizinde AI tarafından otomatik olarak dikkate alınır.</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={custActive} onCheckedChange={setCustActive} />
