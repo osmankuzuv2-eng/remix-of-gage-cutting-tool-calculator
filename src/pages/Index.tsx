@@ -290,8 +290,8 @@ const Index = () => {
               }}
             />
           )}
-          {activeTab === "cost" && hasAccess("cost") && <CostAnalyzer />}
-          {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation />}
+          {activeTab === "cost" && hasAccess("cost") && <CostAnalyzer customMaterials={customMaterials} />}
+          {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation customMaterials={customMaterials} />}
           {activeTab === "afkprice" && hasAccess("afkprice") && <AFKPriceCalculator />}
           {activeTab === "currency-tracker" && hasAccess("currency-tracker") && <CurrencyRateTracker />}
           

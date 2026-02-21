@@ -1,14 +1,20 @@
 import { useState, useMemo } from "react";
 import { DollarSign, TrendingUp, BarChart3, Calculator, Info } from "lucide-react";
-import { materials, toolTypes } from "@/data/materials";
+import { materials, toolTypes, Material } from "@/data/materials";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import InfoPanelContent from "./InfoPanelContent";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 type InfoPanel = 'costPerPart' | 'toolCost' | 'economicSpeed' | 'savings' | null;
 
-const CostAnalyzer = () => {
+interface CostAnalyzerProps {
+  customMaterials?: Material[];
+}
+
+const CostAnalyzer = ({ customMaterials = [] }: CostAnalyzerProps) => {
   const { t } = useLanguage();
+  const allMaterials = useMemo(() => [...materials, ...customMaterials], [customMaterials]);
+  const getMaterialName = (m: Material) => { const tr = t("materialNames", m.id); return tr !== m.id ? tr : m.name; };
   const [activeInfoPanel, setActiveInfoPanel] = useState<InfoPanel>(null);
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [selectedTool, setSelectedTool] = useState(toolTypes[1].id);
@@ -19,7 +25,7 @@ const CostAnalyzer = () => {
   const [partsPerDay, setPartsPerDay] = useState(100);
   const [workDays, setWorkDays] = useState(22);
 
-  const material = materials.find((m) => m.id === selectedMaterial)!;
+  const material = allMaterials.find((m) => m.id === selectedMaterial)!;
   const tool = toolTypes.find((t) => t.id === selectedTool)!;
 
   const calculations = useMemo(() => {
@@ -78,7 +84,7 @@ const CostAnalyzer = () => {
               onChange={(e) => setSelectedMaterial(e.target.value)}
               className="input-industrial w-full"
             >
-              {materials.map((mat) => {
+              {allMaterials.map((mat) => {
                 const tr = t("materialNames", mat.id);
                 return <option key={mat.id} value={mat.id}>{tr !== mat.id ? tr : mat.name}</option>;
               })}
