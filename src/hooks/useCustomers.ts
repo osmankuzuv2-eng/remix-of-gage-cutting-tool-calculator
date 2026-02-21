@@ -6,6 +6,7 @@ export interface Customer {
   name: string;
   factory: string;
   notes: string | null;
+  specs: string | null;
   is_active: boolean;
 }
 

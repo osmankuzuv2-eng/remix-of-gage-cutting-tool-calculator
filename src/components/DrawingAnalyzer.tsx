@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star, FileSpreadsheet } from "lucide-react";
+import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star, FileSpreadsheet, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,7 @@ import { useFactories } from "@/hooks/useFactories";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { materials as defaultMaterials, Material } from "@/data/materials";
 
 // ─── File conversion helpers ───
@@ -390,6 +391,10 @@ const DrawingAnalyzer = () => {
   const [selectedMaterial, setSelectedMaterial] = useState("");
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [currentAnalyzing, setCurrentAnalyzing] = useState(0);
+  const [showSpecsDialog, setShowSpecsDialog] = useState(false);
+
+  const selectedCustomer = activeCustomers.find(c => c.name === customerName);
+  const customerSpecs = selectedCustomer?.specs || null;
 
   const updateItem = useCallback((id: string, update: Partial<DrawingItem>) => {
     setItems(prev => prev.map(it => it.id === id ? { ...it, ...update } : it));
@@ -438,7 +443,7 @@ const DrawingAnalyzer = () => {
       if (urlError) throw urlError;
       const materialInfo = selectedMaterial ? defaultMaterials.find(m => m.id === selectedMaterial) : null;
       const { data, error } = await supabase.functions.invoke("analyze-drawing", {
-        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo, factory: selectedFactory, material: materialInfo ? { name: materialInfo.name, category: materialInfo.category, hardness: materialInfo.hardness, cuttingSpeed: materialInfo.cuttingSpeed, feedRate: materialInfo.feedRate, taylorN: materialInfo.taylorN, taylorC: materialInfo.taylorC } : null },
+        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo, factory: selectedFactory, material: materialInfo ? { name: materialInfo.name, category: materialInfo.category, hardness: materialInfo.hardness, cuttingSpeed: materialInfo.cuttingSpeed, feedRate: materialInfo.feedRate, taylorN: materialInfo.taylorN, taylorC: materialInfo.taylorC } : null, customerSpecs: customerSpecs },
       });
       if (error) throw error;
       if (data?.analysis) {
@@ -591,8 +596,13 @@ const DrawingAnalyzer = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
+                   </div>
+                   {customerName && customerSpecs && (
+                     <Button variant="outline" size="sm" onClick={() => setShowSpecsDialog(true)} className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
+                       <ClipboardList className="w-4 h-4" /> Müşteri Specleri
+                     </Button>
+                   )}
+                 </div>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">{items.length} {t("drawingAnalyzer", "filesSelected")}</p>
@@ -669,6 +679,21 @@ const DrawingAnalyzer = () => {
           </Card>
         </Collapsible>
       ))}
+      {/* Specs Dialog */}
+      <Dialog open={showSpecsDialog} onOpenChange={setShowSpecsDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary" />
+              {customerName} - Müşteri Specleri
+            </DialogTitle>
+          </DialogHeader>
+          <div className="whitespace-pre-wrap text-sm text-foreground bg-secondary/30 rounded-lg p-4 border border-border max-h-80 overflow-y-auto">
+            {customerSpecs || "Bu müşteri için spec tanımlanmamış."}
+          </div>
+          <p className="text-xs text-muted-foreground">Bu specler teknik resim analizi sırasında AI tarafından otomatik olarak dikkate alınır.</p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
