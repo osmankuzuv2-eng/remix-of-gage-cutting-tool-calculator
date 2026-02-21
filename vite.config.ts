@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["favicon.ico", "logo.png", "robots.txt"],
       manifest: {
         name: "GAGE Confidence Toolroom",
@@ -59,8 +59,9 @@ export default defineConfig(({ mode }) => ({
               cacheName: "pages-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24
-              }
+                maxAgeSeconds: 60 * 60
+              },
+              networkTimeoutSeconds: 3,
             }
           },
           {
@@ -70,8 +71,9 @@ export default defineConfig(({ mode }) => ({
               cacheName: "assets-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24
-              }
+                maxAgeSeconds: 60 * 60
+              },
+              networkTimeoutSeconds: 3,
             }
           },
           {
