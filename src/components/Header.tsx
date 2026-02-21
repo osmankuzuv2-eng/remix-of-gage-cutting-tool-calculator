@@ -210,7 +210,7 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                     className="gap-1.5 text-xs"
                   >
                     <Settings className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Yönetim Paneli</span>
+                    <span className="hidden sm:inline">{t("admin", "title")}</span>
                   </Button>
                 )}
 
