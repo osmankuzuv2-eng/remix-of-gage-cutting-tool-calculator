@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import MenuManager from "@/components/MenuManager";
 import ModuleManager from "@/components/ModuleManager";
 import MachineManager from "@/components/MachineManager";
+import CoatingManager from "@/components/CoatingManager";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useFactories } from "@/hooks/useFactories";
@@ -674,11 +675,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
       <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Building2 className="w-4 h-4" /> Müşteriler</TabsTrigger>
           <TabsTrigger value="factories" className="gap-2"><Factory className="w-4 h-4" /> Fabrikalar</TabsTrigger>
           <TabsTrigger value="machines" className="gap-2"><Monitor className="w-4 h-4" /> Makine Parkı</TabsTrigger>
+          <TabsTrigger value="coatings" className="gap-2"><Shield className="w-4 h-4" /> Kaplamalar</TabsTrigger>
           <TabsTrigger value="modules" className="gap-2"><Package className="w-4 h-4" /> Modüller</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
@@ -956,6 +958,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         <TabsContent value="machines" className="mt-4">
           {!canEditMachines && <ReadOnlyBanner />}
           <MachineManager readOnly={!canEditMachines} />
+        </TabsContent>
+
+        {/* ── Coatings Tab ── */}
+        <TabsContent value="coatings" className="mt-4">
+          {!canEdit("admin_machines") && <ReadOnlyBanner />}
+          <CoatingManager readOnly={!canEdit("admin_machines")} />
         </TabsContent>
 
         {/* ── Modules Tab ── */}
