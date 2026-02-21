@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2, Factory, Lock, Camera, Package } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, Building2, Factory, Lock, Camera, Package, Upload, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -102,6 +102,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [custNotes, setCustNotes] = useState("");
   const [custSpecs, setCustSpecs] = useState("");
   const [custActive, setCustActive] = useState(true);
+  const [specAnalyzing, setSpecAnalyzing] = useState(false);
+  const [specPreview, setSpecPreview] = useState<string | null>(null);
+  const specFileRef = useRef<HTMLInputElement>(null);
 
   // Factories state
   const { factories: allFactories, activeFactories, reload: reloadFactories } = useFactories();
@@ -503,13 +506,75 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const openCustomerCreate = () => {
     setEditingCustomer(null);
     setCustName(""); setCustFactory(activeFactories[0]?.name || ""); setCustNotes(""); setCustSpecs(""); setCustActive(true);
+    setSpecPreview(null);
     setShowCustomerDialog(true);
   };
 
   const openCustomerEdit = (c: any) => {
     setEditingCustomer(c);
     setCustName(c.name); setCustFactory(c.factory); setCustNotes(c.notes || ""); setCustSpecs(c.specs || ""); setCustActive(c.is_active);
+    setSpecPreview(null);
     setShowCustomerDialog(true);
+  };
+
+  const handleSpecFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx)$/i)) {
+      toast({ title: "Hata", description: "Sadece PDF ve Word dosyaları desteklenir.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Hata", description: "Dosya boyutu 10MB'dan küçük olmalı.", variant: "destructive" });
+      return;
+    }
+
+    setSpecAnalyzing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-spec`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Analiz başarısız");
+      }
+
+      const data = await response.json();
+      if (data.specs) {
+        setSpecPreview(data.specs);
+        toast({ title: "Başarılı", description: "Spec dokümanı analiz edildi. Sonucu inceleyip kaydedin." });
+      }
+    } catch (err: any) {
+      toast({ title: "Hata", description: err.message, variant: "destructive" });
+    } finally {
+      setSpecAnalyzing(false);
+      if (specFileRef.current) specFileRef.current.value = "";
+    }
+  };
+
+  const applySpecPreview = () => {
+    if (specPreview) {
+      setCustSpecs(specPreview);
+      setSpecPreview(null);
+      toast({ title: "Uygulandı", description: "AI analizi spec alanına aktarıldı." });
+    }
   };
 
   const handleSaveCustomer = async () => {
@@ -759,7 +824,49 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                 </div>
                 <div>
                   <Label>Müşteri Specleri (opsiyonel)</Label>
-                  <Textarea value={custSpecs} onChange={(e) => setCustSpecs(e.target.value.slice(0, 2000))} placeholder="Müşteri özel gereksinimleri, tolerans standartları, yüzey kalitesi beklentileri, malzeme tercihleri vb." rows={4} />
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      ref={specFileRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                      onChange={handleSpecFileUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => specFileRef.current?.click()}
+                      disabled={specAnalyzing}
+                      className="gap-2"
+                    >
+                      {specAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {specAnalyzing ? "Analiz ediliyor..." : "PDF/Word Yükle"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground self-center">AI dokümanı analiz edip spec metni oluşturur</p>
+                  </div>
+                  {specPreview && (
+                    <div className="mb-2 p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                          <FileText className="w-4 h-4" />
+                          AI Analiz Sonucu
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="default" onClick={applySpecPreview} className="gap-1 h-7">
+                            <Check className="w-3 h-3" /> Uygula
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setSpecPreview(null)} className="gap-1 h-7">
+                            <X className="w-3 h-3" /> İptal
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-xs text-foreground whitespace-pre-wrap max-h-48 overflow-y-auto">
+                        {specPreview}
+                      </div>
+                    </div>
+                  )}
+                  <Textarea value={custSpecs} onChange={(e) => setCustSpecs(e.target.value.slice(0, 5000))} placeholder="Müşteri özel gereksinimleri, tolerans standartları, yüzey kalitesi beklentileri, malzeme tercihleri vb." rows={4} />
                   <p className="text-xs text-muted-foreground mt-1">Bu specler teknik resim analizinde AI tarafından otomatik olarak dikkate alınır.</p>
                 </div>
                 <div className="flex items-center gap-2">

@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.update-currency-forecasts]
 verify_jwt = false
+
+[functions.analyze-spec]
+verify_jwt = false
