@@ -23,7 +23,7 @@ import { materials as defaultMaterials, Material } from "@/data/materials";
 
 const convertPdfToJpg = async (file: File): Promise<File> => {
   const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
-  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs`;
   const buf = await file.arrayBuffer();
   const pdf = await getDocument({ data: new Uint8Array(buf) }).promise;
   const numPages = pdf.numPages;
