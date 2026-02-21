@@ -201,15 +201,6 @@ const Index = () => {
               );
             })}
 
-            {(isAdmin || permissions["add_material"]) && (
-              <button
-                onClick={() => setShowMaterialForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-success/10 text-success border border-success/30 hover:bg-success/20 hover:scale-[1.03] hover:shadow-md active:scale-[0.97] transition-all duration-300 ml-auto group"
-              >
-                <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                {t("footer", "addMaterial")}
-              </button>
-            )}
           </div>
 
           {/* Expanded module cards for open category */}
@@ -276,6 +267,7 @@ const Index = () => {
               afkMultipliers={afkMultipliers}
               onDeleteCustom={handleDeleteMaterial}
               isAdmin={isAdmin}
+              onAddMaterial={(isAdmin || permissions["add_material"]) ? () => setShowMaterialForm(true) : undefined}
               onUpdatePrice={(id, price) => {
                 updatePrice(id, price);
                 if (id.startsWith("custom-")) {
