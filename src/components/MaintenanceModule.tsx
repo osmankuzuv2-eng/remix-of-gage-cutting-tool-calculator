@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Wrench, Calendar, AlertTriangle, ClipboardCheck, Plus, Trash2, ChevronDown, ChevronUp, Clock, DollarSign, User, CheckCircle2, XCircle, CircleDot, Filter, Search } from "lucide-react";
-import { useMaintenance, MaintenanceRecord, MaintenanceSchedule, ChecklistItem } from "@/hooks/useMaintenance";
+import { useState, useRef } from "react";
+import { Wrench, Calendar, AlertTriangle, ClipboardCheck, Plus, Trash2, ChevronDown, ChevronUp, Clock, DollarSign, User, CheckCircle2, XCircle, CircleDot, Filter, Search, Camera, Image, X, ZoomIn, Upload } from "lucide-react";
+import { useMaintenance, MaintenanceRecord, MaintenanceSchedule, ChecklistItem, MaintenancePhoto } from "@/hooks/useMaintenance";
 import { useMachines, Machine } from "@/hooks/useMachines";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // ---- Sub-components ----
 
@@ -62,7 +63,53 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
     scheduled_date: initial?.scheduled_date || "",
     notes: initial?.notes || "",
   });
+  const [photos, setPhotos] = useState<MaintenancePhoto[]>((initial?.photos as MaintenancePhoto[]) || []);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadType, setUploadType] = useState<"before" | "after">("before");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const newPhotos: MaintenancePhoto[] = [];
+
+    for (const file of Array.from(files)) {
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      const filePath = `${form.machine_id || "general"}/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from("maintenance-photos")
+        .upload(filePath, file, { upsert: true });
+
+      if (error) {
+        toast({ title: "Yükleme hatası", description: error.message, variant: "destructive" });
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("maintenance-photos")
+        .getPublicUrl(filePath);
+
+      newPhotos.push({
+        url: urlData.publicUrl,
+        type: uploadType,
+        caption: "",
+        uploaded_at: new Date().toISOString(),
+      });
+    }
+
+    setPhotos(prev => [...prev, ...newPhotos]);
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePhoto = (idx: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== idx));
+  };
 
   const handleSubmit = async () => {
     if (!form.machine_id || !form.title) {
@@ -70,7 +117,7 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
       return;
     }
     setSaving(true);
-    const err = await onSave(form);
+    const err = await onSave({ ...form, photos } as any);
     setSaving(false);
     if (!err) {
       toast({ title: "Başarılı", description: initial ? "Kayıt güncellendi" : "Bakım kaydı oluşturuldu" });
@@ -149,6 +196,59 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
           </div>
         </div>
 
+        {/* Photo Upload Section */}
+        <div className="space-y-3">
+          <label className="text-xs text-muted-foreground font-semibold block">Fotoğraflar (Öncesi / Sonrası)</label>
+          
+          <div className="flex items-center gap-2">
+            <select value={uploadType} onChange={e => setUploadType(e.target.value as "before" | "after")} className="rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
+              <option value="before">Öncesi</option>
+              <option value="after">Sonrası</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary text-sm font-medium hover:bg-primary/30 transition-colors disabled:opacity-50"
+            >
+              {uploading ? (
+                <><Upload className="w-4 h-4 animate-pulse" /> Yükleniyor...</>
+              ) : (
+                <><Camera className="w-4 h-4" /> Fotoğraf Ekle</>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </div>
+
+          {photos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {photos.map((photo, idx) => (
+                <div key={idx} className="relative group rounded-xl overflow-hidden border border-border aspect-video bg-background">
+                  <img src={photo.url} alt={photo.caption || `Fotoğraf ${idx + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute top-1 left-1">
+                    <Badge className={`text-[10px] ${photo.type === "before" ? "bg-blue-500/80 text-white" : "bg-emerald-500/80 text-white"}`}>
+                      {photo.type === "before" ? "Öncesi" : "Sonrası"}
+                    </Badge>
+                  </div>
+                  <button
+                    onClick={() => removePhoto(idx)}
+                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-end gap-3 pt-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">İptal</button>
           <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
@@ -159,7 +259,6 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
     </div>
   );
 };
-
 // ---- Schedule Form Dialog ----
 interface ScheduleFormProps {
   machines: Machine[];
@@ -380,6 +479,7 @@ const MaintenanceModule = () => {
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<MaintenanceSchedule | null>(null);
   const [checklistSchedule, setChecklistSchedule] = useState<MaintenanceSchedule | null>(null);
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
   const [search, setSearch] = useState("");
 
@@ -475,6 +575,33 @@ const MaintenanceModule = () => {
                       </div>
                       <p className="text-sm text-muted-foreground">{getMachineName(r.machine_id)}</p>
                       {r.description && <p className="text-xs text-muted-foreground mt-1">{r.description}</p>}
+                      
+                      {/* Photo thumbnails */}
+                      {r.photos && (r.photos as MaintenancePhoto[]).length > 0 && (
+                        <div className="flex gap-1.5 mt-2 flex-wrap">
+                          {(r.photos as MaintenancePhoto[]).map((photo, pi) => (
+                            <button
+                              key={pi}
+                              onClick={() => setLightboxPhoto(photo.url)}
+                              className="relative w-14 h-14 rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all group"
+                            >
+                              <img src={photo.url} alt="" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0">
+                                <div className={`text-[8px] text-center text-white font-medium py-0.5 ${photo.type === "before" ? "bg-blue-500/80" : "bg-emerald-500/80"}`}>
+                                  {photo.type === "before" ? "Önce" : "Sonra"}
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                          <span className="flex items-center text-xs text-muted-foreground gap-1">
+                            <Image className="w-3 h-3" />{(r.photos as MaintenancePhoto[]).length}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                         {r.technician_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{r.technician_name}</span>}
                         {r.cost > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />€{r.cost}</span>}
@@ -636,6 +763,16 @@ const MaintenanceModule = () => {
           onComplete={(results, duration, notes) => completeChecklist(checklistSchedule.id, checklistSchedule.machine_id, results, duration, notes)}
           onClose={() => setChecklistSchedule(null)}
         />
+      )}
+
+      {/* Lightbox */}
+      {lightboxPhoto && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setLightboxPhoto(null)}>
+          <button onClick={() => setLightboxPhoto(null)} className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+          <img src={lightboxPhoto} alt="Bakım fotoğrafı" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain" onClick={e => e.stopPropagation()} />
+        </div>
       )}
     </div>
   );

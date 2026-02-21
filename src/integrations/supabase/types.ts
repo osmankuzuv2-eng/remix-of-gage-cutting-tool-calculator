@@ -372,6 +372,7 @@ export type Database = {
           maintenance_type: string
           notes: string | null
           parts_used: Json | null
+          photos: Json | null
           priority: string
           scheduled_date: string | null
           status: string
@@ -391,6 +392,7 @@ export type Database = {
           maintenance_type?: string
           notes?: string | null
           parts_used?: Json | null
+          photos?: Json | null
           priority?: string
           scheduled_date?: string | null
           status?: string
@@ -410,6 +412,7 @@ export type Database = {
           maintenance_type?: string
           notes?: string | null
           parts_used?: Json | null
+          photos?: Json | null
           priority?: string
           scheduled_date?: string | null
           status?: string
