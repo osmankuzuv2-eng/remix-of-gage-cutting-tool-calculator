@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown, Weight, Ruler, Save } from "lucide-react";
-import { materials } from "@/data/materials";
+import { materials, Material } from "@/data/materials";
 import { useMachines } from "@/hooks/useMachines";
 import { exportCostPdf } from "@/lib/exportCostPdf";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -9,14 +9,44 @@ import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useCustomers } from "@/hooks/useCustomers";
+import { supabase } from "@/integrations/supabase/client";
 
 const CostCalculation = () => {
   const { t } = useLanguage();
-  const getMaterialName = (id: string) => { const tr = t("materialNames", id); return tr !== id ? tr : materials.find(m => m.id === id)?.name || id; };
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
   const { machines, getMachinesByType, getMachineLabel } = useMachines();
   const { activeCustomers } = useCustomers();
+
+  // Fetch custom saved materials from DB and merge with hardcoded ones
+  const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    const fetchCustomMaterials = async () => {
+      const { data } = await supabase.from("saved_materials").select("*").eq("user_id", user.id);
+      if (data) {
+        const mapped: Material[] = data.map((m: any) => ({
+          id: `custom-${m.id}`,
+          name: m.name,
+          category: m.category,
+          hardness: m.hardness_min && m.hardness_max ? `${m.hardness_min}-${m.hardness_max} HB` : "N/A",
+          density: 7.85, // default density for custom materials
+          pricePerKg: m.price_per_kg || 0,
+          cuttingSpeed: { min: m.cutting_speed_min, max: m.cutting_speed_max, unit: "m/dk" },
+          feedRate: { min: m.feed_rate_min, max: m.feed_rate_max, unit: "mm/dev" },
+          taylorN: 0.20,
+          taylorC: 300,
+          color: "bg-emerald-500",
+        }));
+        setCustomMaterials(mapped);
+      }
+    };
+    fetchCustomMaterials();
+  }, [user]);
+
+  const allMaterials = useMemo(() => [...materials, ...customMaterials], [customMaterials]);
+  const getMaterialName = (id: string) => { const tr = t("materialNames", id); return tr !== id ? tr : allMaterials.find(m => m.id === id)?.name || id; };
+
   const [referenceNo, setReferenceNo] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [customer, setCustomer] = useState("");
@@ -57,7 +87,7 @@ const CostCalculation = () => {
   const [scrapRate, setScrapRate] = useState(0);
   const [profitMargin, setProfitMargin] = useState(0);
 
-  const currentMaterial = materials.find(m => m.id === selectedMaterial);
+  const currentMaterial = allMaterials.find(m => m.id === selectedMaterial);
 
   const calculations = useMemo(() => {
     const density = currentMaterial?.density ?? 7.85;
@@ -99,7 +129,7 @@ const CostCalculation = () => {
           <div>
             <label className="label-industrial block mb-2">{t("costCalc", "materialType")}</label>
             <select value={selectedMaterial} onChange={(e) => setSelectedMaterial(e.target.value)} className="input-industrial w-full">
-              {materials.map((mat) => (<option key={mat.id} value={mat.id}>{getMaterialName(mat.id)}</option>))}
+              {allMaterials.map((mat) => (<option key={mat.id} value={mat.id}>{getMaterialName(mat.id)}</option>))}
             </select>
           </div>
           <div className="pt-2 border-t border-border space-y-2">
