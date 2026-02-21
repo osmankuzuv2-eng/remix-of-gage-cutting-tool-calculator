@@ -68,7 +68,9 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
   useEffect(() => { if (selectedMilling) setMillingRate(getMachineRate(selectedMilling)); }, [selectedMilling, machines]);
   useEffect(() => { if (selected5Axis) setFiveAxisRate(getMachineRate(selected5Axis)); }, [selected5Axis, machines]);
   const [setupTime, setSetupTime] = useState(0);
-  const [machiningTime, setMachiningTime] = useState(0);
+  const [turningTime, setTurningTime] = useState(0);
+  const [millingTime, setMillingTime] = useState(0);
+  const [fiveAxisTime, setFiveAxisTime] = useState(0);
   const [orderQuantity, setOrderQuantity] = useState(0);
   const [shapeType, setShapeType] = useState<"round" | "rectangular">("round");
   const [diameter, setDiameter] = useState(0);
@@ -106,8 +108,8 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
     const weightKg = (volumeCm3 * density) / 1000;
     const materialCostPerPart = weightKg * materialPricePerKg;
     const totalMaterialCost = materialCostPerPart * orderQuantity;
-    const machineCost = (turningRate + millingRate + fiveAxisRate) * machiningTime * orderQuantity;
-    const totalMachiningMinutes = setupTime + machiningTime * orderQuantity;
+    const machineCost = (turningRate * turningTime + millingRate * millingTime + fiveAxisRate * fiveAxisTime) * orderQuantity;
+    const totalMachiningMinutes = setupTime + (turningTime + millingTime + fiveAxisTime) * orderQuantity;
     const totalMachiningHours = totalMachiningMinutes / 60;
     const laborCost = totalMachiningMinutes * laborRate;
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
@@ -118,7 +120,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
     const grandTotal = totalBeforeProfit + profit;
     const costPerPart = orderQuantity > 0 ? grandTotal / orderQuantity : 0;
     return { volumeCm3: volumeCm3.toFixed(2), weightKg: weightKg.toFixed(3), materialCostPerPart: materialCostPerPart.toFixed(2), totalMaterialCost: totalMaterialCost.toFixed(2), totalMachiningHours: totalMachiningHours.toFixed(1), laborCost: laborCost.toFixed(2), machineCost: machineCost.toFixed(2), additionalCosts: additionalCosts.toFixed(2), scrapCost: scrapCost.toFixed(2), profit: profit.toFixed(2), grandTotal: grandTotal.toFixed(2), costPerPart: costPerPart.toFixed(2) };
-  }, [setupTime, machiningTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, shapeType, diameter, length, width, height, materialPricePerKg, currentMaterial]);
+  }, [setupTime, turningTime, millingTime, fiveAxisTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, shapeType, diameter, length, width, height, materialPricePerKg, currentMaterial]);
 
   return (
     <div className="industrial-card p-6 animate-fade-in">
@@ -194,18 +196,24 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
           <div className="space-y-3">
             <label className="label-industrial block">{t("costCalc", "machineSelection")}</label>
             {([
-              { label: t("costCalc", "turning"), types: ["turning"], value: selectedTurning, setValue: setSelectedTurning, rate: turningRate, setRate: setTurningRate },
-              { label: t("costCalc", "milling"), types: ["milling-3axis", "milling-4axis"], value: selectedMilling, setValue: setSelectedMilling, rate: millingRate, setRate: setMillingRate },
-              { label: t("costCalc", "fiveAxis"), types: ["milling-5axis"], value: selected5Axis, setValue: setSelected5Axis, rate: fiveAxisRate, setRate: setFiveAxisRate },
+              { label: t("costCalc", "turning"), types: ["turning"], value: selectedTurning, setValue: setSelectedTurning, rate: turningRate, setRate: setTurningRate, time: turningTime, setTime: setTurningTime },
+              { label: t("costCalc", "milling"), types: ["milling-3axis", "milling-4axis"], value: selectedMilling, setValue: setSelectedMilling, rate: millingRate, setRate: setMillingRate, time: millingTime, setTime: setMillingTime },
+              { label: t("costCalc", "fiveAxis"), types: ["milling-5axis"], value: selected5Axis, setValue: setSelected5Axis, rate: fiveAxisRate, setRate: setFiveAxisRate, time: fiveAxisTime, setTime: setFiveAxisTime },
             ]).map((machine) => (
               <div key={machine.types.join("-")} className="p-3 rounded-lg bg-secondary/20 border border-border space-y-2">
                 <span className="text-xs font-medium text-muted-foreground">{machine.label}</span>
                 <select value={machine.value} onChange={(e) => machine.setValue(e.target.value)} className="input-industrial w-full text-sm">
                   {machine.types.flatMap(t => getMachinesByType(t)).map((m) => (<option key={m.id} value={m.id}>{m.label}</option>))}
                 </select>
-                <div className="flex items-center gap-2">
-                  <input type="number" value={machine.rate} onChange={(e) => machine.setRate(Number(e.target.value))} className="input-industrial w-full text-sm" placeholder="0" />
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">€/{t("common", "minute")}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1">
+                    <input type="number" value={machine.rate} onChange={(e) => machine.setRate(Number(e.target.value))} className="input-industrial w-full text-sm" placeholder="0" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">€/dk</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input type="number" value={machine.time} onChange={(e) => machine.setTime(Number(e.target.value))} className="input-industrial w-full text-sm" placeholder="0" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">dk</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -217,9 +225,8 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
           <h3 className="label-industrial flex items-center gap-2"><Package className="w-4 h-4" /> {t("costCalc", "productionAndCosts")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label-industrial block mb-2">{t("costCalc", "setupTime")}</label><input type="number" value={setupTime} onChange={(e) => setSetupTime(Number(e.target.value))} className="input-industrial w-full" /></div>
-            <div><label className="label-industrial block mb-2">{t("costCalc", "machiningTime")}</label><input type="number" value={machiningTime} onChange={(e) => setMachiningTime(Number(e.target.value))} className="input-industrial w-full" /></div>
+            <div><label className="label-industrial block mb-2">{t("costCalc", "orderQuantity")}</label><input type="number" value={orderQuantity} onChange={(e) => setOrderQuantity(Number(e.target.value))} className="input-industrial w-full" /></div>
           </div>
-          <div><label className="label-industrial block mb-2">{t("costCalc", "orderQuantity")}</label><input type="number" value={orderQuantity} onChange={(e) => setOrderQuantity(Number(e.target.value))} className="input-industrial w-full" /></div>
           <div className="pt-2 border-t border-border">
             <h4 className="label-industrial mb-3 flex items-center gap-2">{t("costCalc", "additionalCosts")}</h4>
             <div className="grid grid-cols-2 gap-3">
@@ -274,7 +281,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
                 { label: t("costCalc", "turning"), name: getMLbl(selectedTurning), rate: turningRate },
                 { label: t("costCalc", "milling"), name: getMLbl(selectedMilling), rate: millingRate },
                 { label: t("costCalc", "fiveAxis"), name: getMLbl(selected5Axis), rate: fiveAxisRate },
-              ], setupTime, machiningTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
+              ], setupTime, machiningTime: turningTime + millingTime + fiveAxisTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
             }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors">
               <FileDown className="w-4 h-4" />{t("costCalc", "downloadPdf")}
             </button>
@@ -290,7 +297,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
                     customer: customer || "-",
                     laborRate,
                     setupTime,
-                    machiningTime,
+                    machiningTime: turningTime + millingTime + fiveAxisTime,
                     orderQuantity,
                     materialPricePerKg,
                     scrapRate,
