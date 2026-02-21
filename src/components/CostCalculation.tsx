@@ -12,9 +12,10 @@ import { useCustomers } from "@/hooks/useCustomers";
 
 interface CostCalculationProps {
   customMaterials?: Material[];
+  materialPrices?: Record<string, number>;
 }
 
-const CostCalculation = ({ customMaterials = [] }: CostCalculationProps) => {
+const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalculationProps) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
@@ -65,6 +66,19 @@ const CostCalculation = ({ customMaterials = [] }: CostCalculationProps) => {
   const [profitMargin, setProfitMargin] = useState(0);
 
   const currentMaterial = allMaterials.find(m => m.id === selectedMaterial);
+
+  // Auto-fill material price from database when material changes
+  useEffect(() => {
+    // Check material_settings prices first (for default materials)
+    if (materialPrices[selectedMaterial] != null) {
+      setMaterialPricePerKg(materialPrices[selectedMaterial]);
+    } else if (currentMaterial?.pricePerKg) {
+      // For custom materials with embedded price
+      setMaterialPricePerKg(currentMaterial.pricePerKg);
+    } else {
+      setMaterialPricePerKg(0);
+    }
+  }, [selectedMaterial, materialPrices, currentMaterial]);
 
   const calculations = useMemo(() => {
     const density = currentMaterial?.density ?? 7.85;
