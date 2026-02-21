@@ -305,6 +305,190 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_checklist_logs: {
+        Row: {
+          checklist_results: Json
+          completed_by: string
+          completed_by_name: string | null
+          completion_date: string
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          machine_id: string
+          notes: string | null
+          schedule_id: string
+        }
+        Insert: {
+          checklist_results?: Json
+          completed_by: string
+          completed_by_name?: string | null
+          completion_date?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          machine_id: string
+          notes?: string | null
+          schedule_id: string
+        }
+        Update: {
+          checklist_results?: Json
+          completed_by?: string
+          completed_by_name?: string | null
+          completion_date?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          machine_id?: string
+          notes?: string | null
+          schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_checklist_logs_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_checklist_logs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_records: {
+        Row: {
+          completed_date: string | null
+          cost: number | null
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          machine_id: string
+          maintenance_type: string
+          notes: string | null
+          parts_used: Json | null
+          priority: string
+          scheduled_date: string | null
+          status: string
+          technician_name: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          machine_id: string
+          maintenance_type?: string
+          notes?: string | null
+          parts_used?: Json | null
+          priority?: string
+          scheduled_date?: string | null
+          status?: string
+          technician_name?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          machine_id?: string
+          maintenance_type?: string
+          notes?: string | null
+          parts_used?: Json | null
+          priority?: string
+          scheduled_date?: string | null
+          status?: string
+          technician_name?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_records_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_schedules: {
+        Row: {
+          checklist: Json | null
+          created_at: string
+          created_by: string
+          current_hours: number | null
+          id: string
+          interval_days: number | null
+          interval_hours: number | null
+          is_active: boolean
+          last_performed_at: string | null
+          last_performed_hours: number | null
+          machine_id: string
+          maintenance_type: string
+          next_due_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          checklist?: Json | null
+          created_at?: string
+          created_by: string
+          current_hours?: number | null
+          id?: string
+          interval_days?: number | null
+          interval_hours?: number | null
+          is_active?: boolean
+          last_performed_at?: string | null
+          last_performed_hours?: number | null
+          machine_id: string
+          maintenance_type?: string
+          next_due_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          checklist?: Json | null
+          created_at?: string
+          created_by?: string
+          current_hours?: number | null
+          id?: string
+          interval_days?: number | null
+          interval_hours?: number | null
+          is_active?: boolean
+          last_performed_at?: string | null
+          last_performed_hours?: number | null
+          machine_id?: string
+          maintenance_type?: string
+          next_due_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_schedules_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       material_price_history: {
         Row: {
           change_type: string

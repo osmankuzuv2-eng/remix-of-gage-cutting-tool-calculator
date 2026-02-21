@@ -30,4 +30,5 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "history": History,
   "afkprice": DollarSign,
   "currency-tracker": TrendingUp,
+  "maintenance": Wrench,
 };
