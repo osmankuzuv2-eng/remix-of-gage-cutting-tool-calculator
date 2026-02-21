@@ -31,10 +31,16 @@ serve(async (req) => {
       );
     }
 
-    // Read file as base64
+    // Read file as base64 (chunked to avoid stack overflow)
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
-    const base64 = btoa(String.fromCharCode(...uint8Array));
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64 = btoa(binary);
 
     // Determine MIME type
     let mimeType = "application/pdf";
