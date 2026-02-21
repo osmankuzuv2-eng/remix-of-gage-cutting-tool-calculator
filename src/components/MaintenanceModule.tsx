@@ -6,40 +6,44 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 // ---- Sub-components ----
 
 const StatusBadge = ({ status }: { status: string }) => {
+  const { t } = useLanguage();
   const map: Record<string, { label: string; cls: string }> = {
-    planned: { label: "Planlandı", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-    in_progress: { label: "Devam Ediyor", cls: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-    completed: { label: "Tamamlandı", cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-    cancelled: { label: "İptal", cls: "bg-red-500/20 text-red-400 border-red-500/30" },
+    planned: { label: t("maintenance", "planned"), cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+    in_progress: { label: t("maintenance", "inProgress"), cls: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+    completed: { label: t("maintenance", "completed"), cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+    cancelled: { label: t("maintenance", "cancelled"), cls: "bg-red-500/20 text-red-400 border-red-500/30" },
   };
   const s = map[status] || { label: status, cls: "bg-muted text-muted-foreground" };
   return <Badge className={`${s.cls} border text-xs`}>{s.label}</Badge>;
 };
 
 const PriorityBadge = ({ priority }: { priority: string }) => {
+  const { t } = useLanguage();
   const map: Record<string, { label: string; cls: string }> = {
-    low: { label: "Düşük", cls: "bg-slate-500/20 text-slate-400" },
-    normal: { label: "Normal", cls: "bg-blue-500/20 text-blue-400" },
-    high: { label: "Yüksek", cls: "bg-orange-500/20 text-orange-400" },
-    critical: { label: "Kritik", cls: "bg-red-500/20 text-red-400" },
+    low: { label: t("maintenance", "low"), cls: "bg-slate-500/20 text-slate-400" },
+    normal: { label: t("maintenance", "normal"), cls: "bg-blue-500/20 text-blue-400" },
+    high: { label: t("maintenance", "high"), cls: "bg-orange-500/20 text-orange-400" },
+    critical: { label: t("maintenance", "critical"), cls: "bg-red-500/20 text-red-400" },
   };
   const p = map[priority] || { label: priority, cls: "" };
   return <Badge className={`${p.cls} text-xs`}>{p.label}</Badge>;
 };
 
 const TypeBadge = ({ type }: { type: string }) => {
+  const { t } = useLanguage();
   const map: Record<string, { label: string; cls: string }> = {
-    preventive: { label: "Önleyici", cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-    predictive: { label: "Kestirici", cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-    corrective: { label: "Düzeltici", cls: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+    preventive: { label: t("maintenance", "preventive"), cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+    predictive: { label: t("maintenance", "predictive"), cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+    corrective: { label: t("maintenance", "corrective"), cls: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
   };
-  const t = map[type] || { label: type, cls: "" };
-  return <Badge className={`${t.cls} border text-xs`}>{t.label}</Badge>;
+  const mt = map[type] || { label: type, cls: "" };
+  return <Badge className={`${mt.cls} border text-xs`}>{mt.label}</Badge>;
 };
 
 // ---- Record Form Dialog ----

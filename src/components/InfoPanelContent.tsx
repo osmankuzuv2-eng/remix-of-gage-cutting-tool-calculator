@@ -1,4 +1,5 @@
 import { Info } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface InfoPanelContentProps {
   title: string;
@@ -14,6 +15,7 @@ interface InfoPanelContentProps {
 }
 
 const InfoPanelContent = ({ title, description, formula, metrics, useCases, statusInfo, tip }: InfoPanelContentProps) => {
+  const { t } = useLanguage();
   const getStatus = () => {
     if (!statusInfo) return null;
     for (const threshold of statusInfo.thresholds) {
@@ -42,7 +44,7 @@ const InfoPanelContent = ({ title, description, formula, metrics, useCases, stat
       )}
 
       <div className="p-3 rounded-md bg-secondary/50 border border-border">
-        <span className="text-xs text-muted-foreground">Formül:</span>
+        <span className="text-xs text-muted-foreground">{t("infoPanel", "formula")}:</span>
         <div className="font-mono text-lg text-primary mt-1">{formula}</div>
       </div>
 
@@ -62,7 +64,7 @@ const InfoPanelContent = ({ title, description, formula, metrics, useCases, stat
       )}
 
       <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border">
-        <p><strong>Kullanım Alanları:</strong></p>
+        <p><strong>{t("infoPanel", "useCases")}:</strong></p>
         <ul className="list-disc list-inside space-y-0.5 ml-2">
           {useCases.map((useCase, idx) => (
             <li key={idx}>{useCase}</li>
