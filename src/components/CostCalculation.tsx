@@ -21,7 +21,7 @@ const CostCalculation = () => {
   const [selectedMaterial, setSelectedMaterial] = useState(materials[0].id);
   const [customer, setCustomer] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
-  const [laborRate, setLaborRate] = useState(1.67);
+  const [laborRate, setLaborRate] = useState(0);
   const [selectedTurning, setSelectedTurning] = useState("");
   const [turningRate, setTurningRate] = useState(0);
   const [selectedMilling, setSelectedMilling] = useState("");
@@ -41,21 +41,21 @@ const CostCalculation = () => {
       if (!selected5Axis) setSelected5Axis(getMachinesByType("milling-5axis")[0]?.id ?? "");
     }
   }, [machines]);
-  const [setupTime, setSetupTime] = useState(30);
-  const [machiningTime, setMachiningTime] = useState(15);
-  const [orderQuantity, setOrderQuantity] = useState(100);
+  const [setupTime, setSetupTime] = useState(0);
+  const [machiningTime, setMachiningTime] = useState(0);
+  const [orderQuantity, setOrderQuantity] = useState(0);
   const [shapeType, setShapeType] = useState<"round" | "rectangular">("round");
-  const [diameter, setDiameter] = useState(50);
-  const [length, setLength] = useState(100);
-  const [width, setWidth] = useState(50);
-  const [height, setHeight] = useState(50);
-  const [materialPricePerKg, setMaterialPricePerKg] = useState(5);
+  const [diameter, setDiameter] = useState(0);
+  const [length, setLength] = useState(0);
+  const [width, setWidth] = useState(0);
+  const [height, setHeight] = useState(0);
+  const [materialPricePerKg, setMaterialPricePerKg] = useState(0);
   const [toolCost, setToolCost] = useState(0);
   const [shippingCost, setShippingCost] = useState(0);
   const [coatingCost, setCoatingCost] = useState(0);
   const [heatTreatmentCost, setHeatTreatmentCost] = useState(0);
-  const [scrapRate, setScrapRate] = useState(3);
-  const [profitMargin, setProfitMargin] = useState(20);
+  const [scrapRate, setScrapRate] = useState(0);
+  const [profitMargin, setProfitMargin] = useState(0);
 
   const currentMaterial = materials.find(m => m.id === selectedMaterial);
 
