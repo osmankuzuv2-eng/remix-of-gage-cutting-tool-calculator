@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export interface MaintenancePhoto {
+  url: string;
+  type: "before" | "after";
+  caption: string;
+  uploaded_at: string;
+}
+
 export interface MaintenanceRecord {
   id: string;
   machine_id: string;
@@ -14,6 +21,7 @@ export interface MaintenanceRecord {
   cost: number;
   duration_minutes: number;
   parts_used: any[];
+  photos: MaintenancePhoto[];
   notes: string | null;
   scheduled_date: string | null;
   completed_date: string | null;
