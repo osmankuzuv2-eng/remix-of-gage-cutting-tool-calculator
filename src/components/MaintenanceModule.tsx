@@ -1,11 +1,12 @@
-import { useState, useRef } from "react";
-import { Wrench, Calendar, AlertTriangle, ClipboardCheck, Plus, Trash2, ChevronDown, ChevronUp, Clock, DollarSign, User, CheckCircle2, XCircle, CircleDot, Filter, Search, Camera, Image, X, ZoomIn, Upload } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { Wrench, Calendar, AlertTriangle, ClipboardCheck, Plus, Trash2, ChevronDown, ChevronUp, Clock, DollarSign, User, CheckCircle2, XCircle, CircleDot, Filter, Search, Camera, Image, X, ZoomIn, Upload, BarChart3, TrendingUp, Activity } from "lucide-react";
 import { useMaintenance, MaintenanceRecord, MaintenanceSchedule, ChecklistItem, MaintenancePhoto } from "@/hooks/useMaintenance";
 import { useMachines, Machine } from "@/hooks/useMachines";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 // ---- Sub-components ----
 
@@ -492,6 +493,48 @@ const MaintenanceModule = () => {
     return true;
   });
 
+  // Dashboard data
+  const dashboardData = useMemo(() => {
+    const machineMap = new Map<string, { name: string; count: number; cost: number; totalDuration: number; preventive: number; predictive: number; corrective: number }>();
+    
+    for (const r of records) {
+      const existing = machineMap.get(r.machine_id) || {
+        name: getMachineName(r.machine_id),
+        count: 0, cost: 0, totalDuration: 0,
+        preventive: 0, predictive: 0, corrective: 0,
+      };
+      existing.count++;
+      existing.cost += r.cost || 0;
+      existing.totalDuration += r.duration_minutes || 0;
+      if (r.maintenance_type === "preventive") existing.preventive++;
+      else if (r.maintenance_type === "predictive") existing.predictive++;
+      else existing.corrective++;
+      machineMap.set(r.machine_id, existing);
+    }
+
+    const perMachine = Array.from(machineMap.values()).sort((a, b) => b.count - a.count);
+    const totalCount = records.length;
+    const totalCost = records.reduce((s, r) => s + (r.cost || 0), 0);
+    const totalDuration = records.reduce((s, r) => s + (r.duration_minutes || 0), 0);
+    const avgDuration = totalCount > 0 ? Math.round(totalDuration / totalCount) : 0;
+    const completedCount = records.filter(r => r.status === "completed").length;
+
+    const typeData = [
+      { name: "Önleyici", value: records.filter(r => r.maintenance_type === "preventive").length, color: "hsl(var(--chart-1))" },
+      { name: "Kestirici", value: records.filter(r => r.maintenance_type === "predictive").length, color: "hsl(var(--chart-2))" },
+      { name: "Düzeltici", value: records.filter(r => r.maintenance_type === "corrective").length, color: "hsl(var(--chart-3))" },
+    ].filter(d => d.value > 0);
+
+    const statusData = [
+      { name: "Planlandı", value: records.filter(r => r.status === "planned").length, color: "hsl(var(--chart-4))" },
+      { name: "Devam Ediyor", value: records.filter(r => r.status === "in_progress").length, color: "hsl(var(--chart-5))" },
+      { name: "Tamamlandı", value: completedCount, color: "hsl(var(--chart-1))" },
+      { name: "İptal", value: records.filter(r => r.status === "cancelled").length, color: "hsl(var(--chart-3))" },
+    ].filter(d => d.value > 0);
+
+    return { perMachine, totalCount, totalCost, avgDuration, totalDuration, completedCount, typeData, statusData };
+  }, [records, machines]);
+
   if (loading) return <div className="text-center py-12 text-muted-foreground">Yükleniyor...</div>;
 
   return (
@@ -531,12 +574,162 @@ const MaintenanceModule = () => {
         </div>
       )}
 
-      <Tabs defaultValue="records" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-md bg-background border border-border">
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid grid-cols-4 w-full max-w-lg bg-background border border-border">
+          <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
           <TabsTrigger value="records" className="text-xs">Bakım Kayıtları</TabsTrigger>
           <TabsTrigger value="schedules" className="text-xs">Bakım Planları</TabsTrigger>
           <TabsTrigger value="logs" className="text-xs">Checklist Geçmişi</TabsTrigger>
         </TabsList>
+
+        {/* ---- Dashboard Tab ---- */}
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-xs text-muted-foreground">Toplam Bakım</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{dashboardData.totalCount}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 text-accent-foreground" />
+                </div>
+                <span className="text-xs text-muted-foreground">Toplam Maliyet</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">€{dashboardData.totalCost.toLocaleString("tr-TR")}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-secondary-foreground" />
+                </div>
+                <span className="text-xs text-muted-foreground">Ort. Arıza Süresi</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{dashboardData.avgDuration} <span className="text-sm font-normal text-muted-foreground">dk</span></p>
+            </div>
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-foreground" />
+                </div>
+                <span className="text-xs text-muted-foreground">Tamamlanan</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{dashboardData.completedCount}</p>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Type Distribution Pie */}
+            {dashboardData.typeData.length > 0 && (
+              <div className="p-4 rounded-xl bg-card border border-border">
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" /> Bakım Türü Dağılımı
+                </h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={dashboardData.typeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                      {dashboardData.typeData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <RechartsTooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Status Distribution Pie */}
+            {dashboardData.statusData.length > 0 && (
+              <div className="p-4 rounded-xl bg-card border border-border">
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" /> Durum Dağılımı
+                </h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={dashboardData.statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                      {dashboardData.statusData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <RechartsTooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* Per-Machine Bar Chart */}
+          {dashboardData.perMachine.length > 0 && (
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-primary" /> Makine Bazlı Bakım Sayısı & Maliyet
+              </h4>
+              <ResponsiveContainer width="100%" height={Math.max(250, dashboardData.perMachine.length * 40)}>
+                <BarChart data={dashboardData.perMachine} layout="vertical" margin={{ left: 10, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                  <YAxis dataKey="name" type="category" width={120} tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }} />
+                  <RechartsTooltip
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }}
+                    formatter={(value: number, name: string) => [name === "cost" ? `€${value}` : `${value}`, name === "cost" ? "Maliyet" : name === "count" ? "Bakım Sayısı" : "Süre (dk)"]}
+                  />
+                  <Legend formatter={(value) => value === "count" ? "Bakım Sayısı" : value === "cost" ? "Maliyet (€)" : "Süre (dk)"} />
+                  <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} name="count" />
+                  <Bar dataKey="cost" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} name="cost" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Per-Machine Detail Table */}
+          {dashboardData.perMachine.length > 0 && (
+            <div className="p-4 rounded-xl bg-card border border-border overflow-x-auto">
+              <h4 className="text-sm font-semibold text-foreground mb-3">Makine Özet Tablosu</h4>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">Makine</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Toplam</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Önleyici</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Kestirici</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">Düzeltici</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-medium">Maliyet</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-medium">Ort. Süre</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboardData.perMachine.map((m, i) => (
+                    <tr key={i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="py-2 px-3 font-medium text-foreground">{m.name}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.count}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.preventive}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.predictive}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.corrective}</td>
+                      <td className="py-2 px-3 text-right text-foreground">€{m.cost.toLocaleString("tr-TR")}</td>
+                      <td className="py-2 px-3 text-right text-foreground">{m.count > 0 ? Math.round(m.totalDuration / m.count) : 0} dk</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {dashboardData.totalCount === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p>Henüz bakım kaydı yok. Dashboard verisi bakım kayıtları oluştukça dolacaktır.</p>
+            </div>
+          )}
+        </TabsContent>
 
         {/* ---- Records Tab ---- */}
         <TabsContent value="records" className="space-y-4">
