@@ -56,10 +56,34 @@ const Index = () => {
     }
   }, [categories]);
 
+  // Load custom materials from database
   useEffect(() => {
-    const stored = safeGetItem<Material[]>(CUSTOM_MATERIALS_KEY, []);
-    if (isValidArray(stored)) setCustomMaterials(stored);
-  }, []);
+    if (!user) return;
+    const loadCustomMaterials = async () => {
+      const { data } = await supabase.from("saved_materials").select("*").eq("user_id", user.id);
+      if (data && data.length > 0) {
+        const mapped: Material[] = data.map((m: any) => ({
+          id: `custom-${m.id}`,
+          name: m.name,
+          category: m.category,
+          hardness: m.hardness_min && m.hardness_max ? `${m.hardness_min}-${m.hardness_max} HB` : "N/A",
+          density: 7.85,
+          pricePerKg: m.price_per_kg || 0,
+          cuttingSpeed: { min: m.cutting_speed_min, max: m.cutting_speed_max, unit: "m/dk" },
+          feedRate: { min: m.feed_rate_min, max: m.feed_rate_max, unit: "mm/dev" },
+          taylorN: 0.20,
+          taylorC: 300,
+          color: "bg-emerald-500",
+        }));
+        setCustomMaterials(mapped);
+      } else {
+        // Fallback: load from localStorage for migration
+        const stored = safeGetItem<Material[]>(CUSTOM_MATERIALS_KEY, []);
+        if (isValidArray(stored)) setCustomMaterials(stored);
+      }
+    };
+    loadCustomMaterials();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -84,13 +108,45 @@ const Index = () => {
     return !!permissions[tabId];
   };
 
-  const handleAddMaterial = (material: Material) => {
-    const updated = [...customMaterials, material];
-    setCustomMaterials(updated);
-    safeSetItem(CUSTOM_MATERIALS_KEY, updated);
+  const handleAddMaterial = async (material: Material) => {
+    // Save to database
+    if (user) {
+      const hardnessParts = material.hardness.replace(' HB', '').split('-');
+      const { data, error } = await supabase.from("saved_materials").insert({
+        user_id: user.id,
+        name: material.name,
+        category: material.category,
+        hardness_min: hardnessParts[0] ? Number(hardnessParts[0]) : null,
+        hardness_max: hardnessParts[1] ? Number(hardnessParts[1]) : null,
+        cutting_speed_min: material.cuttingSpeed.min,
+        cutting_speed_max: material.cuttingSpeed.max,
+        feed_rate_min: material.feedRate.min,
+        feed_rate_max: material.feedRate.max,
+        price_per_kg: material.pricePerKg || 0,
+      } as any).select().single();
+      
+      if (!error && data) {
+        const dbMaterial: Material = { ...material, id: `custom-${(data as any).id}` };
+        setCustomMaterials(prev => [...prev, dbMaterial]);
+      } else {
+        // Fallback to local
+        const updated = [...customMaterials, material];
+        setCustomMaterials(updated);
+        safeSetItem(CUSTOM_MATERIALS_KEY, updated);
+      }
+    } else {
+      const updated = [...customMaterials, material];
+      setCustomMaterials(updated);
+      safeSetItem(CUSTOM_MATERIALS_KEY, updated);
+    }
   };
 
-  const handleDeleteMaterial = (id: string) => {
+  const handleDeleteMaterial = async (id: string) => {
+    // Delete from database if it's a DB material
+    if (id.startsWith("custom-")) {
+      const dbId = id.replace("custom-", "");
+      await supabase.from("saved_materials").delete().eq("id", dbId);
+    }
     const updated = customMaterials.filter((m) => m.id !== id);
     setCustomMaterials(updated);
     safeSetItem(CUSTOM_MATERIALS_KEY, updated);
