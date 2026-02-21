@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Database, Search, ChevronDown, ChevronUp, Trash2, Pencil, Check, X } from "lucide-react";
+import PriceHistoryTooltip from "@/components/PriceHistoryTooltip";
 import { materials as defaultMaterials, Material } from "@/data/materials";
 import { getCategoryStyle } from "@/data/categoryStyles";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -162,6 +163,7 @@ const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice,
                         ) : (
                           <span className="text-xs text-muted-foreground">-</span>
                         )}
+                        <PriceHistoryTooltip materialId={material.id} />
                         {isAdmin && (
                           <button
                             onClick={() => { setEditingPriceId(material.id); setEditPriceValue(String(material.pricePerKg || 0)); }}
