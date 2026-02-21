@@ -579,14 +579,16 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
 
   const handleSaveCustomer = async () => {
     if (!custName.trim()) return;
+    // Auto-apply spec preview if user hasn't clicked "Uygula" yet
+    const finalSpecs = specPreview ? specPreview : custSpecs;
     setSubmitting(true);
     try {
       if (editingCustomer) {
-        const { error } = await supabase.from("customers" as any).update({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, specs: custSpecs.trim() || null, is_active: custActive } as any).eq("id", editingCustomer.id);
+        const { error } = await supabase.from("customers" as any).update({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, specs: finalSpecs.trim() || null, is_active: custActive } as any).eq("id", editingCustomer.id);
         if (error) throw error;
         toast({ title: t("common", "success"), description: "Müşteri güncellendi" });
       } else {
-        const { error } = await supabase.from("customers" as any).insert({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, specs: custSpecs.trim() || null, is_active: custActive } as any);
+        const { error } = await supabase.from("customers" as any).insert({ name: custName.trim(), factory: custFactory, notes: custNotes.trim() || null, specs: finalSpecs.trim() || null, is_active: custActive } as any);
         if (error) throw error;
         toast({ title: t("common", "success"), description: "Müşteri eklendi" });
       }
