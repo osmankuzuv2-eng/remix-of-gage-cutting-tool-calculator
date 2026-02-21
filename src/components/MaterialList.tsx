@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Database, Search, ChevronDown, ChevronUp, Trash2, Pencil, Check, X } from "lucide-react";
+import { Database, Search, ChevronDown, ChevronUp, Trash2, Pencil, Check, X, Plus } from "lucide-react";
 import PriceHistoryTooltip from "@/components/PriceHistoryTooltip";
 import { materials as defaultMaterials, Material } from "@/data/materials";
 import { getCategoryStyle } from "@/data/categoryStyles";
@@ -10,13 +10,14 @@ interface MaterialListProps {
   customMaterials: Material[];
   onDeleteCustom: (id: string) => void;
   isAdmin?: boolean;
+  onAddMaterial?: () => void;
   onUpdatePrice?: (id: string, price: number) => void;
   materialPrices?: Record<string, number>;
   afkMultipliers?: Record<string, number>;
   onUpdateAfkMultiplier?: (id: string, multiplier: number) => void;
 }
 
-const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice, materialPrices = {}, afkMultipliers = {}, onUpdateAfkMultiplier }: MaterialListProps) => {
+const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onAddMaterial, onUpdatePrice, materialPrices = {}, afkMultipliers = {}, onUpdateAfkMultiplier }: MaterialListProps) => {
   const { t } = useLanguage();
   const allMaterials = [...defaultMaterials, ...customMaterials].map((m) =>
     materialPrices[m.id] !== undefined ? { ...m, pricePerKg: materialPrices[m.id] } : m
@@ -70,6 +71,15 @@ const MaterialList = ({ customMaterials, onDeleteCustom, isAdmin, onUpdatePrice,
             </span>
           )}
         </div>
+        {onAddMaterial && (
+          <button
+            onClick={onAddMaterial}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-success/10 text-success border border-success/30 hover:bg-success/20 hover:scale-[1.03] hover:shadow-md active:scale-[0.97] transition-all duration-300 group"
+          >
+            <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
+            {t("footer", "addMaterial")}
+          </button>
+        )}
       </div>
 
       <div className="relative mb-4">
