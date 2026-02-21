@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown, Weight, Ruler, Save } from "lucide-react";
+import { DollarSign, Calculator, Percent, Package, Truck, Flame, Shield, Wrench, FileDown, Weight, Ruler, Save, Info } from "lucide-react";
 import { materials, Material } from "@/data/materials";
 import { useMachines } from "@/hooks/useMachines";
 import { exportCostPdf } from "@/lib/exportCostPdf";
@@ -79,7 +79,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
   const [height, setHeight] = useState(0);
   const [materialPricePerKg, setMaterialPricePerKg] = useState(0);
   const [toolCost, setToolCost] = useState(0);
-  const [shippingCost, setShippingCost] = useState(0);
+  const [shippingRate, setShippingRate] = useState(5);
   const [coatingCost, setCoatingCost] = useState(0);
   const [heatTreatmentCost, setHeatTreatmentCost] = useState(0);
   const [scrapRate, setScrapRate] = useState(0);
@@ -112,6 +112,8 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
     const setupCost = setupTime * laborRate;
     const totalMachiningMinutes = setupTime + (turningTime + millingTime + fiveAxisTime) * orderQuantity;
     const totalMachiningHours = totalMachiningMinutes / 60;
+    const baseSubtotal = setupCost + machineCost + totalMaterialCost + toolCost + coatingCost + heatTreatmentCost;
+    const shippingCost = baseSubtotal * (shippingRate / 100);
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
     const subtotal = setupCost + machineCost + totalMaterialCost + additionalCosts;
     const scrapCost = subtotal * (scrapRate / 100);
@@ -119,8 +121,8 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
     const profit = totalBeforeProfit * (profitMargin / 100);
     const grandTotal = totalBeforeProfit + profit;
     const costPerPart = orderQuantity > 0 ? grandTotal / orderQuantity : 0;
-    return { volumeCm3: volumeCm3.toFixed(2), weightKg: weightKg.toFixed(3), materialCostPerPart: materialCostPerPart.toFixed(2), totalMaterialCost: totalMaterialCost.toFixed(2), totalMachiningHours: totalMachiningHours.toFixed(1), setupCost: setupCost.toFixed(2), machineCost: machineCost.toFixed(2), additionalCosts: additionalCosts.toFixed(2), scrapCost: scrapCost.toFixed(2), profit: profit.toFixed(2), grandTotal: grandTotal.toFixed(2), costPerPart: costPerPart.toFixed(2) };
-  }, [setupTime, turningTime, millingTime, fiveAxisTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, shapeType, diameter, length, width, height, materialPricePerKg, currentMaterial]);
+    return { volumeCm3: volumeCm3.toFixed(2), weightKg: weightKg.toFixed(3), materialCostPerPart: materialCostPerPart.toFixed(2), totalMaterialCost: totalMaterialCost.toFixed(2), totalMachiningHours: totalMachiningHours.toFixed(1), setupCost: setupCost.toFixed(2), machineCost: machineCost.toFixed(2), shippingCost: shippingCost.toFixed(2), additionalCosts: additionalCosts.toFixed(2), scrapCost: scrapCost.toFixed(2), profit: profit.toFixed(2), grandTotal: grandTotal.toFixed(2), costPerPart: costPerPart.toFixed(2) };
+  }, [setupTime, turningTime, millingTime, fiveAxisTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingRate, coatingCost, heatTreatmentCost, scrapRate, profitMargin, shapeType, diameter, length, width, height, materialPricePerKg, currentMaterial]);
 
   return (
     <div className="industrial-card p-6 animate-fade-in">
@@ -231,7 +233,22 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
             <h4 className="label-industrial mb-3 flex items-center gap-2">{t("costCalc", "additionalCosts")}</h4>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label-industrial block mb-2 flex items-center gap-1"><Wrench className="w-3 h-3" /> {t("costCalc", "toolCostLabel")}</label><input type="number" value={toolCost} onChange={(e) => setToolCost(Number(e.target.value))} className="input-industrial w-full" /></div>
-              <div><label className="label-industrial block mb-2 flex items-center gap-1"><Truck className="w-3 h-3" /> {t("costCalc", "shipping")}</label><input type="number" value={shippingCost} onChange={(e) => setShippingCost(Number(e.target.value))} className="input-industrial w-full" /></div>
+              <div>
+                <label className="label-industrial block mb-2 flex items-center gap-1">
+                  <Truck className="w-3 h-3" /> {t("costCalc", "shipping")} (%)
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="ml-1 text-muted-foreground hover:text-foreground transition-colors"><Info className="w-3 h-3" /></button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 text-xs bg-card border border-border z-50" side="top">
+                      <p className="font-medium mb-1">Nakliye Hesaplama</p>
+                      <p className="text-muted-foreground">Nakliye ücreti, toplam maliyetin (malzeme + işçilik + tezgah + takım + kaplama + ısıl işlem) belirtilen yüzdesi olarak hesaplanır.</p>
+                      <p className="mt-1 text-muted-foreground">Hesaplanan: €{calculations.shippingCost}</p>
+                    </PopoverContent>
+                  </Popover>
+                </label>
+                <input type="number" value={shippingRate} onChange={(e) => setShippingRate(Number(e.target.value))} className="input-industrial w-full" />
+              </div>
               <div><label className="label-industrial block mb-2 flex items-center gap-1"><Shield className="w-3 h-3" /> {t("costCalc", "coating")}</label><input type="number" value={coatingCost} onChange={(e) => setCoatingCost(Number(e.target.value))} className="input-industrial w-full" /></div>
               <div><label className="label-industrial block mb-2 flex items-center gap-1"><Flame className="w-3 h-3" /> {t("costCalc", "heatTreatment")}</label><input type="number" value={heatTreatmentCost} onChange={(e) => setHeatTreatmentCost(Number(e.target.value))} className="input-industrial w-full" /></div>
             </div>
@@ -281,7 +298,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
                 { label: t("costCalc", "turning"), name: getMLbl(selectedTurning), rate: turningRate },
                 { label: t("costCalc", "milling"), name: getMLbl(selectedMilling), rate: millingRate },
                 { label: t("costCalc", "fiveAxis"), name: getMLbl(selected5Axis), rate: fiveAxisRate },
-              ], setupTime, machiningTime: turningTime + millingTime + fiveAxisTime, orderQuantity, toolCost, shippingCost, coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
+              ], setupTime, machiningTime: turningTime + millingTime + fiveAxisTime, orderQuantity, toolCost, shippingCost: Number(calculations.shippingCost), coatingCost, heatTreatmentCost, scrapRate, profitMargin, calculations }, t);
             }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors">
               <FileDown className="w-4 h-4" />{t("costCalc", "downloadPdf")}
             </button>
@@ -303,7 +320,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
                     scrapRate,
                     profitMargin,
                     toolCost,
-                    shippingCost,
+                    shippingRate,
                     coatingCost,
                     heatTreatmentCost,
                   },
