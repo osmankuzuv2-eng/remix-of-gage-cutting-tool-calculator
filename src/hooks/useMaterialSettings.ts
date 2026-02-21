@@ -41,17 +41,35 @@ export const useMaterialSettings = () => {
   useEffect(() => { load(); }, [load]);
 
   const updatePrice = useCallback(async (materialId: string, price: number) => {
+    const oldPrice = materialPrices[materialId] ?? 0;
     setMaterialPrices((prev) => ({ ...prev, [materialId]: price }));
+
+    const { data: { user } } = await supabase.auth.getUser();
 
     const { error } = await supabase
       .from("material_settings")
       .upsert(
-        { material_id: materialId, price_per_kg: price },
+        { material_id: materialId, price_per_kg: price, updated_by: user?.id },
         { onConflict: "material_id" }
       );
 
-    if (error) console.error("Failed to save price:", error);
-  }, []);
+    if (error) {
+      console.error("Failed to save price:", error);
+      return;
+    }
+
+    // Log price change history
+    if (user && oldPrice !== price) {
+      await supabase.from("material_price_history").insert({
+        material_id: materialId,
+        old_price: oldPrice,
+        new_price: price,
+        changed_by: user.id,
+        changed_by_name: user.user_metadata?.display_name || user.email || "Bilinmiyor",
+        change_type: "price",
+      } as any);
+    }
+  }, [materialPrices]);
 
   const updateAfkMultiplier = useCallback(async (materialId: string, multiplier: number) => {
     setAfkMultipliers((prev) => ({ ...prev, [materialId]: multiplier }));

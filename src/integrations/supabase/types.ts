@@ -305,6 +305,45 @@ export type Database = {
         }
         Relationships: []
       }
+      material_price_history: {
+        Row: {
+          change_type: string
+          changed_by: string
+          changed_by_name: string | null
+          created_at: string
+          id: string
+          material_id: string
+          new_afk_multiplier: number | null
+          new_price: number | null
+          old_afk_multiplier: number | null
+          old_price: number | null
+        }
+        Insert: {
+          change_type?: string
+          changed_by: string
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          material_id: string
+          new_afk_multiplier?: number | null
+          new_price?: number | null
+          old_afk_multiplier?: number | null
+          old_price?: number | null
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          material_id?: string
+          new_afk_multiplier?: number | null
+          new_price?: number | null
+          old_afk_multiplier?: number | null
+          old_price?: number | null
+        }
+        Relationships: []
+      }
       material_settings: {
         Row: {
           afk_multiplier: number | null
