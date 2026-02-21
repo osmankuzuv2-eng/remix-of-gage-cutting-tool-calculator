@@ -206,6 +206,7 @@ export type Database = {
           label: string
           max_diameter_mm: number | null
           max_rpm: number | null
+          minute_rate: number | null
           model: string
           power_kw: number | null
           sort_order: number
@@ -231,6 +232,7 @@ export type Database = {
           label: string
           max_diameter_mm?: number | null
           max_rpm?: number | null
+          minute_rate?: number | null
           model: string
           power_kw?: number | null
           sort_order?: number
@@ -256,6 +258,7 @@ export type Database = {
           label?: string
           max_diameter_mm?: number | null
           max_rpm?: number | null
+          minute_rate?: number | null
           model?: string
           power_kw?: number | null
           sort_order?: number

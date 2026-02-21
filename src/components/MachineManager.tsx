@@ -28,6 +28,7 @@ const emptyForm = {
   code: "", type: "turning", designation: "", brand: "", model: "",
   year: 0, label: "", max_diameter_mm: null as number | null,
   power_kw: null as number | null, max_rpm: 4500,
+  minute_rate: 0,
   taper: "", has_live_tooling: false, has_y_axis: false, has_c_axis: false,
   travel_x_mm: null as number | null, travel_y_mm: null as number | null,
   travel_z_mm: null as number | null, is_active: true, sort_order: 0,
@@ -67,7 +68,8 @@ const MachineManager = ({ readOnly = false }: { readOnly?: boolean }) => {
       code: m.code, type: m.type, designation: m.designation, brand: m.brand,
       model: m.model, year: m.year, label: m.label,
       max_diameter_mm: m.max_diameter_mm, power_kw: m.power_kw,
-      max_rpm: m.max_rpm ?? 4500, taper: m.taper ?? "",
+      max_rpm: m.max_rpm ?? 4500, minute_rate: m.minute_rate ?? 0,
+      taper: m.taper ?? "",
       has_live_tooling: m.has_live_tooling, has_y_axis: m.has_y_axis,
       has_c_axis: m.has_c_axis, travel_x_mm: m.travel_x_mm,
       travel_y_mm: m.travel_y_mm, travel_z_mm: m.travel_z_mm,
@@ -88,7 +90,8 @@ const MachineManager = ({ readOnly = false }: { readOnly?: boolean }) => {
         code: form.code, type: form.type, designation: form.designation,
         brand: form.brand, model: form.model, year: form.year, label: form.label,
         max_diameter_mm: form.max_diameter_mm, power_kw: form.power_kw,
-        max_rpm: form.max_rpm, taper: form.taper || null,
+        max_rpm: form.max_rpm, minute_rate: form.minute_rate,
+        taper: form.taper || null,
         has_live_tooling: form.has_live_tooling, has_y_axis: form.has_y_axis,
         has_c_axis: form.has_c_axis, travel_x_mm: form.travel_x_mm,
         travel_y_mm: form.travel_y_mm, travel_z_mm: form.travel_z_mm,
@@ -175,6 +178,7 @@ const MachineManager = ({ readOnly = false }: { readOnly?: boolean }) => {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                   <span>{typeLabel(m.type)}</span>
+                  {m.minute_rate > 0 && <span className="text-emerald-400 font-medium">• €{m.minute_rate}/dk</span>}
                   {m.max_rpm && <span>• {m.max_rpm} rpm</span>}
                   {m.power_kw && <span>• {m.power_kw} kW</span>}
                   {m.max_diameter_mm && <span>• Ø{m.max_diameter_mm}mm</span>}
@@ -228,6 +232,10 @@ const MachineManager = ({ readOnly = false }: { readOnly?: boolean }) => {
               <div><Label>Max Çap (mm)</Label><Input type="number" value={form.max_diameter_mm ?? ""} onChange={e => setForm(f => ({ ...f, max_diameter_mm: e.target.value ? Number(e.target.value) : null }))} /></div>
               <div><Label>Güç (kW)</Label><Input type="number" value={form.power_kw ?? ""} onChange={e => setForm(f => ({ ...f, power_kw: e.target.value ? Number(e.target.value) : null }))} /></div>
               <div><Label>Max RPM</Label><Input type="number" value={form.max_rpm} onChange={e => setForm(f => ({ ...f, max_rpm: Number(e.target.value) }))} /></div>
+            </div>
+            <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+              <Label className="text-emerald-400">Dakika Fiyatı (€/dk)</Label>
+              <Input type="number" step="0.01" min="0" value={form.minute_rate} onChange={e => setForm(f => ({ ...f, minute_rate: Number(e.target.value) }))} placeholder="0.00" className="mt-1" />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><Label>X Travel (mm)</Label><Input type="number" value={form.travel_x_mm ?? ""} onChange={e => setForm(f => ({ ...f, travel_x_mm: e.target.value ? Number(e.target.value) : null }))} /></div>

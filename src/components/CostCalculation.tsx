@@ -37,18 +37,36 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
   const [selected5Axis, setSelected5Axis] = useState("");
   const [fiveAxisRate, setFiveAxisRate] = useState(0);
 
-  // Initialize machine selections when machines load
+  // Helper to get minute_rate from machine
+  const getMachineRate = (machineId: string): number => {
+    const machine = machines.find(m => m.id === machineId);
+    return machine?.minute_rate ?? 0;
+  };
+
+  // Initialize machine selections and auto-fill rates when machines load
   useEffect(() => {
     if (machines.length > 0) {
-      if (!selectedTurning) setSelectedTurning(getMachinesByType("turning")[0]?.id ?? "");
+      if (!selectedTurning) {
+        const t = getMachinesByType("turning")[0];
+        if (t) { setSelectedTurning(t.id); setTurningRate(getMachineRate(t.id)); }
+      }
       if (!selectedMilling) {
         const m4 = getMachinesByType("milling-4axis");
         const m3 = getMachinesByType("milling-3axis");
-        setSelectedMilling((m4[0] || m3[0])?.id ?? "");
+        const m = m4[0] || m3[0];
+        if (m) { setSelectedMilling(m.id); setMillingRate(getMachineRate(m.id)); }
       }
-      if (!selected5Axis) setSelected5Axis(getMachinesByType("milling-5axis")[0]?.id ?? "");
+      if (!selected5Axis) {
+        const a = getMachinesByType("milling-5axis")[0];
+        if (a) { setSelected5Axis(a.id); setFiveAxisRate(getMachineRate(a.id)); }
+      }
     }
   }, [machines]);
+
+  // Auto-fill rate when machine selection changes
+  useEffect(() => { if (selectedTurning) setTurningRate(getMachineRate(selectedTurning)); }, [selectedTurning, machines]);
+  useEffect(() => { if (selectedMilling) setMillingRate(getMachineRate(selectedMilling)); }, [selectedMilling, machines]);
+  useEffect(() => { if (selected5Axis) setFiveAxisRate(getMachineRate(selected5Axis)); }, [selected5Axis, machines]);
   const [setupTime, setSetupTime] = useState(0);
   const [machiningTime, setMachiningTime] = useState(0);
   const [orderQuantity, setOrderQuantity] = useState(0);
