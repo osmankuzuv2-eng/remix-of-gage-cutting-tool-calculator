@@ -205,6 +205,18 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
     );
   };
 
+  const moveModule = (moduleKey: string, direction: "up" | "down") => {
+    setFormModules((prev) => {
+      const idx = prev.indexOf(moduleKey);
+      if (idx < 0) return prev;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+      return next;
+    });
+  };
+
   const addCustomModule = () => {
     const key = newModuleKey.trim().toLowerCase().replace(/\s+/g, "-");
     if (!key) return;
@@ -275,8 +287,9 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
                   <div className="flex-1 min-w-0">
                     <p className={`font-medium ${cat.text_color}`}>{cat.name}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {cat.modules.map((m) => (
+                      {cat.modules.map((m, mIdx) => (
                         <span key={m.module_key} className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${cat.bg_color} ${cat.text_color} border ${cat.border_color}`}>
+                          <span className="text-[10px] opacity-50 font-mono mr-0.5">{mIdx + 1}</span>
                           {getModuleName(m.module_key)}
                           {!readOnly && (
                             <button
@@ -375,31 +388,44 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
                   <Plus className="w-4 h-4 mr-1" /> Ekle
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {Array.from(new Set([...availableModules, ...formModules])).map((m) => {
-                  const selected = formModules.includes(m);
-                  const preset = COLOR_PRESETS[formColorIdx];
-                  return (
-                    <div key={m} className="flex items-center gap-1">
-                      <button
-                        onClick={() => toggleModule(m)}
-                        className={`flex-1 flex items-center gap-2 p-2 rounded-lg border text-sm transition-all ${
-                          selected
-                            ? `${preset.bg} ${preset.text} ${preset.border}`
-                            : "bg-card border-border text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <div className={`w-3 h-3 rounded-sm border ${selected ? `${preset.border} bg-current` : "border-muted-foreground"}`} />
-                        {getModuleName(m)}
-                      </button>
-                      {selected && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => removeModule(m)}>
+
+              {/* Selected modules with reorder */}
+              {formModules.length > 0 && (
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Seçili Modüller (Sıralama)</Label>
+                  {formModules.map((m, mIdx) => {
+                    const preset = COLOR_PRESETS[formColorIdx];
+                    return (
+                      <div key={m} className={`flex items-center gap-1 p-2 rounded-lg border ${preset.bg} ${preset.text} ${preset.border}`}>
+                        <span className="text-xs font-mono opacity-50 w-5 text-center">{mIdx + 1}</span>
+                        <span className="flex-1 text-sm font-medium">{getModuleName(m)}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={mIdx === 0} onClick={() => moveModule(m, "up")}>
+                          <ArrowUp className="w-3 h-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={mIdx === formModules.length - 1} onClick={() => moveModule(m, "down")}>
+                          <ArrowDown className="w-3 h-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeModule(m)}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Available modules */}
+              <div className="grid grid-cols-2 gap-2">
+                {availableModules.filter((m) => !formModules.includes(m)).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => toggleModule(m)}
+                    className="flex items-center gap-2 p-2 rounded-lg border bg-card border-border text-muted-foreground hover:text-foreground text-sm transition-all"
+                  >
+                    <div className="w-3 h-3 rounded-sm border border-muted-foreground" />
+                    {getModuleName(m)}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
