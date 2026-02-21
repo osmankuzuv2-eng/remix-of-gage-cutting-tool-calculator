@@ -165,9 +165,9 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-1 rounded-lg glow-accent">
+            <button onClick={() => window.location.href = "/"} className="p-1 rounded-lg glow-accent cursor-pointer hover:opacity-80 transition-opacity">
               <img src={logo} alt="GAGE Logo" className="w-10 h-10 object-contain" />
-            </div>
+            </button>
             <div>
               <h1 className="text-xl font-bold text-foreground">
                 {t("header", "title")}
