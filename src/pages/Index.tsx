@@ -163,14 +163,24 @@ const Index = () => {
   );
 
   const handleTabClick = useCallback((tabId: TabId) => {
-    if (!hasAccess(tabId) || tabId === activeTab) return;
+    if (!hasAccess(tabId) || tabId === visibleTab) return;
     setActiveTab(tabId);
     setIsTransitioning(true);
     setTimeout(() => {
       setVisibleTab(tabId);
       setIsTransitioning(false);
     }, 1000);
-  }, [activeTab, permissions, isAdmin]);
+  }, [visibleTab, permissions, isAdmin]);
+
+  const handleAdminClick = useCallback(() => {
+    if (visibleTab === "admin") return;
+    setActiveTab("admin");
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setVisibleTab("admin");
+      setIsTransitioning(false);
+    }, 1000);
+  }, [visibleTab]);
 
   const toggleCategory = (catId: string) => {
     setOpenCategory(openCategory === catId ? null : catId);
@@ -180,7 +190,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background grid-pattern">
-      <Header isAdmin={isAdmin} onAdminClick={() => setActiveTab("admin")} adminActive={activeTab === "admin"} />
+      <Header isAdmin={isAdmin} onAdminClick={handleAdminClick} adminActive={activeTab === "admin"} />
       <LiveTicker />
       
       <main className="container mx-auto px-4 py-6">
