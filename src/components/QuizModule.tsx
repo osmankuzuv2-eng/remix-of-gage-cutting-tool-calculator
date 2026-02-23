@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Brain, Trophy, ArrowRight, CheckCircle2, XCircle, Loader2,
   RotateCcw, Star, Zap, Target, ChevronRight, BarChart3, Clock,
-  TrendingUp, Award, Calendar,
+  TrendingUp, Award, Calendar, Medal, Users,
 } from "lucide-react";
 
 type Question = {
@@ -32,6 +32,15 @@ type QuizResult = {
   passed: boolean;
   duration_seconds: number | null;
   created_at: string;
+};
+
+type LeaderboardEntry = {
+  user_id: string;
+  display_name: string;
+  total_quizzes: number;
+  avg_score: number;
+  total_correct: number;
+  pass_rate: number;
 };
 
 const LEVEL_CONFIG: Record<Level, { label: Record<string, string>; color: string; icon: typeof Star; minScore: number }> = {
@@ -82,6 +91,11 @@ const t_quiz: Record<string, Record<string, string>> = {
   saved: { tr: "Sonuç kaydedildi", en: "Result saved", fr: "Résultat sauvegardé" },
   byLevel: { tr: "Seviyeye Göre", en: "By Level", fr: "Par niveau" },
   byTopic: { tr: "Konuya Göre", en: "By Topic", fr: "Par sujet" },
+  leaderboard: { tr: "Liderlik Tablosu", en: "Leaderboard", fr: "Classement" },
+  rank: { tr: "Sıra", en: "Rank", fr: "Rang" },
+  player: { tr: "Oyuncu", en: "Player", fr: "Joueur" },
+  quizCount: { tr: "Quiz", en: "Quizzes", fr: "Quiz" },
+  you: { tr: "(Sen)", en: "(You)", fr: "(Vous)" },
 };
 
 const QuizModule = () => {
@@ -106,6 +120,10 @@ const QuizModule = () => {
   const [stats, setStats] = useState<QuizResult[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // Leaderboard
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
   // Timer
   const startTimeRef = useRef<number>(0);
   const [elapsed, setElapsed] = useState(0);
@@ -126,9 +144,66 @@ const QuizModule = () => {
     setStatsLoading(false);
   }, [user]);
 
+  const loadLeaderboard = useCallback(async () => {
+    setLeaderboardLoading(true);
+    try {
+      // Fetch all quiz results
+      const { data: allResults } = await supabase
+        .from("quiz_results")
+        .select("user_id, score, total_questions, passed");
+      
+      if (!allResults || allResults.length === 0) {
+        setLeaderboard([]);
+        setLeaderboardLoading(false);
+        return;
+      }
+
+      // Aggregate by user
+      const userMap = new Map<string, { total_quizzes: number; total_correct: number; total_questions: number; passed: number }>();
+      for (const r of allResults) {
+        const existing = userMap.get(r.user_id) || { total_quizzes: 0, total_correct: 0, total_questions: 0, passed: 0 };
+        existing.total_quizzes++;
+        existing.total_correct += r.score;
+        existing.total_questions += r.total_questions;
+        if (r.passed) existing.passed++;
+        userMap.set(r.user_id, existing);
+      }
+
+      // Fetch display names from profiles
+      const userIds = Array.from(userMap.keys());
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", userIds);
+
+      const profileMap = new Map<string, string>();
+      if (profiles) {
+        for (const p of profiles) {
+          profileMap.set(p.user_id, p.display_name || "Anonim");
+        }
+      }
+
+      const entries: LeaderboardEntry[] = Array.from(userMap.entries()).map(([uid, data]) => ({
+        user_id: uid,
+        display_name: profileMap.get(uid) || "Anonim",
+        total_quizzes: data.total_quizzes,
+        avg_score: Math.round((data.total_correct / data.total_questions) * 100),
+        total_correct: data.total_correct,
+        pass_rate: Math.round((data.passed / data.total_quizzes) * 100),
+      }));
+
+      entries.sort((a, b) => b.avg_score - a.avg_score || b.total_quizzes - a.total_quizzes);
+      setLeaderboard(entries);
+    } catch (err) {
+      console.error("Leaderboard error:", err);
+    }
+    setLeaderboardLoading(false);
+  }, []);
+
   useEffect(() => {
     if (activeTab === "stats") loadStats();
-  }, [activeTab, loadStats]);
+    if (activeTab === "leaderboard") loadLeaderboard();
+  }, [activeTab, loadStats, loadLeaderboard]);
 
   const startTimer = () => {
     startTimeRef.current = Date.now();
@@ -277,6 +352,7 @@ const QuizModule = () => {
           <TabsList className="w-full">
             <TabsTrigger value="quiz" className="flex-1"><Brain className="w-4 h-4 mr-1" />{tt("quizTab")}</TabsTrigger>
             <TabsTrigger value="stats" className="flex-1"><BarChart3 className="w-4 h-4 mr-1" />{tt("statsTab")}</TabsTrigger>
+            <TabsTrigger value="leaderboard" className="flex-1"><Medal className="w-4 h-4 mr-1" />{tt("leaderboard")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="quiz">
@@ -400,6 +476,47 @@ const QuizModule = () => {
                   </CardContent>
                 </Card>
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="leaderboard">
+            {leaderboardLoading ? (
+              <Card className="border-border bg-card"><CardContent className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></CardContent></Card>
+            ) : leaderboard.length === 0 ? (
+              <Card className="border-border bg-card"><CardContent className="p-8 text-center text-muted-foreground"><Users className="w-10 h-10 mx-auto mb-2 opacity-30" /><p>{tt("noStats")}</p></CardContent></Card>
+            ) : (
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2"><Medal className="w-4 h-4 text-primary" />{tt("leaderboard")}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {leaderboard.map((entry, idx) => {
+                    const isMe = entry.user_id === user?.id;
+                    const medalColors = ["text-yellow-500", "text-muted-foreground", "text-orange-700"];
+                    return (
+                      <div key={entry.user_id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                        isMe ? "border-primary bg-primary/5" : "border-border bg-secondary/20"
+                      }`}>
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
+                          {idx < 3 ? <Trophy className={`w-4 h-4 ${medalColors[idx]}`} /> : <span className="text-muted-foreground">{idx + 1}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-foreground truncate">
+                            {entry.display_name} {isMe && <span className="text-primary text-xs">{tt("you")}</span>}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {entry.total_quizzes} {tt("quizCount")} · {tt("passRate")}: %{entry.pass_rate}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-lg font-mono font-bold text-primary">%{entry.avg_score}</div>
+                          <div className="text-[10px] text-muted-foreground">{tt("avgScore")}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
