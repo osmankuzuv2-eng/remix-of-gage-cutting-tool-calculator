@@ -129,6 +129,23 @@
     }
   }
 
+  .animate-pulse-logo {
+    animation: pulse-logo 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(0.95);
+      filter: drop-shadow(0 0 8px hsl(25 95% 55% / 0.2));
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+      filter: drop-shadow(0 0 20px hsl(25 95% 55% / 0.5));
+    }
+  }
+
   .grid-pattern {
     background-image: 
       linear-gradient(hsl(220 15% 15%) 1px, transparent 1px),
