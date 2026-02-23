@@ -169,7 +169,7 @@ const Index = () => {
     setTimeout(() => {
       setVisibleTab(tabId);
       setIsTransitioning(false);
-    }, 500);
+    }, 1000);
   }, [activeTab, permissions, isAdmin]);
 
   const toggleCategory = (catId: string) => {
