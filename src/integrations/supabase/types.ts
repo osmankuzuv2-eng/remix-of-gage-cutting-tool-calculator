@@ -707,6 +707,48 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_results: {
+        Row: {
+          answers: Json | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          level: string
+          passed: boolean
+          questions: Json | null
+          score: number
+          topic: string | null
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          level: string
+          passed?: boolean
+          questions?: Json | null
+          score: number
+          topic?: string | null
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          level?: string
+          passed?: boolean
+          questions?: Json | null
+          score?: number
+          topic?: string | null
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       saved_calculations: {
         Row: {
           calculation_type: string
