@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import MenuManager from "@/components/MenuManager";
 import ModuleManager from "@/components/ModuleManager";
 import MachineManager from "@/components/MachineManager";
+import QuizAdminPanel from "@/components/QuizAdminPanel";
 import CoatingManager from "@/components/CoatingManager";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useCustomers } from "@/hooks/useCustomers";
@@ -675,7 +676,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
       <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Building2 className="w-4 h-4" /> Müşteriler</TabsTrigger>
           <TabsTrigger value="factories" className="gap-2"><Factory className="w-4 h-4" /> Fabrikalar</TabsTrigger>
@@ -684,6 +685,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           <TabsTrigger value="modules" className="gap-2"><Package className="w-4 h-4" /> Modüller</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
+          <TabsTrigger value="quiz" className="gap-2"><TrendingUp className="w-4 h-4" /> Quiz</TabsTrigger>
         </TabsList>
 
         {/* ── Users Tab ── */}
@@ -1220,6 +1222,11 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* ── Quiz Tab ── */}
+        <TabsContent value="quiz" className="space-y-4 mt-4">
+          <QuizAdminPanel />
         </TabsContent>
       </Tabs>
 
