@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Install from "./pages/Install";
@@ -14,7 +15,7 @@ const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 };
