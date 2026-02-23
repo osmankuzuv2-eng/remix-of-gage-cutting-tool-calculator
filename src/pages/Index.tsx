@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
+import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
 import { Lock, Plus, ChevronDown } from "lucide-react";
 import Header from "@/components/Header";
@@ -45,6 +46,8 @@ const Index = () => {
   const { getModuleName } = useModuleTranslations();
   const { materialPrices, afkMultipliers, updatePrice, updateAfkMultiplier } = useMaterialSettings();
   const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
+  const [visibleTab, setVisibleTab] = useState<TabId>("ai-learn");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
@@ -159,10 +162,15 @@ const Index = () => {
     materialPrices[m.id] !== undefined ? { ...m, pricePerKg: materialPrices[m.id] } : m
   );
 
-  const handleTabClick = (tabId: TabId) => {
-    if (!hasAccess(tabId)) return;
+  const handleTabClick = useCallback((tabId: TabId) => {
+    if (!hasAccess(tabId) || tabId === activeTab) return;
     setActiveTab(tabId);
-  };
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setVisibleTab(tabId);
+      setIsTransitioning(false);
+    }, 500);
+  }, [activeTab, permissions, isAdmin]);
 
   const toggleCategory = (catId: string) => {
     setOpenCategory(openCategory === catId ? null : catId);
@@ -256,54 +264,61 @@ const Index = () => {
 
         {/* Module Content */}
         <div className="space-y-6">
-          {activeTab === "ai-learn" && <AILearningModule />}
-          {activeTab === "cutting" && hasAccess("cutting") && <CuttingCalculator customMaterials={customMaterials} />}
-          {activeTab === "toollife" && hasAccess("toollife") && <ToolLifeCalculator customMaterials={customMaterials} />}
-          {activeTab === "threading" && hasAccess("threading") && <ThreadingCalculator />}
-          {activeTab === "drilling" && hasAccess("drilling") && <DrillTapCalculator customMaterials={customMaterials} />}
-          {activeTab === "compare" && hasAccess("compare") && <ParameterComparison customMaterials={customMaterials} />}
-          {activeTab === "materials" && hasAccess("materials") && (
-            <MaterialList
-              customMaterials={customMaterials}
-              materialPrices={materialPrices}
-              afkMultipliers={afkMultipliers}
-              onDeleteCustom={handleDeleteMaterial}
-              isAdmin={isAdmin}
-              onAddMaterial={(isAdmin || permissions["add_material"]) ? () => setShowMaterialForm(true) : undefined}
-              onUpdatePrice={(id, price) => {
-                updatePrice(id, price);
-                if (id.startsWith("custom-")) {
-                  const updated = customMaterials.map((m) =>
-                    m.id === id ? { ...m, pricePerKg: price } : m
-                  );
-                  setCustomMaterials(updated);
-                  safeSetItem(CUSTOM_MATERIALS_KEY, updated);
-                }
-              }}
-              onUpdateAfkMultiplier={(id, multiplier) => {
-                updateAfkMultiplier(id, multiplier);
-              }}
-            />
-          )}
-          {activeTab === "cost" && hasAccess("cost") && <CostAnalyzer customMaterials={customMaterials} />}
-          {activeTab === "costcalc" && hasAccess("costcalc") && <CostCalculation customMaterials={customMaterials} materialPrices={materialPrices} />}
-          {activeTab === "afkprice" && hasAccess("afkprice") && <AFKPriceCalculator />}
-          {activeTab === "currency-tracker" && hasAccess("currency-tracker") && <CurrencyRateTracker />}
-          
-          {activeTab === "coatings" && hasAccess("coatings") && <CoatingList />}
-          {activeTab === "maintenance" && hasAccess("maintenance") && <MaintenanceModule />}
-          {activeTab === "drawing" && hasAccess("drawing") && <DrawingAnalyzer />}
-          {activeTab === "tolerance" && hasAccess("tolerance") && <ToleranceGuide />}
-          {activeTab === "quiz" && hasAccess("quiz") && <QuizModule />}
-          {activeTab === "history" && hasAccess("history") && <CalculationHistory />}
-          {activeTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
-          
-          {!hasAccess(activeTab) && !ALWAYS_ACCESSIBLE.includes(activeTab) && (
-            <div className="text-center py-12">
-              <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">{t("admin", "noPermission")}</p>
+          {isTransitioning && (
+            <div className="flex items-center justify-center py-24">
+              <img src={gageLogo} alt="GAGE" className="w-16 h-16 object-contain animate-pulse-logo" />
             </div>
           )}
+          <div className={isTransitioning ? "hidden" : undefined}>
+            {visibleTab === "ai-learn" && <AILearningModule />}
+            {visibleTab === "cutting" && hasAccess("cutting") && <CuttingCalculator customMaterials={customMaterials} />}
+            {visibleTab === "toollife" && hasAccess("toollife") && <ToolLifeCalculator customMaterials={customMaterials} />}
+            {visibleTab === "threading" && hasAccess("threading") && <ThreadingCalculator />}
+            {visibleTab === "drilling" && hasAccess("drilling") && <DrillTapCalculator customMaterials={customMaterials} />}
+            {visibleTab === "compare" && hasAccess("compare") && <ParameterComparison customMaterials={customMaterials} />}
+            {visibleTab === "materials" && hasAccess("materials") && (
+              <MaterialList
+                customMaterials={customMaterials}
+                materialPrices={materialPrices}
+                afkMultipliers={afkMultipliers}
+                onDeleteCustom={handleDeleteMaterial}
+                isAdmin={isAdmin}
+                onAddMaterial={(isAdmin || permissions["add_material"]) ? () => setShowMaterialForm(true) : undefined}
+                onUpdatePrice={(id, price) => {
+                  updatePrice(id, price);
+                  if (id.startsWith("custom-")) {
+                    const updated = customMaterials.map((m) =>
+                      m.id === id ? { ...m, pricePerKg: price } : m
+                    );
+                    setCustomMaterials(updated);
+                    safeSetItem(CUSTOM_MATERIALS_KEY, updated);
+                  }
+                }}
+                onUpdateAfkMultiplier={(id, multiplier) => {
+                  updateAfkMultiplier(id, multiplier);
+                }}
+              />
+            )}
+            {visibleTab === "cost" && hasAccess("cost") && <CostAnalyzer customMaterials={customMaterials} />}
+            {visibleTab === "costcalc" && hasAccess("costcalc") && <CostCalculation customMaterials={customMaterials} materialPrices={materialPrices} />}
+            {visibleTab === "afkprice" && hasAccess("afkprice") && <AFKPriceCalculator />}
+            {visibleTab === "currency-tracker" && hasAccess("currency-tracker") && <CurrencyRateTracker />}
+            
+            {visibleTab === "coatings" && hasAccess("coatings") && <CoatingList />}
+            {visibleTab === "maintenance" && hasAccess("maintenance") && <MaintenanceModule />}
+            {visibleTab === "drawing" && hasAccess("drawing") && <DrawingAnalyzer />}
+            {visibleTab === "tolerance" && hasAccess("tolerance") && <ToleranceGuide />}
+            {visibleTab === "quiz" && hasAccess("quiz") && <QuizModule />}
+            {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
+            {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
+            
+            {!hasAccess(visibleTab) && !ALWAYS_ACCESSIBLE.includes(visibleTab) && (
+              <div className="text-center py-12">
+                <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">{t("admin", "noPermission")}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <footer className="mt-8 pt-6 border-t border-border">
