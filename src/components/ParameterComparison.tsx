@@ -102,7 +102,7 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-primary" />
                 <span className="text-sm font-medium text-foreground">Hız Verimliliği</span>
-                <span className="text-xs text-muted-foreground ml-auto">%25</span>
+                <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%25</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">Girilen kesme hızının, malzemenin önerilen maksimum hızına oranı. Yüksek oran = malzeme kapasitesinin iyi kullanımı.</p>
             </div>
@@ -110,7 +110,7 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-primary" />
                 <span className="text-sm font-medium text-foreground">Takım Ömrü</span>
-                <span className="text-xs text-muted-foreground ml-auto">%30</span>
+                <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%30</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">Taylor formülüyle hesaplanan takım ömrünün 60 dk referansa oranı. Uzun ömür = daha az takım değişimi ve maliyet.</p>
             </div>
@@ -118,7 +118,7 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
               <div className="flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-primary" />
                 <span className="text-sm font-medium text-foreground">MRR (Talaş Kaldırma)</span>
-                <span className="text-xs text-muted-foreground ml-auto">%30</span>
+                <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%30</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">Birim zamanda kaldırılan talaş hacmi (cm³/dk). 50 cm³/dk referansa oranlanır. Yüksek MRR = yüksek üretkenlik.</p>
             </div>
@@ -126,7 +126,7 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-primary" />
                 <span className="text-sm font-medium text-foreground">Güç Verimliliği</span>
-                <span className="text-xs text-muted-foreground ml-auto">%15</span>
+                <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%15</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">Düşük güç tüketimi yüksek skor alır. Enerji verimliliğini ödüllendirerek işleme maliyetini düşürmeyi hedefler.</p>
             </div>
