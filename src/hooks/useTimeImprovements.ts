@@ -11,6 +11,7 @@ export interface TimeImprovementImage {
 export interface TimeImprovement {
   id: string;
   user_id: string;
+  factory: string;
   reference_code: string;
   customer_name: string;
   machine_id: string | null;
@@ -20,6 +21,9 @@ export interface TimeImprovement {
   old_time_minutes: number;
   new_time_minutes: number;
   improvement_percent: number;
+  old_price: number;
+  new_price: number;
+  price_improvement_percent: number;
   improvement_details: string | null;
   tool_changes: string | null;
   parameter_changes: string | null;
