@@ -76,6 +76,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
   const [uploading, setUploading] = useState(false);
   const [filterCustomer, setFilterCustomer] = useState<string>("all");
   const [filterFactory, setFilterFactory] = useState<string>("all");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -180,9 +181,13 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
     else toast.error("Silme hatası");
   };
 
+  // Build month options from data
+  const monthOptions = [...new Set(improvements.map((i) => i.improvement_date?.slice(0, 7)).filter(Boolean))].sort().reverse();
+
   const filtered = improvements
     .filter((i) => filterCustomer === "all" || i.customer_name === filterCustomer)
-    .filter((i) => filterFactory === "all" || i.factory === filterFactory);
+    .filter((i) => filterFactory === "all" || i.factory === filterFactory)
+    .filter((i) => filterMonth === "all" || i.improvement_date?.startsWith(filterMonth));
 
   const totalTimeSaved = filtered.reduce((sum, i) => sum + (i.old_time_minutes - i.new_time_minutes), 0);
   const avgTimeImpr = filtered.length > 0 ? filtered.reduce((sum, i) => sum + Number(i.improvement_percent), 0) / filtered.length : 0;
@@ -252,6 +257,22 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                   {[...new Set(improvements.map((i) => i.customer_name))].map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm whitespace-nowrap">Ay:</Label>
+              <Select value={filterMonth} onValueChange={setFilterMonth}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tümü</SelectItem>
+                  {monthOptions.map((m) => {
+                    const [y, mo] = m.split("-");
+                    const monthNames = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+                    return <SelectItem key={m} value={m}>{monthNames[parseInt(mo) - 1]} {y}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
             </div>
