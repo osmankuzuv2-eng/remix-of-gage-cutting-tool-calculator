@@ -333,7 +333,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {canRecord && (
+                          {(canRecord || isAdmin) && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
                               <Edit2 className="w-3.5 h-3.5" />
                             </Button>
