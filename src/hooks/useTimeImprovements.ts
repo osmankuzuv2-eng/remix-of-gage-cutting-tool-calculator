@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export interface TimeImprovementImage {
+  url: string;
+  caption: string;
+  uploaded_at: string;
+}
+
 export interface TimeImprovement {
   id: string;
   user_id: string;
@@ -18,6 +24,7 @@ export interface TimeImprovement {
   tool_changes: string | null;
   parameter_changes: string | null;
   notes: string | null;
+  images: TimeImprovementImage[];
   improvement_date: string;
   created_at: string;
   updated_at: string;

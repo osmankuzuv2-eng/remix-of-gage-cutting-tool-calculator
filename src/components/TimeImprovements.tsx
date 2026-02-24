@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useTimeImprovements, TimeImprovement } from "@/hooks/useTimeImprovements";
+import { useState, useRef } from "react";
+import { useTimeImprovements, TimeImprovement, TimeImprovementImage } from "@/hooks/useTimeImprovements";
+import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useMachines } from "@/hooks/useMachines";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit2, TrendingDown, Clock, RefreshCw, Loader2, ArrowDownRight } from "lucide-react";
+import { Plus, Trash2, Edit2, TrendingDown, Clock, RefreshCw, Loader2, ArrowDownRight, ImagePlus, X, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 const OPERATION_TYPES = [
@@ -37,6 +38,7 @@ const emptyForm = {
   tool_changes: "",
   parameter_changes: "",
   notes: "",
+  images: [] as TimeImprovementImage[],
   improvement_date: new Date().toISOString().split("T")[0],
 };
 
@@ -54,7 +56,10 @@ const TimeImprovements = ({ isAdmin }: Props) => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [filterCustomer, setFilterCustomer] = useState<string>("all");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openNew = () => {
     setEditId(null);
@@ -77,6 +82,7 @@ const TimeImprovements = ({ isAdmin }: Props) => {
       tool_changes: item.tool_changes || "",
       parameter_changes: item.parameter_changes || "",
       notes: item.notes || "",
+      images: item.images || [],
       improvement_date: item.improvement_date,
     });
     setDialogOpen(true);
@@ -89,6 +95,30 @@ const TimeImprovements = ({ isAdmin }: Props) => {
       machine_id: machineId,
       machine_name: machine ? machine.label : "",
     }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    const newImages: TimeImprovementImage[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) { toast.error("Sadece resim dosyaları yüklenebilir"); continue; }
+      if (file.size > 5 * 1024 * 1024) { toast.error("Dosya 5MB'dan küçük olmalı"); continue; }
+      const ext = file.name.split(".").pop();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("time-improvement-images").upload(path, file);
+      if (error) { toast.error("Yükleme hatası"); continue; }
+      const { data: urlData } = supabase.storage.from("time-improvement-images").getPublicUrl(path);
+      newImages.push({ url: urlData.publicUrl, caption: "", uploaded_at: new Date().toISOString() });
+    }
+    setForm((p) => ({ ...p, images: [...p.images, ...newImages] }));
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (idx: number) => {
+    setForm((p) => ({ ...p, images: p.images.filter((_, i) => i !== idx) }));
   };
 
   const handleSave = async () => {
@@ -107,6 +137,7 @@ const TimeImprovements = ({ isAdmin }: Props) => {
       tool_changes: form.tool_changes || null,
       parameter_changes: form.parameter_changes || null,
       notes: form.notes || null,
+      images: form.images,
     };
     const error = editId ? await update(editId, payload) : await add(payload as any);
     setSaving(false);
@@ -192,6 +223,7 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                     <TableHead className="text-right">Eski (dk)</TableHead>
                     <TableHead className="text-right">Yeni (dk)</TableHead>
                     <TableHead className="text-right">İyileştirme</TableHead>
+                    <TableHead>Resim</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -215,6 +247,13 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                           <ArrowDownRight className="w-3 h-3" />
                           %{Number(item.improvement_percent).toFixed(1)}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {item.images && item.images.length > 0 && (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            <ImageIcon className="w-3 h-3" /> {item.images.length}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
@@ -309,6 +348,27 @@ const TimeImprovements = ({ isAdmin }: Props) => {
               <Label>Parametre Değişiklikleri</Label>
               <Textarea value={form.parameter_changes} onChange={(e) => setForm((p) => ({ ...p, parameter_changes: e.target.value }))} placeholder="Değiştirilen parametreler..." rows={2} />
             </div>
+            {/* Image Upload */}
+            <div className="md:col-span-2">
+              <Label className="flex items-center gap-1.5 mb-2">
+                <ImageIcon className="w-4 h-4" /> Resimler
+              </Label>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.images.map((img, idx) => (
+                  <div key={idx} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border">
+                    <img src={img.url} alt="" className="w-full h-full object-cover cursor-pointer" onClick={() => setPreviewImage(img.url)} />
+                    <button type="button" onClick={() => removeImage(idx)} className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-20 h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+                  {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+                  <span className="text-[10px]">{uploading ? "Yükleniyor" : "Ekle"}</span>
+                </button>
+              </div>
+            </div>
             <div className="md:col-span-2">
               <Label>Notlar</Label>
               <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} rows={2} />
@@ -329,6 +389,13 @@ const TimeImprovements = ({ isAdmin }: Props) => {
               {editId ? "Güncelle" : "Kaydet"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-3xl p-2">
+          {previewImage && <img src={previewImage} alt="Önizleme" className="w-full h-auto rounded-lg" />}
         </DialogContent>
       </Dialog>
     </div>

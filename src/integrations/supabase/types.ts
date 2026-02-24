@@ -841,6 +841,7 @@ export type Database = {
           created_at: string
           customer_name: string
           id: string
+          images: Json | null
           improvement_date: string
           improvement_details: string | null
           improvement_percent: number | null
@@ -861,6 +862,7 @@ export type Database = {
           created_at?: string
           customer_name: string
           id?: string
+          images?: Json | null
           improvement_date?: string
           improvement_details?: string | null
           improvement_percent?: number | null
@@ -881,6 +883,7 @@ export type Database = {
           created_at?: string
           customer_name?: string
           id?: string
+          images?: Json | null
           improvement_date?: string
           improvement_details?: string | null
           improvement_percent?: number | null
