@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* Modern Dark — Bright Blue accent */
+    /* Modern Dark — Orange accent */
     --background: 225 18% 11%;
     --foreground: 210 40% 96%;
 
@@ -16,7 +16,7 @@
     --popover: 225 16% 15%;
     --popover-foreground: 210 40% 96%;
 
-    --primary: 217 91% 60%;
+    --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 225 14% 20%;
@@ -25,7 +25,7 @@
     --muted: 225 12% 18%;
     --muted-foreground: 220 15% 65%;
 
-    --accent: 199 89% 48%;
+    --accent: 33 90% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -34,29 +34,29 @@
     --success: 152 60% 45%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 45 93% 47%;
     --warning-foreground: 225 18% 11%;
 
     --border: 225 12% 22%;
     --input: 225 12% 18%;
-    --ring: 217 91% 60%;
+    --ring: 25 95% 53%;
 
     --radius: 0.5rem;
 
-    --chart-1: 217 91% 60%;
-    --chart-2: 199 89% 48%;
+    --chart-1: 25 95% 53%;
+    --chart-2: 33 90% 50%;
     --chart-3: 152 60% 45%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 271 60% 55%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 15 80% 45%;
 
     --font-mono: 'JetBrains Mono', monospace;
     --font-sans: 'Inter', sans-serif;
 
     --gradient-industrial: linear-gradient(180deg, hsl(225 16% 15%) 0%, hsl(225 18% 11%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 85% 68%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(30 90% 60%) 100%);
     --gradient-metal: linear-gradient(180deg, hsl(225 14% 20%) 0%, hsl(225 16% 15%) 100%);
 
-    --shadow-glow: 0 0 20px hsl(217 91% 60% / 0.25);
+    --shadow-glow: 0 0 20px hsl(25 95% 53% / 0.25);
     --shadow-card: 0 1px 3px hsl(225 30% 5% / 0.3), 0 4px 16px hsl(225 30% 5% / 0.2);
   }
 
@@ -123,10 +123,10 @@
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 8px hsl(217 91% 60% / 0.15);
+      box-shadow: 0 0 8px hsl(25 95% 53% / 0.15);
     }
     50% {
-      box-shadow: 0 0 20px hsl(217 91% 60% / 0.3);
+      box-shadow: 0 0 20px hsl(25 95% 53% / 0.3);
     }
   }
 
@@ -138,12 +138,12 @@
     0%, 100% {
       opacity: 0.3;
       transform: scale(0.95);
-      filter: drop-shadow(0 0 8px hsl(217 91% 60% / 0.2));
+      filter: drop-shadow(0 0 8px hsl(25 95% 53% / 0.2));
     }
     50% {
       opacity: 1;
       transform: scale(1.05);
-      filter: drop-shadow(0 0 18px hsl(217 91% 60% / 0.45));
+      filter: drop-shadow(0 0 18px hsl(25 95% 53% / 0.45));
     }
   }
 
