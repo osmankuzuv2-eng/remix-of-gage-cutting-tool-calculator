@@ -1229,7 +1229,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         {/* ── Improvements Tab ── */}
         <TabsContent value="improvements" className="space-y-4 mt-4">
           {!canEdit("admin_improvements" as any) && <ReadOnlyBanner />}
-          <TimeImprovements isAdmin={canEdit("admin_improvements" as any)} />
+          <TimeImprovements isAdmin={canEdit("admin_improvements" as any)} canRecord={canEdit("admin_improvements" as any)} />
         </TabsContent>
 
         {/* ── Quiz Tab ── */}
