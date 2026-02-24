@@ -96,14 +96,14 @@ const loadLogoBase64 = (): Promise<string> => {
 
 // Brand colors
 export const BRAND = {
-  primary: [47, 49, 114] as [number, number, number],
-  primaryDark: [32, 33, 79] as [number, number, number],
-  dark: [22, 24, 52] as [number, number, number],
-  darkAlt: [35, 38, 72] as [number, number, number],
-  light: [240, 241, 250] as [number, number, number],
-  muted: [130, 135, 160] as [number, number, number],
+  primary: [56, 132, 244] as [number, number, number],
+  primaryDark: [37, 99, 205] as [number, number, number],
+  dark: [22, 26, 38] as [number, number, number],
+  darkAlt: [32, 38, 55] as [number, number, number],
+  light: [240, 242, 250] as [number, number, number],
+  muted: [130, 140, 165] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  accent: [41, 121, 209] as [number, number, number],
+  accent: [14, 165, 233] as [number, number, number],
   success: [40, 180, 120] as [number, number, number],
 };
 
