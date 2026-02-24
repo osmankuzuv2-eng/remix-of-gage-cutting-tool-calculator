@@ -1,0 +1,1 @@
+ALTER TABLE public.time_improvements ADD COLUMN team_members jsonb DEFAULT '[]'::jsonb;

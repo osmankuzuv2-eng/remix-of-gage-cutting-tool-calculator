@@ -860,6 +860,7 @@ export type Database = {
           part_name: string
           price_improvement_percent: number | null
           reference_code: string
+          team_members: Json | null
           tool_changes: string | null
           updated_at: string
           user_id: string
@@ -887,6 +888,7 @@ export type Database = {
           part_name: string
           price_improvement_percent?: number | null
           reference_code: string
+          team_members?: Json | null
           tool_changes?: string | null
           updated_at?: string
           user_id: string
@@ -914,6 +916,7 @@ export type Database = {
           part_name?: string
           price_improvement_percent?: number | null
           reference_code?: string
+          team_members?: Json | null
           tool_changes?: string | null
           updated_at?: string
           user_id?: string
