@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTimeImprovements, TimeImprovement, TimeImprovementImage } from "@/hooks/useTimeImprovements";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useMachines } from "@/hooks/useMachines";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit2, TrendingDown, RefreshCw, Loader2, ArrowDownRight, ImagePlus, X, Image as ImageIcon, FileDown, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Edit2, TrendingDown, RefreshCw, Loader2, ArrowDownRight, ImagePlus, X, Image as ImageIcon, FileDown, FileSpreadsheet, User } from "lucide-react";
 import { toast } from "sonner";
 import { exportTimeImprovementsPdf } from "@/lib/exportTimeImprovementsPdf";
 import { exportTimeImprovementsExcel } from "@/lib/exportTimeImprovementsExcel";
@@ -51,13 +52,22 @@ const emptyForm = {
 
 interface Props {
   isAdmin?: boolean;
+  canRecord?: boolean;
 }
 
-const TimeImprovements = ({ isAdmin }: Props) => {
+const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
   const { improvements, loading, reload, add, update, remove } = useTimeImprovements();
+  const { user } = useAuth();
   const { activeCustomers } = useCustomers();
   const { machines, getMachineLabel } = useMachines();
   const { language } = useLanguage();
+  const [displayName, setDisplayName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("display_name").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data?.display_name) setDisplayName(data.display_name); });
+  }, [user]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -151,6 +161,7 @@ const TimeImprovements = ({ isAdmin }: Props) => {
       parameter_changes: form.parameter_changes || null,
       notes: form.notes || null,
       images: form.images,
+      ...(!editId ? { created_by_name: displayName || user?.email || "Bilinmiyor" } : {}),
     };
     const error = editId ? await update(editId, payload) : await add(payload as any);
     setSaving(false);
@@ -196,9 +207,11 @@ const TimeImprovements = ({ isAdmin }: Props) => {
               <Button variant="outline" size="sm" onClick={reload}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
-              <Button size="sm" onClick={openNew} className="gap-1.5">
-                <Plus className="w-4 h-4" /> Yeni Kayıt
-              </Button>
+              {canRecord && (
+                <Button size="sm" onClick={openNew} className="gap-1.5">
+                  <Plus className="w-4 h-4" /> Yeni Kayıt
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -267,6 +280,7 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                     <TableHead className="text-right">Yeni ₺</TableHead>
                     <TableHead className="text-right">Fiyat %</TableHead>
                     <TableHead>Resim</TableHead>
+                    <TableHead>Kaydeden</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -312,10 +326,18 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                         )}
                       </TableCell>
                       <TableCell>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <User className="w-3 h-3" />
+                          {item.created_by_name || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
+                          {canRecord && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           {isAdmin && (
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}>
                               <Trash2 className="w-3.5 h-3.5" />

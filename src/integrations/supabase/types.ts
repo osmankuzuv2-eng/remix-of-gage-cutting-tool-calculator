@@ -839,6 +839,7 @@ export type Database = {
       time_improvements: {
         Row: {
           created_at: string
+          created_by_name: string | null
           customer_name: string
           factory: string
           id: string
@@ -864,6 +865,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by_name?: string | null
           customer_name: string
           factory?: string
           id?: string
@@ -889,6 +891,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by_name?: string | null
           customer_name?: string
           factory?: string
           id?: string

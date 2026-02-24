@@ -29,6 +29,7 @@ export interface TimeImprovement {
   parameter_changes: string | null;
   notes: string | null;
   images: TimeImprovementImage[];
+  created_by_name: string | null;
   improvement_date: string;
   created_at: string;
   updated_at: string;
