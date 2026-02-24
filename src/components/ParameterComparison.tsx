@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { GitCompare, Plus, Trash2, Trophy, TrendingUp, Clock, Zap } from "lucide-react";
+import { GitCompare, Plus, Trash2, Trophy, TrendingUp, Clock, Zap, Info, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { materials, toolTypes, Material } from "@/data/materials";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -87,6 +88,54 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
           <Plus className="w-4 h-4" />{t("comparison", "addScenario")}
         </button>
       </div>
+
+      {/* Score Explanation Panel */}
+      <Collapsible className="mb-6">
+        <CollapsibleTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm text-muted-foreground hover:text-foreground transition-colors w-full group">
+          <Info className="w-4 h-4 text-primary" />
+          <span className="flex-1 text-left font-medium">Genel Skor Nasıl Hesaplanır?</span>
+          <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 rounded-lg bg-card border border-border">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                <span className="text-sm font-medium text-foreground">Hız Verimliliği</span>
+                <span className="text-xs text-muted-foreground ml-auto">%25</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">Girilen kesme hızının, malzemenin önerilen maksimum hızına oranı. Yüksek oran = malzeme kapasitesinin iyi kullanımı.</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span className="text-sm font-medium text-foreground">Takım Ömrü</span>
+                <span className="text-xs text-muted-foreground ml-auto">%30</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">Taylor formülüyle hesaplanan takım ömrünün 60 dk referansa oranı. Uzun ömür = daha az takım değişimi ve maliyet.</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                <span className="text-sm font-medium text-foreground">MRR (Talaş Kaldırma)</span>
+                <span className="text-xs text-muted-foreground ml-auto">%30</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">Birim zamanda kaldırılan talaş hacmi (cm³/dk). 50 cm³/dk referansa oranlanır. Yüksek MRR = yüksek üretkenlik.</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                <span className="text-sm font-medium text-foreground">Güç Verimliliği</span>
+                <span className="text-xs text-muted-foreground ml-auto">%15</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">Düşük güç tüketimi yüksek skor alır. Enerji verimliliğini ödüllendirerek işleme maliyetini düşürmeyi hedefler.</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 px-1">
+            <strong>Formül:</strong> Genel Skor = Hız×0.25 + Ömür×0.30 + MRR×0.30 + Güç×0.15 — En yüksek skoru alan senaryo 🏆 ile işaretlenir.
+          </p>
+        </CollapsibleContent>
+      </Collapsible>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {scenarios.map((scenario, index) => {
