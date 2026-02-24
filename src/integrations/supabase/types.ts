@@ -836,6 +836,77 @@ export type Database = {
         }
         Relationships: []
       }
+      time_improvements: {
+        Row: {
+          created_at: string
+          customer_name: string
+          id: string
+          improvement_date: string
+          improvement_details: string | null
+          improvement_percent: number | null
+          machine_id: string | null
+          machine_name: string | null
+          new_time_minutes: number
+          notes: string | null
+          old_time_minutes: number
+          operation_type: string
+          parameter_changes: string | null
+          part_name: string
+          reference_code: string
+          tool_changes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          id?: string
+          improvement_date?: string
+          improvement_details?: string | null
+          improvement_percent?: number | null
+          machine_id?: string | null
+          machine_name?: string | null
+          new_time_minutes: number
+          notes?: string | null
+          old_time_minutes: number
+          operation_type?: string
+          parameter_changes?: string | null
+          part_name: string
+          reference_code: string
+          tool_changes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          id?: string
+          improvement_date?: string
+          improvement_details?: string | null
+          improvement_percent?: number | null
+          machine_id?: string | null
+          machine_name?: string | null
+          new_time_minutes?: number
+          notes?: string | null
+          old_time_minutes?: number
+          operation_type?: string
+          parameter_changes?: string | null
+          part_name?: string
+          reference_code?: string
+          tool_changes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_improvements_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_module_permissions: {
         Row: {
           created_at: string

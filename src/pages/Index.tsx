@@ -23,6 +23,7 @@ import CurrencyRateTracker from "@/components/CurrencyRateTracker";
 import CoatingList from "@/components/CoatingList";
 import MaintenanceModule from "@/components/MaintenanceModule";
 import QuizModule from "@/components/QuizModule";
+import TimeImprovements from "@/components/TimeImprovements";
 
 import AdminPanel from "@/components/AdminPanel";
 import { Material, materials as defaultMaterials } from "@/data/materials";
@@ -33,7 +34,7 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "admin";
+type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "admin";
 
 const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
@@ -319,6 +320,7 @@ const Index = () => {
             {visibleTab === "drawing" && hasAccess("drawing") && <DrawingAnalyzer />}
             {visibleTab === "tolerance" && hasAccess("tolerance") && <ToleranceGuide />}
             {visibleTab === "quiz" && hasAccess("quiz") && <QuizModule />}
+            {visibleTab === "time-improvements" && hasAccess("time-improvements") && <TimeImprovements isAdmin={isAdmin} />}
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             
