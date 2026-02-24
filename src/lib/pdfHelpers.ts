@@ -96,15 +96,15 @@ const loadLogoBase64 = (): Promise<string> => {
 
 // Brand colors
 export const BRAND = {
-  primary: [245, 124, 0] as [number, number, number],
-  primaryDark: [230, 100, 0] as [number, number, number],
-  dark: [30, 35, 50] as [number, number, number],
-  darkAlt: [40, 45, 65] as [number, number, number],
-  light: [248, 248, 252] as [number, number, number],
-  muted: [140, 140, 160] as [number, number, number],
+  primary: [47, 49, 114] as [number, number, number],
+  primaryDark: [32, 33, 79] as [number, number, number],
+  dark: [22, 24, 52] as [number, number, number],
+  darkAlt: [35, 38, 72] as [number, number, number],
+  light: [240, 241, 250] as [number, number, number],
+  muted: [130, 135, 160] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  accent: [59, 130, 246] as [number, number, number],
-  success: [34, 197, 94] as [number, number, number],
+  accent: [41, 121, 209] as [number, number, number],
+  success: [40, 180, 120] as [number, number, number],
 };
 
 export const drawHeader = async (doc: jsPDF, title: string): Promise<number> => {
