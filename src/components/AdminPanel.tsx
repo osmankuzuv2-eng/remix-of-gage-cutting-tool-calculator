@@ -993,9 +993,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                 Yenile
               </Button>
               {canEditFeedback && (
-                <Button size="sm" onClick={trainAI} disabled={trainingInProgress || !feedbacks.some(f => f.status === "approved")} className="gap-1.5">
+                <Button size="sm" onClick={trainAI} disabled={trainingInProgress || !feedbacks.some(f => f.status === "approved" && !f.applied_at)} className="gap-1.5">
                   {trainingInProgress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-                  AI'yı Eğit ({feedbacks.filter(f => f.status === "approved").length})
+                  AI'yı Eğit ({feedbacks.filter(f => f.status === "approved" && !f.applied_at).length})
                 </Button>
               )}
             </div>
