@@ -43,6 +43,7 @@ const emptyForm = {
   old_price: 0,
   new_price: 0,
   order_quantity: 1,
+  team_members: [] as string[],
   improvement_details: "",
   tool_changes: "",
   parameter_changes: "",
@@ -102,6 +103,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
       old_price: Number(item.old_price) || 0,
       new_price: Number(item.new_price) || 0,
       order_quantity: (item as any).order_quantity || 1,
+      team_members: (item as any).team_members || [],
       improvement_details: item.improvement_details || "",
       tool_changes: item.tool_changes || "",
       parameter_changes: item.parameter_changes || "",
@@ -471,6 +473,50 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                 <Label>Yeni Fiyat (€)</Label>
                 <Input type="number" min={0} step="0.01" value={form.new_price || ""} onChange={(e) => setForm((p) => ({ ...p, new_price: Number(e.target.value) }))} />
               </div>
+            </div>
+
+            {/* Team Members */}
+            <div className="md:col-span-2">
+              <Label className="flex items-center gap-1.5 mb-2">
+                <User className="w-4 h-4" /> Proje Ekibi (max 5 kişi)
+              </Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.team_members.map((name, idx) => (
+                  <div key={idx} className="flex items-center gap-1 bg-muted rounded-md px-2 py-1 text-sm">
+                    <span>{name}</span>
+                    <button type="button" onClick={() => setForm((p) => ({ ...p, team_members: p.team_members.filter((_, i) => i !== idx) }))} className="text-muted-foreground hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {form.team_members.length < 5 && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="İsim girin..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && form.team_members.length < 5) {
+                          setForm((p) => ({ ...p, team_members: [...p.team_members, val] }));
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }}
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={(e) => {
+                    const input = (e.currentTarget as HTMLElement).previousElementSibling as HTMLInputElement;
+                    const val = input?.value.trim();
+                    if (val && form.team_members.length < 5) {
+                      setForm((p) => ({ ...p, team_members: [...p.team_members, val] }));
+                      input.value = "";
+                    }
+                  }}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="md:col-span-2">
