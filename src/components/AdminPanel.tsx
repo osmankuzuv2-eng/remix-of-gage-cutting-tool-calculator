@@ -739,7 +739,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                             {user.permissions
                               .filter((p) => p.granted)
                               .map((p) => (
-                                <span key={p.module_key} className="text-xs px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/25">
+                                <span key={p.module_key} className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground border border-border">
                                   {getModuleName(p.module_key)}
                                 </span>
                               ))}
