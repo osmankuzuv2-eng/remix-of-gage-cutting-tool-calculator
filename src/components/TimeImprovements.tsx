@@ -191,9 +191,9 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
     .filter((i) => filterFactory === "all" || i.factory === filterFactory)
     .filter((i) => filterMonth === "all" || i.improvement_date?.startsWith(filterMonth));
 
-  const totalTimeSaved = filtered.reduce((sum, i) => sum + (i.old_time_minutes - i.new_time_minutes), 0);
+  const totalTimeSaved = filtered.reduce((sum, i) => sum + (i.old_time_minutes - i.new_time_minutes) * ((i as any).order_quantity || 1), 0);
   const avgTimeImpr = filtered.length > 0 ? filtered.reduce((sum, i) => sum + Number(i.improvement_percent), 0) / filtered.length : 0;
-  const totalPriceSaved = filtered.reduce((sum, i) => sum + (Number(i.old_price) - Number(i.new_price)), 0);
+  const totalPriceSaved = filtered.reduce((sum, i) => sum + (Number(i.old_price) - Number(i.new_price)) * ((i as any).order_quantity || 1), 0);
 
   return (
     <div className="space-y-6">
@@ -228,7 +228,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
             <SummaryCard label="Toplam Kayıt" value={filtered.length.toString()} />
             <SummaryCard label="Kazanılan Süre" value={`${totalTimeSaved.toFixed(1)} dk`} />
             <SummaryCard label="Ort. Süre İyileştirme" value={`%${avgTimeImpr.toFixed(1)}`} />
-            <SummaryCard label="Fiyat Kazancı" value={`${totalPriceSaved.toFixed(2)} ₺`} />
+            <SummaryCard label="Fiyat Kazancı" value={`€${totalPriceSaved.toFixed(2)}`} />
             <SummaryCard label="Müşteri Sayısı" value={new Set(filtered.map((i) => i.customer_name)).size.toString()} />
           </div>
 
@@ -449,24 +449,28 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               <Input type="number" min={1} value={form.order_quantity || 1} onChange={(e) => setForm((p) => ({ ...p, order_quantity: Number(e.target.value) }))} />
             </div>
 
-            {/* Time fields */}
-            <div>
-              <Label>Eski Süre (dk) *</Label>
-              <Input type="number" min={0} value={form.old_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, old_time_minutes: Number(e.target.value) }))} />
-            </div>
-            <div>
-              <Label>Yeni Süre (dk) *</Label>
-              <Input type="number" min={0} value={form.new_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, new_time_minutes: Number(e.target.value) }))} />
+            {/* Time fields - side by side */}
+            <div className="md:col-span-2 grid grid-cols-2 gap-4">
+              <div>
+                <Label>Eski Süre (dk) *</Label>
+                <Input type="number" min={0} value={form.old_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, old_time_minutes: Number(e.target.value) }))} />
+              </div>
+              <div>
+                <Label>Yeni Süre (dk) *</Label>
+                <Input type="number" min={0} value={form.new_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, new_time_minutes: Number(e.target.value) }))} />
+              </div>
             </div>
 
-            {/* Price fields */}
-            <div>
-              <Label>Eski Fiyat (₺)</Label>
-              <Input type="number" min={0} step="0.01" value={form.old_price || ""} onChange={(e) => setForm((p) => ({ ...p, old_price: Number(e.target.value) }))} />
-            </div>
-            <div>
-              <Label>Yeni Fiyat (₺)</Label>
-              <Input type="number" min={0} step="0.01" value={form.new_price || ""} onChange={(e) => setForm((p) => ({ ...p, new_price: Number(e.target.value) }))} />
+            {/* Price fields - side by side */}
+            <div className="md:col-span-2 grid grid-cols-2 gap-4">
+              <div>
+                <Label>Eski Fiyat (€)</Label>
+                <Input type="number" min={0} step="0.01" value={form.old_price || ""} onChange={(e) => setForm((p) => ({ ...p, old_price: Number(e.target.value) }))} />
+              </div>
+              <div>
+                <Label>Yeni Fiyat (€)</Label>
+                <Input type="number" min={0} step="0.01" value={form.new_price || ""} onChange={(e) => setForm((p) => ({ ...p, new_price: Number(e.target.value) }))} />
+              </div>
             </div>
 
             <div className="md:col-span-2">
