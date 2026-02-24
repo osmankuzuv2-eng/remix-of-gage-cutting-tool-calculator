@@ -12,9 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit2, TrendingDown, Clock, RefreshCw, Loader2, ArrowDownRight, ImagePlus, X, Image as ImageIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, Trash2, Edit2, TrendingDown, RefreshCw, Loader2, ArrowDownRight, ImagePlus, X, Image as ImageIcon, FileDown, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { exportTimeImprovementsPdf } from "@/lib/exportTimeImprovementsPdf";
+import { exportTimeImprovementsExcel } from "@/lib/exportTimeImprovementsExcel";
 
 const OPERATION_TYPES = [
   { value: "turning", label: "Tornalama" },
@@ -25,15 +27,20 @@ const OPERATION_TYPES = [
   { value: "other", label: "Diğer" },
 ];
 
+const FACTORIES = ["Havacılık", "Raylı Sistemler"];
+
 const emptyForm = {
   reference_code: "",
   customer_name: "",
+  factory: "Havacılık",
   machine_id: "",
   machine_name: "",
   part_name: "",
   operation_type: "turning",
   old_time_minutes: 0,
   new_time_minutes: 0,
+  old_price: 0,
+  new_price: 0,
   improvement_details: "",
   tool_changes: "",
   parameter_changes: "",
@@ -58,6 +65,7 @@ const TimeImprovements = ({ isAdmin }: Props) => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [filterCustomer, setFilterCustomer] = useState<string>("all");
+  const [filterFactory, setFilterFactory] = useState<string>("all");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,12 +80,15 @@ const TimeImprovements = ({ isAdmin }: Props) => {
     setForm({
       reference_code: item.reference_code,
       customer_name: item.customer_name,
+      factory: item.factory || "Havacılık",
       machine_id: item.machine_id || "",
       machine_name: item.machine_name || "",
       part_name: item.part_name,
       operation_type: item.operation_type,
       old_time_minutes: item.old_time_minutes,
       new_time_minutes: item.new_time_minutes,
+      old_price: Number(item.old_price) || 0,
+      new_price: Number(item.new_price) || 0,
       improvement_details: item.improvement_details || "",
       tool_changes: item.tool_changes || "",
       parameter_changes: item.parameter_changes || "",
@@ -133,6 +144,8 @@ const TimeImprovements = ({ isAdmin }: Props) => {
       machine_name: form.machine_name || null,
       old_time_minutes: Number(form.old_time_minutes),
       new_time_minutes: Number(form.new_time_minutes),
+      old_price: Number(form.old_price),
+      new_price: Number(form.new_price),
       improvement_details: form.improvement_details || null,
       tool_changes: form.tool_changes || null,
       parameter_changes: form.parameter_changes || null,
@@ -156,10 +169,13 @@ const TimeImprovements = ({ isAdmin }: Props) => {
     else toast.error("Silme hatası");
   };
 
-  const filtered = filterCustomer === "all" ? improvements : improvements.filter((i) => i.customer_name === filterCustomer);
+  const filtered = improvements
+    .filter((i) => filterCustomer === "all" || i.customer_name === filterCustomer)
+    .filter((i) => filterFactory === "all" || i.factory === filterFactory);
 
-  const totalSaved = filtered.reduce((sum, i) => sum + (i.old_time_minutes - i.new_time_minutes), 0);
-  const avgImprovement = filtered.length > 0 ? filtered.reduce((sum, i) => sum + Number(i.improvement_percent), 0) / filtered.length : 0;
+  const totalTimeSaved = filtered.reduce((sum, i) => sum + (i.old_time_minutes - i.new_time_minutes), 0);
+  const avgTimeImpr = filtered.length > 0 ? filtered.reduce((sum, i) => sum + Number(i.improvement_percent), 0) / filtered.length : 0;
+  const totalPriceSaved = filtered.reduce((sum, i) => sum + (Number(i.old_price) - Number(i.new_price)), 0);
 
   return (
     <div className="space-y-6">
@@ -168,9 +184,15 @@ const TimeImprovements = ({ isAdmin }: Props) => {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="w-5 h-5 text-primary" />
-              Parça Süre İyileştirmeleri
+              Parça Süre & Fiyat İyileştirmeleri
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsPdf(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory)} className="gap-1.5">
+                <FileDown className="w-4 h-4" /> PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsExcel(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory)} className="gap-1.5">
+                <FileSpreadsheet className="w-4 h-4" /> Excel
+              </Button>
               <Button variant="outline" size="sm" onClick={reload}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
@@ -182,27 +204,44 @@ const TimeImprovements = ({ isAdmin }: Props) => {
         </CardHeader>
         <CardContent>
           {/* Summary cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <SummaryCard label="Toplam Kayıt" value={filtered.length.toString()} />
-            <SummaryCard label="Kazanılan Süre" value={`${totalSaved.toFixed(1)} dk`} />
-            <SummaryCard label="Ort. İyileştirme" value={`%${avgImprovement.toFixed(1)}`} />
-            <SummaryCard label="Müşteri Sayısı" value={new Set(improvements.map((i) => i.customer_name)).size.toString()} />
+            <SummaryCard label="Kazanılan Süre" value={`${totalTimeSaved.toFixed(1)} dk`} />
+            <SummaryCard label="Ort. Süre İyileştirme" value={`%${avgTimeImpr.toFixed(1)}`} />
+            <SummaryCard label="Fiyat Kazancı" value={`${totalPriceSaved.toFixed(2)} ₺`} />
+            <SummaryCard label="Müşteri Sayısı" value={new Set(filtered.map((i) => i.customer_name)).size.toString()} />
           </div>
 
-          {/* Filter */}
-          <div className="flex items-center gap-3 mb-4">
-            <Label className="text-sm whitespace-nowrap">Müşteri Filtre:</Label>
-            <Select value={filterCustomer} onValueChange={setFilterCustomer}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tümü</SelectItem>
-                {[...new Set(improvements.map((i) => i.customer_name))].map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm whitespace-nowrap">Fabrika:</Label>
+              <Select value={filterFactory} onValueChange={setFilterFactory}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tümü</SelectItem>
+                  {FACTORIES.map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm whitespace-nowrap">Müşteri:</Label>
+              <Select value={filterCustomer} onValueChange={setFilterCustomer}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tümü</SelectItem>
+                  {[...new Set(improvements.map((i) => i.customer_name))].map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {loading ? (
@@ -215,14 +254,18 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Tarih</TableHead>
+                    <TableHead>Fabrika</TableHead>
                     <TableHead>Referans</TableHead>
                     <TableHead>Müşteri</TableHead>
                     <TableHead>Parça</TableHead>
                     <TableHead>Tezgah</TableHead>
                     <TableHead>İşlem</TableHead>
-                    <TableHead className="text-right">Eski (dk)</TableHead>
-                    <TableHead className="text-right">Yeni (dk)</TableHead>
-                    <TableHead className="text-right">İyileştirme</TableHead>
+                    <TableHead className="text-right">Eski dk</TableHead>
+                    <TableHead className="text-right">Yeni dk</TableHead>
+                    <TableHead className="text-right">Süre %</TableHead>
+                    <TableHead className="text-right">Eski ₺</TableHead>
+                    <TableHead className="text-right">Yeni ₺</TableHead>
+                    <TableHead className="text-right">Fiyat %</TableHead>
                     <TableHead>Resim</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -231,6 +274,9 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                   {filtered.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="whitespace-nowrap">{item.improvement_date}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{item.factory}</Badge>
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{item.reference_code}</TableCell>
                       <TableCell>{item.customer_name}</TableCell>
                       <TableCell>{item.part_name}</TableCell>
@@ -247,6 +293,16 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                           <ArrowDownRight className="w-3 h-3" />
                           %{Number(item.improvement_percent).toFixed(1)}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">{Number(item.old_price).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-mono">{Number(item.new_price).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        {Number(item.old_price) > 0 ? (
+                          <span className="flex items-center justify-end gap-1 text-green-600 font-semibold">
+                            <ArrowDownRight className="w-3 h-3" />
+                            %{Number(item.price_improvement_percent).toFixed(1)}
+                          </span>
+                        ) : "-"}
                       </TableCell>
                       <TableCell>
                         {item.images && item.images.length > 0 && (
@@ -280,7 +336,22 @@ const TimeImprovements = ({ isAdmin }: Props) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editId ? "Kaydı Düzenle" : "Yeni İyileştirme Kaydı"}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>{editId ? "Kaydı Düzenle" : "Yeni İyileştirme Kaydı"}</DialogTitle>
+              <div className="flex gap-1.5">
+                {FACTORIES.map((f) => (
+                  <Button
+                    key={f}
+                    size="sm"
+                    variant={form.factory === f ? "default" : "outline"}
+                    onClick={() => setForm((p) => ({ ...p, factory: f }))}
+                    className="text-xs"
+                  >
+                    {f}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -328,6 +399,8 @@ const TimeImprovements = ({ isAdmin }: Props) => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Time fields */}
             <div>
               <Label>Eski Süre (dk) *</Label>
               <Input type="number" min={0} value={form.old_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, old_time_minutes: Number(e.target.value) }))} />
@@ -336,6 +409,17 @@ const TimeImprovements = ({ isAdmin }: Props) => {
               <Label>Yeni Süre (dk) *</Label>
               <Input type="number" min={0} value={form.new_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, new_time_minutes: Number(e.target.value) }))} />
             </div>
+
+            {/* Price fields */}
+            <div>
+              <Label>Eski Fiyat (₺)</Label>
+              <Input type="number" min={0} step="0.01" value={form.old_price || ""} onChange={(e) => setForm((p) => ({ ...p, old_price: Number(e.target.value) }))} />
+            </div>
+            <div>
+              <Label>Yeni Fiyat (₺)</Label>
+              <Input type="number" min={0} step="0.01" value={form.new_price || ""} onChange={(e) => setForm((p) => ({ ...p, new_price: Number(e.target.value) }))} />
+            </div>
+
             <div className="md:col-span-2">
               <Label>Yapılan İyileştirmeler</Label>
               <Textarea value={form.improvement_details} onChange={(e) => setForm((p) => ({ ...p, improvement_details: e.target.value }))} placeholder="Hangi değişiklikler yapıldı?" rows={2} />
@@ -373,11 +457,23 @@ const TimeImprovements = ({ isAdmin }: Props) => {
               <Label>Notlar</Label>
               <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} rows={2} />
             </div>
-            {form.old_time_minutes > 0 && form.new_time_minutes > 0 && (
+
+            {/* Preview calculations */}
+            {(form.old_time_minutes > 0 || form.old_price > 0) && (
               <div className="md:col-span-2 p-3 rounded-lg bg-muted/50 border border-border">
-                <div className="flex items-center gap-4 text-sm">
-                  <span>Kazanç: <strong className="text-green-600">{(form.old_time_minutes - form.new_time_minutes).toFixed(1)} dk</strong></span>
-                  <span>İyileştirme: <strong className="text-green-600">%{((1 - form.new_time_minutes / form.old_time_minutes) * 100).toFixed(1)}</strong></span>
+                <div className="flex items-center gap-4 text-sm flex-wrap">
+                  {form.old_time_minutes > 0 && form.new_time_minutes > 0 && (
+                    <>
+                      <span>Süre Kazancı: <strong className="text-green-600">{(form.old_time_minutes - form.new_time_minutes).toFixed(1)} dk</strong></span>
+                      <span>Süre İyileştirme: <strong className="text-green-600">%{((1 - form.new_time_minutes / form.old_time_minutes) * 100).toFixed(1)}</strong></span>
+                    </>
+                  )}
+                  {form.old_price > 0 && form.new_price > 0 && (
+                    <>
+                      <span>Fiyat Kazancı: <strong className="text-green-600">{(form.old_price - form.new_price).toFixed(2)} ₺</strong></span>
+                      <span>Fiyat İyileştirme: <strong className="text-green-600">%{((1 - form.new_price / form.old_price) * 100).toFixed(1)}</strong></span>
+                    </>
+                  )}
                 </div>
               </div>
             )}

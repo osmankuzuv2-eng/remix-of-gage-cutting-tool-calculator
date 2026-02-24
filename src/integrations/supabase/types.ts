@@ -840,6 +840,7 @@ export type Database = {
         Row: {
           created_at: string
           customer_name: string
+          factory: string
           id: string
           images: Json | null
           improvement_date: string
@@ -847,12 +848,15 @@ export type Database = {
           improvement_percent: number | null
           machine_id: string | null
           machine_name: string | null
+          new_price: number | null
           new_time_minutes: number
           notes: string | null
+          old_price: number | null
           old_time_minutes: number
           operation_type: string
           parameter_changes: string | null
           part_name: string
+          price_improvement_percent: number | null
           reference_code: string
           tool_changes: string | null
           updated_at: string
@@ -861,6 +865,7 @@ export type Database = {
         Insert: {
           created_at?: string
           customer_name: string
+          factory?: string
           id?: string
           images?: Json | null
           improvement_date?: string
@@ -868,12 +873,15 @@ export type Database = {
           improvement_percent?: number | null
           machine_id?: string | null
           machine_name?: string | null
+          new_price?: number | null
           new_time_minutes: number
           notes?: string | null
+          old_price?: number | null
           old_time_minutes: number
           operation_type?: string
           parameter_changes?: string | null
           part_name: string
+          price_improvement_percent?: number | null
           reference_code: string
           tool_changes?: string | null
           updated_at?: string
@@ -882,6 +890,7 @@ export type Database = {
         Update: {
           created_at?: string
           customer_name?: string
+          factory?: string
           id?: string
           images?: Json | null
           improvement_date?: string
@@ -889,12 +898,15 @@ export type Database = {
           improvement_percent?: number | null
           machine_id?: string | null
           machine_name?: string | null
+          new_price?: number | null
           new_time_minutes?: number
           notes?: string | null
+          old_price?: number | null
           old_time_minutes?: number
           operation_type?: string
           parameter_changes?: string | null
           part_name?: string
+          price_improvement_percent?: number | null
           reference_code?: string
           tool_changes?: string | null
           updated_at?: string
