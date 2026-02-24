@@ -218,15 +218,15 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors">
-                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                      <div className="w-7 h-7 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center overflow-hidden">
                         {avatarUrl ? (
                           <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
-                          <User className="w-4 h-4 text-primary" />
+                          <User className="w-4 h-4 text-accent-foreground" />
                         )}
                       </div>
                       <div className="hidden sm:flex flex-col items-start">
-                        <span className="text-xs font-medium text-foreground leading-tight">
+                        <span className="text-xs font-medium text-foreground leading-tight truncate max-w-[120px]">
                           {user.user_metadata?.display_name || user.email?.split("@")[0]}
                         </span>
                         <span className="text-[10px] text-muted-foreground leading-tight">{user.email}</span>
@@ -250,11 +250,11 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                     <DropdownMenuLabel className="px-3 py-2">
                       <div className="flex items-center gap-3">
                         <div className="relative group">
-                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                          <div className="w-10 h-10 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center overflow-hidden">
                             {avatarUrl ? (
                               <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
-                              <User className="w-5 h-5 text-primary" />
+                              <User className="w-5 h-5 text-accent-foreground" />
                             )}
                           </div>
                           <button
