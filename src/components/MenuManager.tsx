@@ -376,18 +376,25 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
 
             <div className="space-y-2">
               <Label>Modüller</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newModuleKey}
-                  onChange={(e) => setNewModuleKey(e.target.value)}
-                  placeholder="Yeni modül key'i (ör: gcode)..."
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomModule())}
-                  className="flex-1"
-                />
-                <Button type="button" size="sm" onClick={addCustomModule} disabled={!newModuleKey.trim()}>
-                  <Plus className="w-4 h-4 mr-1" /> Ekle
-                </Button>
-              </div>
+
+              {/* Available modules to add */}
+              {availableModules.filter((m) => !formModules.includes(m)).length > 0 && (
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Eklenebilir Modüller</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {availableModules.filter((m) => !formModules.includes(m)).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => toggleModule(m)}
+                        className="flex items-center gap-2 p-2 rounded-lg border bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/50 text-sm transition-all"
+                      >
+                        <Plus className="w-3 h-3 text-primary" />
+                        {getModuleName(m)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Selected modules with reorder */}
               {formModules.length > 0 && (
@@ -413,20 +420,6 @@ const MenuManager = ({ onUpdated, readOnly }: MenuManagerProps) => {
                   })}
                 </div>
               )}
-
-              {/* Available modules */}
-              <div className="grid grid-cols-2 gap-2">
-                {availableModules.filter((m) => !formModules.includes(m)).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => toggleModule(m)}
-                    className="flex items-center gap-2 p-2 rounded-lg border bg-card border-border text-muted-foreground hover:text-foreground text-sm transition-all"
-                  >
-                    <div className="w-3 h-3 rounded-sm border border-muted-foreground" />
-                    {getModuleName(m)}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
           <DialogFooter>
