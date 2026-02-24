@@ -1,0 +1,1 @@
+ALTER TABLE public.time_improvements ADD COLUMN order_quantity integer DEFAULT 1;

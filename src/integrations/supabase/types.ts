@@ -855,6 +855,7 @@ export type Database = {
           old_price: number | null
           old_time_minutes: number
           operation_type: string
+          order_quantity: number | null
           parameter_changes: string | null
           part_name: string
           price_improvement_percent: number | null
@@ -881,6 +882,7 @@ export type Database = {
           old_price?: number | null
           old_time_minutes: number
           operation_type?: string
+          order_quantity?: number | null
           parameter_changes?: string | null
           part_name: string
           price_improvement_percent?: number | null
@@ -907,6 +909,7 @@ export type Database = {
           old_price?: number | null
           old_time_minutes?: number
           operation_type?: string
+          order_quantity?: number | null
           parameter_changes?: string | null
           part_name?: string
           price_improvement_percent?: number | null
