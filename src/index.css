@@ -8,24 +8,24 @@
   :root {
     /* RAL 5002 Ultramarine Blue - Flat Design */
     --background: 237 40% 12%;
-    --foreground: 220 20% 93%;
+    --foreground: 220 30% 95%;
 
     --card: 237 35% 16%;
-    --card-foreground: 220 20% 93%;
+    --card-foreground: 220 30% 95%;
 
     --popover: 237 35% 16%;
-    --popover-foreground: 220 20% 93%;
+    --popover-foreground: 220 30% 95%;
 
-    --primary: 237 55% 35%;
+    --primary: 237 60% 52%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 237 30% 22%;
-    --secondary-foreground: 220 20% 88%;
+    --secondary-foreground: 220 30% 92%;
 
     --muted: 237 25% 20%;
-    --muted-foreground: 230 20% 65%;
+    --muted-foreground: 225 25% 72%;
 
-    --accent: 210 70% 50%;
+    --accent: 210 80% 65%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 65% 48%;
@@ -39,11 +39,11 @@
 
     --border: 237 25% 24%;
     --input: 237 25% 20%;
-    --ring: 237 55% 35%;
+    --ring: 237 60% 52%;
 
     --radius: 0.375rem;
 
-    --chart-1: 237 55% 35%;
+    --chart-1: 237 60% 52%;
     --chart-2: 210 70% 50%;
     --chart-3: 160 60% 42%;
     --chart-4: 40 90% 50%;
@@ -53,16 +53,16 @@
     --font-sans: 'Inter', sans-serif;
 
     --gradient-industrial: linear-gradient(180deg, hsl(237 35% 16%) 0%, hsl(237 40% 12%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(237 55% 35%) 0%, hsl(237 50% 42%) 100%);
-    --gradient-metal: linear-gradient(180deg, hsl(237 30% 22%) 0%, hsl(237 35% 16%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(237 60% 52%) 0%, hsl(237 55% 58%) 100%);
+    --gradient-metal: linear-gradient(180deg, hsl(237 30% 24%) 0%, hsl(237 35% 16%) 100%);
     
-    --shadow-glow: 0 0 15px hsl(237 55% 35% / 0.25);
+    --shadow-glow: 0 0 15px hsl(237 60% 52% / 0.25);
     --shadow-card: 0 2px 12px hsl(237 50% 5% / 0.4);
   }
 
   .dark {
     --background: 237 40% 12%;
-    --foreground: 220 20% 93%;
+    --foreground: 220 30% 95%;
   }
 }
 
@@ -123,10 +123,10 @@
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 8px hsl(237 55% 35% / 0.15);
+      box-shadow: 0 0 8px hsl(237 60% 52% / 0.15);
     }
     50% {
-      box-shadow: 0 0 16px hsl(237 55% 35% / 0.3);
+      box-shadow: 0 0 16px hsl(237 60% 52% / 0.3);
     }
   }
 
@@ -138,12 +138,12 @@
     0%, 100% {
       opacity: 0.3;
       transform: scale(0.95);
-      filter: drop-shadow(0 0 6px hsl(237 55% 35% / 0.2));
+      filter: drop-shadow(0 0 6px hsl(237 60% 52% / 0.2));
     }
     50% {
       opacity: 1;
       transform: scale(1.05);
-      filter: drop-shadow(0 0 14px hsl(237 55% 35% / 0.4));
+      filter: drop-shadow(0 0 14px hsl(237 60% 52% / 0.4));
     }
   }
 
