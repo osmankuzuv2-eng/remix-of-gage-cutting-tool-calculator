@@ -42,6 +42,7 @@ const emptyForm = {
   new_time_minutes: 0,
   old_price: 0,
   new_price: 0,
+  order_quantity: 1,
   improvement_details: "",
   tool_changes: "",
   parameter_changes: "",
@@ -100,6 +101,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
       new_time_minutes: item.new_time_minutes,
       old_price: Number(item.old_price) || 0,
       new_price: Number(item.new_price) || 0,
+      order_quantity: (item as any).order_quantity || 1,
       improvement_details: item.improvement_details || "",
       tool_changes: item.tool_changes || "",
       parameter_changes: item.parameter_changes || "",
@@ -441,6 +443,10 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Sipariş Miktarı</Label>
+              <Input type="number" min={1} value={form.order_quantity || 1} onChange={(e) => setForm((p) => ({ ...p, order_quantity: Number(e.target.value) }))} />
             </div>
 
             {/* Time fields */}
