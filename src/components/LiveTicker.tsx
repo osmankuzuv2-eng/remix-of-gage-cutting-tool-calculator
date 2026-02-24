@@ -91,7 +91,7 @@ const LiveTicker = () => {
         </div>
         <div className="flex-1 flex justify-end">
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-muted-foreground">
-            <Clock className="w-3.5 h-3.5 text-primary" />
+            <Clock className="w-3.5 h-3.5 text-accent" />
             <span className="font-medium">
               {now.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })}
             </span>
