@@ -113,4 +113,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: ["pdfjs-dist"],
+  },
+  assetsInclude: ["**/*.mjs"],
 }));
