@@ -378,7 +378,7 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName }: 
 // ─── Main Component ───
 
 const DrawingAnalyzer = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const { saveCalculation } = useSupabaseSync();
   const { activeCustomers } = useCustomers();
@@ -443,7 +443,7 @@ const DrawingAnalyzer = () => {
       if (urlError) throw urlError;
       const materialInfo = selectedMaterial ? defaultMaterials.find(m => m.id === selectedMaterial) : null;
       const { data, error } = await supabase.functions.invoke("analyze-drawing", {
-        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo, factory: selectedFactory, material: materialInfo ? { name: materialInfo.name, category: materialInfo.category, hardness: materialInfo.hardness, cuttingSpeed: materialInfo.cuttingSpeed, feedRate: materialInfo.feedRate, taylorN: materialInfo.taylorN, taylorC: materialInfo.taylorC } : null, customerSpecs: customerSpecs },
+        body: { imageUrl: urlData.signedUrl, fileName: item.file.name, additionalInfo, factory: selectedFactory, language, material: materialInfo ? { name: materialInfo.name, category: materialInfo.category, hardness: materialInfo.hardness, cuttingSpeed: materialInfo.cuttingSpeed, feedRate: materialInfo.feedRate, taylorN: materialInfo.taylorN, taylorC: materialInfo.taylorC } : null, customerSpecs: customerSpecs },
       });
       if (error) throw error;
       if (data?.analysis) {

@@ -27,7 +27,13 @@ serve(async (req) => {
       });
     }
 
-    const { imageUrl, fileName, additionalInfo, factory, material, customerSpecs } = body;
+    const { imageUrl, fileName, additionalInfo, factory, material, customerSpecs, language = "tr" } = body;
+
+    const langInstruction = language === "en"
+      ? "IMPORTANT: Respond in ENGLISH. All text values in the JSON (operation names, descriptions, recommendations, notes, tolerances, surface finish, difficulty notes, clamping descriptions, etc.) MUST be in English."
+      : language === "fr"
+      ? "IMPORTANT: Répondez en FRANÇAIS. Toutes les valeurs textuelles dans le JSON (noms d'opérations, descriptions, recommandations, notes, tolérances, état de surface, notes de difficulté, descriptions de bridage, etc.) DOIVENT être en français."
+      : "Tüm metin değerleri Türkçe olsun.";
 
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "imageUrl is required" }), {
@@ -350,19 +356,28 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
       }
     }
 
-    const finalSystemPrompt = systemPrompt + feedbackContext;
+    const finalSystemPrompt = systemPrompt + feedbackContext + "\n\n" + langInstruction;
 
     let userMessage = "";
     if (material) {
-      userMessage = `Bu teknik resmi analiz et. MALZEME KULLANICI TARAFINDAN BELİRLENMİŞTİR: ${material.name} (Kategori: ${material.category}, Sertlik: ${material.hardness}, Kesme Hızı: ${material.cuttingSpeed.min}-${material.cuttingSpeed.max} ${material.cuttingSpeed.unit}, İlerleme: ${material.feedRate.min}-${material.feedRate.max} ${material.feedRate.unit}, Taylor n=${material.taylorN}, Taylor C=${material.taylorC}). Bu malzemeye göre tüm kesme parametrelerini hesapla. Resimdeki malzeme bilgisini DIKKATE ALMA, kullanıcının seçtiği malzemeyi kullan.`;
+      const matMsg = language === "en"
+        ? `Analyze this technical drawing. MATERIAL IS SPECIFIED BY USER: ${material.name} (Category: ${material.category}, Hardness: ${material.hardness}, Cutting Speed: ${material.cuttingSpeed.min}-${material.cuttingSpeed.max} ${material.cuttingSpeed.unit}, Feed Rate: ${material.feedRate.min}-${material.feedRate.max} ${material.feedRate.unit}, Taylor n=${material.taylorN}, Taylor C=${material.taylorC}). Calculate all cutting parameters based on this material. DO NOT use the material info from the drawing, use the user-selected material.`
+        : language === "fr"
+        ? `Analysez ce dessin technique. MATÉRIAU SPÉCIFIÉ PAR L'UTILISATEUR: ${material.name} (Catégorie: ${material.category}, Dureté: ${material.hardness}, Vitesse de coupe: ${material.cuttingSpeed.min}-${material.cuttingSpeed.max} ${material.cuttingSpeed.unit}, Avance: ${material.feedRate.min}-${material.feedRate.max} ${material.feedRate.unit}, Taylor n=${material.taylorN}, Taylor C=${material.taylorC}). Calculez tous les paramètres de coupe en fonction de ce matériau. N'utilisez PAS les informations de matériau du dessin, utilisez le matériau sélectionné par l'utilisateur.`
+        : `Bu teknik resmi analiz et. MALZEME KULLANICI TARAFINDAN BELİRLENMİŞTİR: ${material.name} (Kategori: ${material.category}, Sertlik: ${material.hardness}, Kesme Hızı: ${material.cuttingSpeed.min}-${material.cuttingSpeed.max} ${material.cuttingSpeed.unit}, İlerleme: ${material.feedRate.min}-${material.feedRate.max} ${material.feedRate.unit}, Taylor n=${material.taylorN}, Taylor C=${material.taylorC}). Bu malzemeye göre tüm kesme parametrelerini hesapla. Resimdeki malzeme bilgisini DIKKATE ALMA, kullanıcının seçtiği malzemeyi kullan.`;
+      userMessage = matMsg;
     } else {
-      userMessage = "Bu teknik resmi analiz et. Tüm kritik ölçüleri, toleransları ve yüzey pürüzlülük değerlerini dikkatlice oku ve detaylı işleme planı oluştur.";
+      userMessage = language === "en"
+        ? "Analyze this technical drawing. Carefully read all critical dimensions, tolerances and surface roughness values and create a detailed machining plan."
+        : language === "fr"
+        ? "Analysez ce dessin technique. Lisez attentivement toutes les cotes critiques, tolérances et valeurs de rugosité de surface et créez un plan d'usinage détaillé."
+        : "Bu teknik resmi analiz et. Tüm kritik ölçüleri, toleransları ve yüzey pürüzlülük değerlerini dikkatlice oku ve detaylı işleme planı oluştur.";
     }
     if (additionalInfo) {
-      userMessage += ` Ek bilgiler: ${additionalInfo}`;
+      userMessage += language === "en" ? ` Additional info: ${additionalInfo}` : language === "fr" ? ` Informations supplémentaires: ${additionalInfo}` : ` Ek bilgiler: ${additionalInfo}`;
     }
     if (customerSpecs) {
-      userMessage += ` MÜŞTERİ SPECLERİ (bu gereksinimlere kesinlikle uymalısın): ${customerSpecs}`;
+      userMessage += language === "en" ? ` CUSTOMER SPECS (you must strictly comply with these requirements): ${customerSpecs}` : language === "fr" ? ` SPÉCIFICATIONS CLIENT (vous devez strictement respecter ces exigences): ${customerSpecs}` : ` MÜŞTERİ SPECLERİ (bu gereksinimlere kesinlikle uymalısın): ${customerSpecs}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
