@@ -12,19 +12,24 @@ import {
 } from "./pdfHelpers";
 import type { TimeImprovement } from "@/hooks/useTimeImprovements";
 
-const OP_LABELS: Record<string, string> = {
-  turning: "Tornalama",
-  milling: "Frezeleme",
-  drilling: "Delme",
-  grinding: "Taşlama",
-  threading: "Diş Açma",
-  other: "Diğer",
-};
+type TFn = (section: string, key: string) => string;
 
 export const exportTimeImprovementsPdf = async (
   items: TimeImprovement[],
-  factory: string
+  factory: string,
+  t?: TFn
 ) => {
+  const tr = t || ((_s: string, k: string) => k);
+
+  const OP_LABELS: Record<string, string> = {
+    turning: tr("export", "opTurning"),
+    milling: tr("export", "opMilling"),
+    drilling: tr("export", "opDrilling"),
+    grinding: tr("export", "opGrinding"),
+    threading: tr("export", "opThreading"),
+    other: tr("export", "opOther"),
+  };
+
   const doc = new jsPDF({ orientation: "landscape" });
   await registerFonts(doc);
   const ff = getFontFamily();
@@ -33,7 +38,7 @@ export const exportTimeImprovementsPdf = async (
   const margin = 14;
   const contentWidth = pageWidth - margin * 2;
 
-  let y = await drawHeader(doc, `Süre & Fiyat İyileştirmeleri - ${factory}`);
+  let y = await drawHeader(doc, `${tr("export", "improvementsTitle")} - ${factory}`);
 
   // Summary
   const totalTimeSaved = items.reduce((s, i) => s + (i.old_time_minutes - i.new_time_minutes), 0);
@@ -41,14 +46,27 @@ export const exportTimeImprovementsPdf = async (
   const totalPriceSaved = items.reduce((s, i) => s + (Number(i.old_price) - Number(i.new_price)), 0);
 
   y = drawInfoBox(doc, y, margin, contentWidth, [
-    { label: "Toplam Kayıt", value: items.length.toString() },
-    { label: "Kazanılan Süre", value: `${totalTimeSaved.toFixed(1)} dk` },
-    { label: "Ort. Süre İyileştirme", value: `%${avgTimeImpr.toFixed(1)}` },
-    { label: "Toplam Fiyat Kazancı", value: `${totalPriceSaved.toFixed(2)} ₺` },
+    { label: tr("export", "totalRecords"), value: items.length.toString() },
+    { label: tr("export", "colTimeImpr").replace(" %", ""), value: `${totalTimeSaved.toFixed(1)} ${tr("common", "minute")}` },
+    { label: tr("export", "colTimeImpr"), value: `%${avgTimeImpr.toFixed(1)}` },
+    { label: tr("export", "colPriceImpr").replace(" %", ""), value: `${totalPriceSaved.toFixed(2)} ₺` },
   ]);
 
   // Table
-  const headers = ["Tarih", "Referans", "Müşteri", "Parça", "Tezgah", "İşlem", "Eski dk", "Yeni dk", "Süre %", "Eski ₺", "Yeni ₺", "Fiyat %"];
+  const headers = [
+    tr("export", "colDate"),
+    tr("export", "colRef"),
+    tr("export", "colCustomer"),
+    tr("export", "colPart"),
+    tr("export", "colMachineCol"),
+    tr("export", "colProcess"),
+    tr("export", "colOldTime").replace(" (dk)", ""),
+    tr("export", "colNewTime").replace(" (dk)", ""),
+    tr("export", "colTimeImpr"),
+    tr("export", "colOldPrice").replace(" (₺)", ""),
+    tr("export", "colNewPrice").replace(" (₺)", ""),
+    tr("export", "colPriceImpr"),
+  ];
   const cols = [22, 22, 28, 28, 22, 18, 16, 16, 16, 18, 18, 18];
   const scale = contentWidth / cols.reduce((a, b) => a + b, 0);
   const scaled = cols.map((c) => c * scale);
@@ -77,6 +95,6 @@ export const exportTimeImprovementsPdf = async (
     ], scaled, idx % 2 === 0);
   });
 
-  drawFooter(doc, "GAGE Confidence ToolSense - Süre & Fiyat İyileştirmeleri Raporu", "Sayfa");
+  drawFooter(doc, tr("export", "pdfImprovementsFooter"), tr("pdf", "page"));
   doc.save(`iyilestirmeler_${factory.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`);
 };

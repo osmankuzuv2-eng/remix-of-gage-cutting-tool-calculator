@@ -263,8 +263,8 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName }: 
         <Button variant="outline" size="sm" onClick={async () => { await exportAnalysisPdf(analysis, t); toast.success(t("drawingAnalyzer", "reportDownloaded")); }}>
           <Download className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "downloadReport")}
         </Button>
-        <Button variant="outline" size="sm" onClick={async () => { await exportBomExcel(analysis, undefined, customerName); toast.success("Ürün ağacı Excel indirildi"); }} className="text-success border-success/30 hover:bg-success/10">
-          <FileSpreadsheet className="w-4 h-4 mr-2" />Ürün Ağacı (Excel)
+        <Button variant="outline" size="sm" onClick={async () => { await exportBomExcel(analysis, undefined, customerName, t); toast.success(t("drawingAnalyzer", "reportDownloaded")); }} className="text-success border-success/30 hover:bg-success/10">
+          <FileSpreadsheet className="w-4 h-4 mr-2" />{t("export", "bomTitle").split(" - ")[0]}
         </Button>
       </div>
 

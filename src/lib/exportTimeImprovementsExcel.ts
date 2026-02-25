@@ -1,14 +1,7 @@
 import ExcelJS from "exceljs";
 import type { TimeImprovement } from "@/hooks/useTimeImprovements";
 
-const OP_LABELS: Record<string, string> = {
-  turning: "Tornalama",
-  milling: "Frezeleme",
-  drilling: "Delme",
-  grinding: "Taşlama",
-  threading: "Diş Açma",
-  other: "Diğer",
-};
+type TFn = (section: string, key: string) => string;
 
 const brandOrange = "FFF57C00";
 const brandDark = "FF1E2332";
@@ -17,18 +10,30 @@ const brandLight = "FFF8F8FC";
 
 export const exportTimeImprovementsExcel = async (
   items: TimeImprovement[],
-  factory: string
+  factory: string,
+  t?: TFn
 ) => {
+  const tr = t || ((_s: string, k: string) => k);
+
+  const OP_LABELS: Record<string, string> = {
+    turning: tr("export", "opTurning"),
+    milling: tr("export", "opMilling"),
+    drilling: tr("export", "opDrilling"),
+    grinding: tr("export", "opGrinding"),
+    threading: tr("export", "opThreading"),
+    other: tr("export", "opOther"),
+  };
+
   const wb = new ExcelJS.Workbook();
   wb.creator = "GAGE Confidence ToolSense";
   wb.created = new Date();
 
-  const ws = wb.addWorksheet("İyileştirmeler", { properties: { defaultRowHeight: 20 } });
+  const ws = wb.addWorksheet(tr("export", "improvementsTitle"), { properties: { defaultRowHeight: 20 } });
 
   // Title
   ws.mergeCells("A1:L1");
   const titleCell = ws.getCell("A1");
-  titleCell.value = `Süre & Fiyat İyileştirmeleri - ${factory}`;
+  titleCell.value = `${tr("export", "improvementsTitle")} - ${factory}`;
   titleCell.font = { name: "Aptos", size: 14, bold: true, color: { argb: brandWhite } };
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
@@ -41,12 +46,25 @@ export const exportTimeImprovementsExcel = async (
 
   // Date row
   ws.mergeCells("A3:L3");
-  ws.getCell("A3").value = `Tarih: ${new Date().toLocaleDateString("tr-TR")}  |  Toplam Kayıt: ${items.length}`;
+  ws.getCell("A3").value = `${tr("export", "colDate")}: ${new Date().toLocaleDateString()}  |  ${tr("export", "totalRecords")}: ${items.length}`;
   ws.getCell("A3").font = { name: "Aptos", size: 10, color: { argb: "FF555555" } };
   ws.getRow(3).height = 24;
 
   // Headers
-  const headers = ["Tarih", "Referans", "Müşteri", "Parça", "Tezgah", "İşlem", "Eski Süre (dk)", "Yeni Süre (dk)", "Süre İyileştirme %", "Eski Fiyat (₺)", "Yeni Fiyat (₺)", "Fiyat İyileştirme %"];
+  const headers = [
+    tr("export", "colDate"),
+    tr("export", "colRef"),
+    tr("export", "colCustomer"),
+    tr("export", "colPart"),
+    tr("export", "colMachineCol"),
+    tr("export", "colProcess"),
+    tr("export", "colOldTime"),
+    tr("export", "colNewTime"),
+    tr("export", "colTimeImpr"),
+    tr("export", "colOldPrice"),
+    tr("export", "colNewPrice"),
+    tr("export", "colPriceImpr"),
+  ];
   const headerRow = ws.getRow(5);
   headerRow.height = 26;
   headers.forEach((h, i) => {
@@ -91,7 +109,7 @@ export const exportTimeImprovementsExcel = async (
   // Summary row
   const sumRow = ws.getRow(6 + items.length + 1);
   ws.mergeCells(`A${sumRow.number}:F${sumRow.number}`);
-  sumRow.getCell(1).value = "TOPLAM";
+  sumRow.getCell(1).value = tr("export", "total");
   sumRow.getCell(1).font = { name: "Aptos", size: 10, bold: true, color: { argb: brandWhite } };
   sumRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
   sumRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
