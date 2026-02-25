@@ -34,8 +34,11 @@ async function convertTifToJpg(file: File): Promise<File> {
 }
 
 async function convertPdfToJpg(file: File): Promise<File> {
-  const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
-  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+  const pdfjsLib = await import("pdfjs-dist");
+  const { getDocument, GlobalWorkerOptions } = pdfjsLib;
+  // Use the worker bundled with the installed package to avoid version mismatch
+  const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+  GlobalWorkerOptions.workerSrc = workerModule.default;
   const buf = await file.arrayBuffer();
   const pdf = await getDocument({ data: new Uint8Array(buf) }).promise;
   const numPages = pdf.numPages; const scale = 2; const GAP = 20;
