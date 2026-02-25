@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useMachines } from "@/hooks/useMachines";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { translations } from "@/i18n/translations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +20,7 @@ import { toast } from "sonner";
 import { exportTimeImprovementsPdf } from "@/lib/exportTimeImprovementsPdf";
 import { exportTimeImprovementsExcel } from "@/lib/exportTimeImprovementsExcel";
 
-const OPERATION_TYPES = [
-  { value: "turning", label: "Tornalama" },
-  { value: "milling", label: "Frezeleme" },
-  { value: "drilling", label: "Delme" },
-  { value: "grinding", label: "Taşlama" },
-  { value: "threading", label: "Diş Açma" },
-  { value: "other", label: "Diğer" },
-];
+const OPERATION_TYPE_KEYS = ["turning", "milling", "drilling", "grinding", "threading", "other"] as const;
 
 const FACTORIES = ["Havacılık", "Raylı Sistemler"];
 
@@ -70,6 +64,11 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
     supabase.from("profiles").select("display_name").eq("user_id", user.id).single()
       .then(({ data }) => { if (data?.display_name) setDisplayName(data.display_name); });
   }, [user]);
+
+  const OPERATION_TYPES = OPERATION_TYPE_KEYS.map((key) => ({
+    value: key,
+    label: t("improvements", `op${key.charAt(0).toUpperCase() + key.slice(1)}` as any),
+  }));
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -129,12 +128,12 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
     setUploading(true);
     const newImages: TimeImprovementImage[] = [];
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) { toast.error("Sadece resim dosyaları yüklenebilir"); continue; }
-      if (file.size > 5 * 1024 * 1024) { toast.error("Dosya 5MB'dan küçük olmalı"); continue; }
+      if (!file.type.startsWith("image/")) { toast.error(t("improvements", "imageOnlyError")); continue; }
+      if (file.size > 5 * 1024 * 1024) { toast.error(t("improvements", "imageSizeError")); continue; }
       const ext = file.name.split(".").pop();
       const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from("time-improvement-images").upload(path, file);
-      if (error) { toast.error("Yükleme hatası"); continue; }
+      if (error) { toast.error(t("improvements", "uploadError")); continue; }
       const { data: urlData } = supabase.storage.from("time-improvement-images").getPublicUrl(path);
       newImages.push({ url: urlData.publicUrl, caption: "", uploaded_at: new Date().toISOString() });
     }
@@ -149,7 +148,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
 
   const handleSave = async () => {
     if (!form.reference_code || !form.customer_name || !form.part_name || !form.old_time_minutes) {
-      toast.error("Lütfen zorunlu alanları doldurun");
+      toast.error(t("improvements", "requiredFields"));
       return;
     }
     setSaving(true);
@@ -171,18 +170,18 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
     const error = editId ? await update(editId, payload) : await add(payload as any);
     setSaving(false);
     if (!error) {
-      toast.success(editId ? "Kayıt güncellendi" : "Kayıt eklendi");
+      toast.success(editId ? t("improvements", "recordUpdated") : t("improvements", "recordSaved"));
       setDialogOpen(false);
     } else {
-      toast.error("Hata oluştu");
+      toast.error(t("improvements", "saveError"));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bu kaydı silmek istediğinize emin misiniz?")) return;
+    if (!confirm(t("improvements", "confirmDelete"))) return;
     const error = await remove(id);
-    if (!error) toast.success("Kayıt silindi");
-    else toast.error("Silme hatası");
+    if (!error) toast.success(t("improvements", "recordDeleted"));
+    else toast.error(t("improvements", "deleteError"));
   };
 
   // Build month options from data
@@ -197,6 +196,8 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
   const avgTimeImpr = filtered.length > 0 ? filtered.reduce((sum, i) => sum + Number(i.improvement_percent), 0) / filtered.length : 0;
   const totalPriceSaved = filtered.reduce((sum, i) => sum + (Number(i.old_price) - Number(i.new_price)) * ((i as any).order_quantity || 1), 0);
 
+  const monthNames = (translations as any).export?.months?.[language] || (translations as any).export?.months?.["tr"];
+
   return (
     <div className="space-y-6">
       <Card>
@@ -204,13 +205,13 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="w-5 h-5 text-primary" />
-              Parça Süre & Fiyat İyileştirmeleri
+              {t("improvements", "title")}
             </CardTitle>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsPdf(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory, t)} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsPdf(filtered, filterFactory === "all" ? t("improvements", "allFactories") : filterFactory, t)} className="gap-1.5">
                 <FileDown className="w-4 h-4" /> PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsExcel(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory, t)} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsExcel(filtered, filterFactory === "all" ? t("improvements", "allFactories") : filterFactory, t)} className="gap-1.5">
                 <FileSpreadsheet className="w-4 h-4" /> Excel
               </Button>
               <Button variant="outline" size="sm" onClick={reload}>
@@ -218,7 +219,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               </Button>
               {canRecord && (
                 <Button size="sm" onClick={openNew} className="gap-1.5">
-                  <Plus className="w-4 h-4" /> Yeni Kayıt
+                  <Plus className="w-4 h-4" /> {t("improvements", "newRecord")}
                 </Button>
               )}
             </div>
@@ -227,23 +228,23 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
         <CardContent>
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            <SummaryCard label="Toplam Kayıt" value={filtered.length.toString()} />
-            <SummaryCard label="Kazanılan Süre" value={`${totalTimeSaved.toFixed(1)} dk`} />
-            <SummaryCard label="Ort. Süre İyileştirme" value={`%${avgTimeImpr.toFixed(1)}`} />
-            <SummaryCard label="Fiyat Kazancı" value={`€${totalPriceSaved.toFixed(2)}`} />
-            <SummaryCard label="Müşteri Sayısı" value={new Set(filtered.map((i) => i.customer_name)).size.toString()} />
+            <SummaryCard label={t("improvements", "totalRecords")} value={filtered.length.toString()} />
+            <SummaryCard label={t("improvements", "timeSaved")} value={`${totalTimeSaved.toFixed(1)} ${t("common", "minute")}`} />
+            <SummaryCard label={t("improvements", "avgTimeImpr")} value={`%${avgTimeImpr.toFixed(1)}`} />
+            <SummaryCard label={t("improvements", "priceSaved")} value={`€${totalPriceSaved.toFixed(2)}`} />
+            <SummaryCard label={t("improvements", "customerCount")} value={new Set(filtered.map((i) => i.customer_name)).size.toString()} />
           </div>
 
           {/* Filters */}
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <Label className="text-sm whitespace-nowrap">Fabrika:</Label>
+              <Label className="text-sm whitespace-nowrap">{t("improvements", "filterFactory")}:</Label>
               <Select value={filterFactory} onValueChange={setFilterFactory}>
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tümü</SelectItem>
+                  <SelectItem value="all">{t("improvements", "filterAll")}</SelectItem>
                   {FACTORIES.map((f) => (
                     <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
@@ -251,13 +252,13 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm whitespace-nowrap">Müşteri:</Label>
+              <Label className="text-sm whitespace-nowrap">{t("improvements", "filterCustomer")}:</Label>
               <Select value={filterCustomer} onValueChange={setFilterCustomer}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tümü</SelectItem>
+                  <SelectItem value="all">{t("improvements", "filterAll")}</SelectItem>
                   {[...new Set(improvements.map((i) => i.customer_name))].map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
@@ -265,16 +266,15 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm whitespace-nowrap">Ay:</Label>
+              <Label className="text-sm whitespace-nowrap">{t("improvements", "filterMonth")}:</Label>
               <Select value={filterMonth} onValueChange={setFilterMonth}>
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tümü</SelectItem>
+                  <SelectItem value="all">{t("improvements", "filterAll")}</SelectItem>
                   {monthOptions.map((m) => {
                     const [y, mo] = m.split("-");
-                    const monthNames = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
                     return <SelectItem key={m} value={m}>{monthNames[parseInt(mo) - 1]} {y}</SelectItem>;
                   })}
                 </SelectContent>
@@ -285,27 +285,27 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
           ) : filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Henüz kayıt bulunmuyor</p>
+            <p className="text-center text-muted-foreground py-8">{t("improvements", "noRecords")}</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tarih</TableHead>
-                    <TableHead>Fabrika</TableHead>
-                    <TableHead>Referans</TableHead>
-                    <TableHead>Müşteri</TableHead>
-                    <TableHead>Parça</TableHead>
-                    <TableHead>Tezgah</TableHead>
-                    <TableHead>İşlem</TableHead>
-                    <TableHead className="text-right">Eski dk</TableHead>
-                    <TableHead className="text-right">Yeni dk</TableHead>
-                    <TableHead className="text-right">Süre %</TableHead>
-                    <TableHead className="text-right">Eski ₺</TableHead>
-                    <TableHead className="text-right">Yeni ₺</TableHead>
-                    <TableHead className="text-right">Fiyat %</TableHead>
-                    <TableHead>Resim</TableHead>
-                    <TableHead>Kaydeden</TableHead>
+                    <TableHead>{t("improvements", "colDate")}</TableHead>
+                    <TableHead>{t("improvements", "colFactory")}</TableHead>
+                    <TableHead>{t("improvements", "colRef")}</TableHead>
+                    <TableHead>{t("improvements", "colCustomer")}</TableHead>
+                    <TableHead>{t("improvements", "colPart")}</TableHead>
+                    <TableHead>{t("improvements", "colMachine")}</TableHead>
+                    <TableHead>{t("improvements", "colProcess")}</TableHead>
+                    <TableHead className="text-right">{t("improvements", "colOldMin")}</TableHead>
+                    <TableHead className="text-right">{t("improvements", "colNewMin")}</TableHead>
+                    <TableHead className="text-right">{t("improvements", "colTimePercent")}</TableHead>
+                    <TableHead className="text-right">{t("improvements", "colOldPrice")}</TableHead>
+                    <TableHead className="text-right">{t("improvements", "colNewPrice")}</TableHead>
+                    <TableHead className="text-right">{t("improvements", "colPricePercent")}</TableHead>
+                    <TableHead>{t("improvements", "colImage")}</TableHead>
+                    <TableHead>{t("improvements", "colSavedBy")}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -328,7 +328,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                       <TableCell className="text-right font-mono">{item.old_time_minutes}</TableCell>
                       <TableCell className="text-right font-mono">{item.new_time_minutes}</TableCell>
                       <TableCell className="text-right">
-                        <span className="flex items-center justify-end gap-1 text-green-600 font-semibold">
+                        <span className="flex items-center justify-end gap-1 text-success font-semibold">
                           <ArrowDownRight className="w-3 h-3" />
                           %{Number(item.improvement_percent).toFixed(1)}
                         </span>
@@ -337,7 +337,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                       <TableCell className="text-right font-mono">{Number(item.new_price).toFixed(2)}</TableCell>
                       <TableCell className="text-right">
                         {Number(item.old_price) > 0 ? (
-                          <span className="flex items-center justify-end gap-1 text-green-600 font-semibold">
+                          <span className="flex items-center justify-end gap-1 text-success font-semibold">
                             <ArrowDownRight className="w-3 h-3" />
                             %{Number(item.price_improvement_percent).toFixed(1)}
                           </span>
@@ -384,7 +384,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{editId ? "Kaydı Düzenle" : "Yeni İyileştirme Kaydı"}</DialogTitle>
+              <DialogTitle>{editId ? t("improvements", "editRecord") : t("improvements", "newImprovement")}</DialogTitle>
               <div className="flex gap-1.5">
                 {FACTORIES.map((f) => (
                   <Button
@@ -402,17 +402,17 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Referans Kodu *</Label>
+              <Label>{t("improvements", "referenceCode")}</Label>
               <Input value={form.reference_code} onChange={(e) => setForm((p) => ({ ...p, reference_code: e.target.value }))} placeholder="REF-001" />
             </div>
             <div>
-              <Label>Tarih *</Label>
+              <Label>{t("improvements", "date")}</Label>
               <Input type="date" value={form.improvement_date} onChange={(e) => setForm((p) => ({ ...p, improvement_date: e.target.value }))} />
             </div>
             <div>
-              <Label>Müşteri *</Label>
+              <Label>{t("improvements", "customer")}</Label>
               <Select value={form.customer_name} onValueChange={(v) => setForm((p) => ({ ...p, customer_name: v }))}>
-                <SelectTrigger><SelectValue placeholder="Müşteri seçin" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("improvements", "selectCustomer")} /></SelectTrigger>
                 <SelectContent>
                   {activeCustomers.map((c) => (
                     <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
@@ -421,9 +421,9 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               </Select>
             </div>
             <div>
-              <Label>Tezgah</Label>
+              <Label>{t("improvements", "machine")}</Label>
               <Select value={form.machine_id} onValueChange={handleMachineChange}>
-                <SelectTrigger><SelectValue placeholder="Tezgah seçin" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("improvements", "selectMachine")} /></SelectTrigger>
                 <SelectContent>
                   {machines.map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
@@ -432,11 +432,11 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               </Select>
             </div>
             <div>
-              <Label>Parça Adı *</Label>
+              <Label>{t("improvements", "partName")}</Label>
               <Input value={form.part_name} onChange={(e) => setForm((p) => ({ ...p, part_name: e.target.value }))} />
             </div>
             <div>
-              <Label>İşlem Tipi</Label>
+              <Label>{t("improvements", "operationType")}</Label>
               <Select value={form.operation_type} onValueChange={(v) => setForm((p) => ({ ...p, operation_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -447,18 +447,18 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               </Select>
             </div>
             <div>
-              <Label>Sipariş Miktarı</Label>
+              <Label>{t("improvements", "orderQty")}</Label>
               <Input type="number" min={1} value={form.order_quantity || 1} onChange={(e) => setForm((p) => ({ ...p, order_quantity: Number(e.target.value) }))} />
             </div>
 
             {/* Time fields - side by side */}
             <div className="md:col-span-2 grid grid-cols-2 gap-4">
               <div>
-                <Label>Eski Süre (dk) *</Label>
+                <Label>{t("improvements", "oldTime")}</Label>
                 <Input type="number" min={0} value={form.old_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, old_time_minutes: Number(e.target.value) }))} />
               </div>
               <div>
-                <Label>Yeni Süre (dk) *</Label>
+                <Label>{t("improvements", "newTime")}</Label>
                 <Input type="number" min={0} value={form.new_time_minutes || ""} onChange={(e) => setForm((p) => ({ ...p, new_time_minutes: Number(e.target.value) }))} />
               </div>
             </div>
@@ -466,11 +466,11 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
             {/* Price fields - side by side */}
             <div className="md:col-span-2 grid grid-cols-2 gap-4">
               <div>
-                <Label>Eski Fiyat (€)</Label>
+                <Label>{t("improvements", "oldPrice")}</Label>
                 <Input type="number" min={0} step="0.01" value={form.old_price || ""} onChange={(e) => setForm((p) => ({ ...p, old_price: Number(e.target.value) }))} />
               </div>
               <div>
-                <Label>Yeni Fiyat (€)</Label>
+                <Label>{t("improvements", "newPrice")}</Label>
                 <Input type="number" min={0} step="0.01" value={form.new_price || ""} onChange={(e) => setForm((p) => ({ ...p, new_price: Number(e.target.value) }))} />
               </div>
             </div>
@@ -478,7 +478,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
             {/* Team Members */}
             <div className="md:col-span-2">
               <Label className="flex items-center gap-1.5 mb-2">
-                <User className="w-4 h-4" /> Proje Ekibi (max 5 kişi)
+                <User className="w-4 h-4" /> {t("improvements", "projectTeam")}
               </Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.team_members.map((name, idx) => (
@@ -493,7 +493,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               {form.team_members.length < 5 && (
                 <div className="flex gap-2">
                   <Input
-                    placeholder="İsim girin..."
+                    placeholder={t("improvements", "enterName")}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -520,21 +520,21 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
             </div>
 
             <div className="md:col-span-2">
-              <Label>Yapılan İyileştirmeler</Label>
-              <Textarea value={form.improvement_details} onChange={(e) => setForm((p) => ({ ...p, improvement_details: e.target.value }))} placeholder="Hangi değişiklikler yapıldı?" rows={2} />
+              <Label>{t("improvements", "improvements")}</Label>
+              <Textarea value={form.improvement_details} onChange={(e) => setForm((p) => ({ ...p, improvement_details: e.target.value }))} placeholder={t("improvements", "improvementsPlaceholder")} rows={2} />
             </div>
             <div>
-              <Label>Takım Değişiklikleri</Label>
-              <Textarea value={form.tool_changes} onChange={(e) => setForm((p) => ({ ...p, tool_changes: e.target.value }))} placeholder="Kullanılan yeni takımlar..." rows={2} />
+              <Label>{t("improvements", "toolChanges")}</Label>
+              <Textarea value={form.tool_changes} onChange={(e) => setForm((p) => ({ ...p, tool_changes: e.target.value }))} placeholder={t("improvements", "toolChangesPlaceholder")} rows={2} />
             </div>
             <div>
-              <Label>Parametre Değişiklikleri</Label>
-              <Textarea value={form.parameter_changes} onChange={(e) => setForm((p) => ({ ...p, parameter_changes: e.target.value }))} placeholder="Değiştirilen parametreler..." rows={2} />
+              <Label>{t("improvements", "paramChanges")}</Label>
+              <Textarea value={form.parameter_changes} onChange={(e) => setForm((p) => ({ ...p, parameter_changes: e.target.value }))} placeholder={t("improvements", "paramChangesPlaceholder")} rows={2} />
             </div>
             {/* Image Upload */}
             <div className="md:col-span-2">
               <Label className="flex items-center gap-1.5 mb-2">
-                <ImageIcon className="w-4 h-4" /> Resimler
+                <ImageIcon className="w-4 h-4" /> {t("improvements", "images")}
               </Label>
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
               <div className="flex flex-wrap gap-2 mb-2">
@@ -548,12 +548,12 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                 ))}
                 <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-20 h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
                   {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
-                  <span className="text-[10px]">{uploading ? "Yükleniyor" : "Ekle"}</span>
+                  <span className="text-[10px]">{uploading ? t("improvements", "uploading") : t("improvements", "addImage")}</span>
                 </button>
               </div>
             </div>
             <div className="md:col-span-2">
-              <Label>Notlar</Label>
+              <Label>{t("improvements", "notes")}</Label>
               <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} rows={2} />
             </div>
 
@@ -563,14 +563,14 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
                 <div className="flex items-center gap-4 text-sm flex-wrap">
                   {form.old_time_minutes > 0 && form.new_time_minutes > 0 && (
                     <>
-                      <span>Süre Kazancı: <strong className="text-green-600">{(form.old_time_minutes - form.new_time_minutes).toFixed(1)} dk</strong></span>
-                      <span>Süre İyileştirme: <strong className="text-green-600">%{((1 - form.new_time_minutes / form.old_time_minutes) * 100).toFixed(1)}</strong></span>
+                      <span>{t("improvements", "timeSavings")}: <strong className="text-success">{(form.old_time_minutes - form.new_time_minutes).toFixed(1)} {t("common", "minute")}</strong></span>
+                      <span>{t("improvements", "timeImprLabel")}: <strong className="text-success">%{((1 - form.new_time_minutes / form.old_time_minutes) * 100).toFixed(1)}</strong></span>
                     </>
                   )}
                   {form.old_price > 0 && form.new_price > 0 && (
                     <>
-                      <span>Fiyat Kazancı: <strong className="text-green-600">{(form.old_price - form.new_price).toFixed(2)} ₺</strong></span>
-                      <span>Fiyat İyileştirme: <strong className="text-green-600">%{((1 - form.new_price / form.old_price) * 100).toFixed(1)}</strong></span>
+                      <span>{t("improvements", "priceGain")}: <strong className="text-success">{(form.old_price - form.new_price).toFixed(2)} ₺</strong></span>
+                      <span>{t("improvements", "priceImprLabel")}: <strong className="text-success">%{((1 - form.new_price / form.old_price) * 100).toFixed(1)}</strong></span>
                     </>
                   )}
                 </div>
@@ -578,10 +578,10 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
             )}
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>İptal</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("common", "cancel")}</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
-              {editId ? "Güncelle" : "Kaydet"}
+              {editId ? t("common", "save") : t("common", "save")}
             </Button>
           </div>
         </DialogContent>
@@ -590,7 +590,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
       {/* Image Preview Dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-3xl p-2">
-          {previewImage && <img src={previewImage} alt="Önizleme" className="w-full h-auto rounded-lg" />}
+          {previewImage && <img src={previewImage} alt={t("improvements", "preview")} className="w-full h-auto rounded-lg" />}
         </DialogContent>
       </Dialog>
     </div>
@@ -605,3 +605,4 @@ const SummaryCard = ({ label, value }: { label: string; value: string }) => (
 );
 
 export default TimeImprovements;
+
