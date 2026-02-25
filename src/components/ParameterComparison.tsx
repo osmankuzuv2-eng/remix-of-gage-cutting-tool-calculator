@@ -93,7 +93,7 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
       <Collapsible className="mb-6">
         <CollapsibleTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm text-muted-foreground hover:text-foreground transition-colors w-full group">
           <Info className="w-4 h-4 text-primary" />
-          <span className="flex-1 text-left font-medium">Genel Skor Nasıl Hesaplanır?</span>
+          <span className="flex-1 text-left font-medium">{t("comparison", "scoreExplanationTitle")}</span>
           <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2">
@@ -101,38 +101,38 @@ const ParameterComparison = ({ customMaterials }: ParameterComparisonProps) => {
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-primary" />
-                <span className="text-sm font-medium text-foreground">Hız Verimliliği</span>
+                <span className="text-sm font-medium text-foreground">{t("comparison", "speedEffLabel")}</span>
                 <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%25</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">Girilen kesme hızının, malzemenin önerilen maksimum hızına oranı. Yüksek oran = malzeme kapasitesinin iyi kullanımı.</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t("comparison", "speedEffDesc")}</p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-primary" />
-                <span className="text-sm font-medium text-foreground">Takım Ömrü</span>
+                <span className="text-sm font-medium text-foreground">{t("comparison", "toolLifeScoreLabel")}</span>
                 <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%30</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">Taylor formülüyle hesaplanan takım ömrünün 60 dk referansa oranı. Uzun ömür = daha az takım değişimi ve maliyet.</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t("comparison", "toolLifeScoreDesc")}</p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                <span className="text-sm font-medium text-foreground">MRR (Talaş Kaldırma)</span>
+                <span className="text-sm font-medium text-foreground">{t("comparison", "mrrScoreLabel")}</span>
                 <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%30</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">Birim zamanda kaldırılan talaş hacmi (cm³/dk). 50 cm³/dk referansa oranlanır. Yüksek MRR = yüksek üretkenlik.</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t("comparison", "mrrScoreDesc")}</p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-primary" />
-                <span className="text-sm font-medium text-foreground">Güç Verimliliği</span>
+                <span className="text-sm font-medium text-foreground">{t("comparison", "powerScoreLabel")}</span>
                 <span className="text-xs font-bold ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">%15</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">Düşük güç tüketimi yüksek skor alır. Enerji verimliliğini ödüllendirerek işleme maliyetini düşürmeyi hedefler.</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t("comparison", "powerScoreDesc")}</p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2 px-1">
-            <strong>Formül:</strong> Genel Skor = Hız×0.25 + Ömür×0.30 + MRR×0.30 + Güç×0.15 — En yüksek skoru alan senaryo 🏆 ile işaretlenir.
+            <strong>{t("common", "formula") || "Formül"}:</strong> {t("comparison", "scoreFormula")}
           </p>
         </CollapsibleContent>
       </Collapsible>

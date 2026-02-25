@@ -220,6 +220,16 @@ export const translations = {
     mrrLabel: { tr: "MRR (cm³/dk)", en: "MRR (cm³/min)", fr: "MRR (cm³/min)" },
     toolLifeLabel: { tr: "Takım Ömrü (dk)", en: "Tool Life (min)", fr: "Durée outil (min)" },
     powerLabel: { tr: "Güç (kW)", en: "Power (kW)", fr: "Puissance (kW)" },
+    scoreExplanationTitle: { tr: "Genel Skor Nasıl Hesaplanır?", en: "How Is the Overall Score Calculated?", fr: "Comment le score global est-il calculé ?" },
+    speedEffLabel: { tr: "Hız Verimliliği", en: "Speed Efficiency", fr: "Efficacité de vitesse" },
+    speedEffDesc: { tr: "Girilen kesme hızının, malzemenin önerilen maksimum hızına oranı. Yüksek oran = malzeme kapasitesinin iyi kullanımı.", en: "Ratio of entered cutting speed to the material's recommended max speed. High ratio = good utilization of material capacity.", fr: "Rapport entre la vitesse de coupe saisie et la vitesse maximale recommandée du matériau. Ratio élevé = bonne utilisation de la capacité." },
+    toolLifeScoreLabel: { tr: "Takım Ömrü", en: "Tool Life", fr: "Durée de l'outil" },
+    toolLifeScoreDesc: { tr: "Taylor formülüyle hesaplanan takım ömrünün 60 dk referansa oranı. Uzun ömür = daha az takım değişimi ve maliyet.", en: "Ratio of tool life (calculated via Taylor's formula) to a 60-min reference. Longer life = fewer tool changes and lower cost.", fr: "Rapport de la durée de vie de l'outil (calculée par la formule de Taylor) à une référence de 60 min. Durée plus longue = moins de changements et coût réduit." },
+    mrrScoreLabel: { tr: "MRR (Talaş Kaldırma)", en: "MRR (Material Removal Rate)", fr: "MRR (Taux d'enlèvement)" },
+    mrrScoreDesc: { tr: "Birim zamanda kaldırılan talaş hacmi (cm³/dk). 50 cm³/dk referansa oranlanır. Yüksek MRR = yüksek üretkenlik.", en: "Volume of material removed per unit time (cm³/min) relative to a 50 cm³/min reference. Higher MRR = higher productivity.", fr: "Volume de matière enlevée par unité de temps (cm³/min) par rapport à une référence de 50 cm³/min. MRR élevé = productivité accrue." },
+    powerScoreLabel: { tr: "Güç Verimliliği", en: "Power Efficiency", fr: "Efficacité énergétique" },
+    powerScoreDesc: { tr: "Düşük güç tüketimi yüksek skor alır. Enerji verimliliğini ödüllendirerek işleme maliyetini düşürmeyi hedefler.", en: "Lower power consumption earns a higher score. Rewards energy efficiency to reduce machining costs.", fr: "Une consommation d'énergie plus faible donne un score plus élevé. Récompense l'efficacité énergétique pour réduire les coûts d'usinage." },
+    scoreFormula: { tr: "Genel Skor = Hız×0.25 + Ömür×0.30 + MRR×0.30 + Güç×0.15 — En yüksek skoru alan senaryo 🏆 ile işaretlenir.", en: "Overall Score = Speed×0.25 + Life×0.30 + MRR×0.30 + Power×0.15 — The scenario with the highest score is marked with 🏆.", fr: "Score global = Vitesse×0.25 + Durée×0.30 + MRR×0.30 + Puissance×0.15 — Le scénario avec le score le plus élevé est marqué 🏆." },
   },
 
   // ─── Material List ───
