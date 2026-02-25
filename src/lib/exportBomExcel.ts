@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import type { Language } from "@/i18n/translations";
 
 interface Operation {
   step: number;
@@ -26,31 +27,33 @@ interface AnalysisResult {
   machinesRequired: string[];
 }
 
+type TFn = (section: string, key: string) => string;
+
 export const exportBomExcel = async (
   analysis: AnalysisResult,
   referenceName?: string,
-  customerName?: string
+  customerName?: string,
+  t?: TFn
 ) => {
+  const tr = t || ((_s: string, k: string) => k);
   const wb = new ExcelJS.Workbook();
   wb.creator = "GAGE Confidence ToolSense";
   wb.created = new Date();
 
-  const ws = wb.addWorksheet("Ürün Ağacı (BOM)", {
-    properties: { defaultRowHeight: 20 },
-  });
-
-  // ── Brand colors ──
   const brandOrange = "FFF57C00";
   const brandDark = "FF1E2332";
   const brandWhite = "FFFFFFFF";
   const brandLight = "FFF8F8FC";
   const brandMuted = "FF8C8CA0";
 
-  // ── Header Section ──
+  const ws = wb.addWorksheet(tr("export", "colOperation"), {
+    properties: { defaultRowHeight: 20 },
+  });
+
   // Row 1: Title
   ws.mergeCells("A1:J1");
   const titleCell = ws.getCell("A1");
-  titleCell.value = "ÜRÜN AĞACI (BOM) - GAGE Confidence";
+  titleCell.value = tr("export", "bomTitle");
   titleCell.font = { name: "Aptos", size: 16, bold: true, color: { argb: brandWhite } };
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
@@ -66,11 +69,11 @@ export const exportBomExcel = async (
   ws.mergeCells("A3:E3");
   ws.mergeCells("F3:J3");
   const refCell = ws.getCell("A3");
-  refCell.value = `Referans: ${referenceName || analysis.partName}`;
+  refCell.value = `${tr("export", "reference")}: ${referenceName || analysis.partName}`;
   refCell.font = { name: "Aptos", size: 11, bold: true, color: { argb: brandDark } };
   refCell.alignment = { vertical: "middle" };
   const custCell = ws.getCell("F3");
-  custCell.value = `Müşteri: ${customerName || "-"}`;
+  custCell.value = `${tr("export", "customer")}: ${customerName || "-"}`;
   custCell.font = { name: "Aptos", size: 11, bold: true, color: { argb: brandDark } };
   custCell.alignment = { vertical: "middle" };
   ws.getRow(3).height = 26;
@@ -79,10 +82,10 @@ export const exportBomExcel = async (
   ws.mergeCells("A4:E4");
   ws.mergeCells("F4:J4");
   const partCell = ws.getCell("A4");
-  partCell.value = `Malzeme: ${analysis.material}`;
+  partCell.value = `${tr("export", "material")}: ${analysis.material}`;
   partCell.font = { name: "Aptos", size: 10, color: { argb: "FF555555" } };
   const dimCell = ws.getCell("F4");
-  dimCell.value = `Ebat: ${analysis.overallDimensions}`;
+  dimCell.value = `${tr("export", "dimensions")}: ${analysis.overallDimensions}`;
   dimCell.font = { name: "Aptos", size: 10, color: { argb: "FF555555" } };
   ws.getRow(4).height = 22;
 
@@ -90,21 +93,24 @@ export const exportBomExcel = async (
   ws.mergeCells("A5:E5");
   ws.mergeCells("F5:J5");
   const dateCell = ws.getCell("A5");
-  dateCell.value = `Tarih: ${new Date().toLocaleDateString("tr-TR")}`;
+  dateCell.value = `${tr("export", "date")}: ${new Date().toLocaleDateString()}`;
   dateCell.font = { name: "Aptos", size: 10, color: { argb: "FF555555" } };
   const compCell = ws.getCell("F5");
-  compCell.value = `Karmaşıklık: ${analysis.complexity}`;
+  compCell.value = `${tr("export", "complexity")}: ${analysis.complexity}`;
   compCell.font = { name: "Aptos", size: 10, color: { argb: "FF555555" } };
   ws.getRow(5).height = 22;
 
-  // Row 6: empty spacer
   ws.getRow(6).height = 8;
 
-  // ── Table Header (Row 7) ──
+  // Table Header (Row 7)
   const headers = [
-    "Sıra", "Operasyon", "Tezgah", "Takım",
+    tr("export", "colStep"),
+    tr("export", "colOperation"),
+    tr("export", "colMachine"),
+    tr("export", "colTool"),
     "Vc (m/dk)", "n (d/dk)", "f (mm/dev)", "ap (mm)",
-    "Süre (dk)", "Notlar"
+    tr("export", "colTime"),
+    tr("export", "colNotes"),
   ];
 
   const headerRow = ws.getRow(7);
@@ -115,102 +121,70 @@ export const exportBomExcel = async (
     cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: brandWhite } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cell.border = {
-      bottom: { style: "medium", color: { argb: brandOrange } },
-    };
+    cell.border = { bottom: { style: "medium", color: { argb: brandOrange } } };
   });
 
-  // ── Data Rows ──
+  // Data Rows
   analysis.operations.forEach((op, idx) => {
     const rowNum = 8 + idx;
     const row = ws.getRow(rowNum);
     row.height = 24;
-
     const values = [
-      op.step,
-      op.operation,
-      op.machine,
-      op.tool,
-      op.cuttingSpeed,
-      op.spindleSpeed || "-",
-      op.feedRate,
-      op.depthOfCut,
-      op.estimatedTime,
-      op.notes,
+      op.step, op.operation, op.machine, op.tool,
+      op.cuttingSpeed, op.spindleSpeed || "-", op.feedRate,
+      op.depthOfCut, op.estimatedTime, op.notes,
     ];
-
     values.forEach((val, i) => {
       const cell = row.getCell(i + 1);
       cell.value = val;
       cell.font = { name: "Aptos", size: 10, color: { argb: "FF333340" } };
       cell.alignment = { horizontal: i === 0 ? "center" : "left", vertical: "middle", wrapText: true };
-
       if (idx % 2 === 0) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandLight } };
       }
-
-      cell.border = {
-        bottom: { style: "thin", color: { argb: "FFDCDCE6" } },
-      };
+      cell.border = { bottom: { style: "thin", color: { argb: "FFDCDCE6" } } };
     });
-
-    // Bold step number
-    row.getCell(1).font = { name: "Aptos", size: 10, bold: true, color: { argb: brandOrange.slice(2) ? brandOrange : "FFF57C00" } };
-    // Bold time
+    row.getCell(1).font = { name: "Aptos", size: 10, bold: true, color: { argb: brandOrange } };
     row.getCell(9).font = { name: "Aptos", size: 10, bold: true, color: { argb: brandOrange } };
   });
 
-  // ── Summary Rows ──
+  // Summary Rows
   const spacerRowNum = 8 + analysis.operations.length;
   ws.getRow(spacerRowNum).height = 6;
 
-  // Setup row (above total)
   const setupRowNum = spacerRowNum + 1;
   const setupRow = ws.getRow(setupRowNum);
   setupRow.height = 26;
   ws.mergeCells(`A${setupRowNum}:J${setupRowNum}`);
   const setupCell = setupRow.getCell(1);
-  setupCell.value = `HAZIRLIK SÜRESİ:  ${analysis.setupTime} dk`;
+  setupCell.value = `${tr("export", "setupTimeLabel")}:  ${analysis.setupTime} ${tr("common", "minute")}`;
   setupCell.font = { name: "Aptos", size: 10, bold: true, color: { argb: brandWhite } };
   setupCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2D3348" } };
   setupCell.alignment = { horizontal: "center", vertical: "middle" };
 
-  // Total row
   const totalRowNum = setupRowNum + 1;
   const totalRow = ws.getRow(totalRowNum);
   totalRow.height = 30;
   ws.mergeCells(`A${totalRowNum}:J${totalRowNum}`);
   const totalCell = totalRow.getCell(1);
-  totalCell.value = `TOPLAM ÜRETİM SÜRESİ:  ${analysis.totalEstimatedTime} dk`;
+  totalCell.value = `${tr("export", "totalTimeLabel")}:  ${analysis.totalEstimatedTime} ${tr("common", "minute")}`;
   totalCell.font = { name: "Aptos", size: 13, bold: true, color: { argb: brandOrange } };
   totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: brandDark } };
   totalCell.alignment = { horizontal: "center", vertical: "middle" };
 
-  const summaryRowNum = totalRowNum;
-
-  // ── Column Widths ──
   ws.columns = [
-    { width: 7 },   // Sıra
-    { width: 28 },  // Operasyon
-    { width: 22 },  // Tezgah
-    { width: 28 },  // Takım
-    { width: 13 },  // Vc
-    { width: 13 },  // n
-    { width: 13 },  // f
-    { width: 12 },  // ap
-    { width: 13 },  // Süre
-    { width: 35 },  // Notlar
+    { width: 7 }, { width: 28 }, { width: 22 }, { width: 28 },
+    { width: 13 }, { width: 13 }, { width: 13 }, { width: 12 },
+    { width: 13 }, { width: 35 },
   ];
 
-  // ── Footer ──
-  const footerRowNum = summaryRowNum + 2;
+  const footerRowNum = totalRowNum + 2;
   ws.mergeCells(`A${footerRowNum}:J${footerRowNum}`);
   const footerCell = ws.getCell(`A${footerRowNum}`);
-  footerCell.value = "Bu belge GAGE Confidence ToolSense tarafından otomatik oluşturulmuştur.";
+  footerCell.value = tr("export", "autoGenerated");
   footerCell.font = { name: "Aptos", size: 8, italic: true, color: { argb: brandMuted } };
   footerCell.alignment = { horizontal: "center" };
 
-  // ── Download ──
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);

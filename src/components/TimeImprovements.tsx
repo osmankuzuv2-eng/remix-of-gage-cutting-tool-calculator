@@ -62,7 +62,7 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
   const { user } = useAuth();
   const { activeCustomers } = useCustomers();
   const { machines, getMachineLabel } = useMachines();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [displayName, setDisplayName] = useState<string>("");
 
   useEffect(() => {
@@ -207,10 +207,10 @@ const TimeImprovements = ({ isAdmin, canRecord = true }: Props) => {
               Parça Süre & Fiyat İyileştirmeleri
             </CardTitle>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsPdf(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory)} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsPdf(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory, t)} className="gap-1.5">
                 <FileDown className="w-4 h-4" /> PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsExcel(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory)} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => exportTimeImprovementsExcel(filtered, filterFactory === "all" ? "Tüm Fabrikalar" : filterFactory, t)} className="gap-1.5">
                 <FileSpreadsheet className="w-4 h-4" /> Excel
               </Button>
               <Button variant="outline" size="sm" onClick={reload}>

@@ -138,8 +138,8 @@ const CurrencyRateTracker = () => {
     };
   }, [historical2025, forecast2026]);
 
-  const handleExport2025 = () => exportCurrencyExcel(historical2025, 2025, false);
-  const handleExport2026 = () => exportCurrencyExcel(forecast2026, 2026, true);
+  const handleExport2025 = () => exportCurrencyExcel(historical2025, 2025, false, t, language);
+  const handleExport2026 = () => exportCurrencyExcel(forecast2026, 2026, true, t, language);
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
