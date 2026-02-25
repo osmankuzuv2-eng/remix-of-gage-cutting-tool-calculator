@@ -147,7 +147,7 @@ const complexityColor = (c: string) => {
 
 // ─── Result Card (collapsible) ───
 
-const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) => {
+const FeedbackForm = ({ item, userId, t }: { item: DrawingItem; userId: string; t: (s: string, k: string) => string }) => {
   const [showForm, setShowForm] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackType, setFeedbackType] = useState("correction");
@@ -169,12 +169,12 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
         rating,
       } as any);
       if (error) throw error;
-      toast.success("Geri bildirim gönderildi");
+      toast.success(t("drawingAnalyzer", "feedbackSent"));
       setFeedbackText("");
       setRating(0);
       setShowForm(false);
     } catch (err: any) {
-      toast.error("Geri bildirim gönderilemedi: " + err.message);
+      toast.error(t("drawingAnalyzer", "feedbackError") + ": " + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -183,7 +183,7 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
   if (!showForm) {
     return (
       <Button variant="outline" size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
-        <MessageSquarePlus className="w-4 h-4" /> Geri Bildirim
+        <MessageSquarePlus className="w-4 h-4" /> {t("drawingAnalyzer", "feedbackButton")}
       </Button>
     );
   }
@@ -192,7 +192,7 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
     <Card className="bg-secondary/20 border-border">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-foreground">AI Eğitim Geri Bildirimi</p>
+          <p className="text-sm font-medium text-foreground">{t("drawingAnalyzer", "feedbackTitle")}</p>
           <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>✕</Button>
         </div>
         <Select value={feedbackType} onValueChange={setFeedbackType}>
@@ -200,14 +200,14 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="correction">Düzeltme (Parametre/Süre Hatası)</SelectItem>
-            <SelectItem value="missing">Eksik İşlem/Detay</SelectItem>
-            <SelectItem value="strategy">Strateji Önerisi</SelectItem>
-            <SelectItem value="other">Diğer</SelectItem>
+            <SelectItem value="correction">{t("drawingAnalyzer", "feedbackCorrection")}</SelectItem>
+            <SelectItem value="missing">{t("drawingAnalyzer", "feedbackMissing")}</SelectItem>
+            <SelectItem value="strategy">{t("drawingAnalyzer", "feedbackStrategy")}</SelectItem>
+            <SelectItem value="other">{t("drawingAnalyzer", "feedbackOther")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Analiz Kalitesi</p>
+          <p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "feedbackQuality")}</p>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -233,15 +233,15 @@ const FeedbackForm = ({ item, userId }: { item: DrawingItem; userId: string }) =
         <Textarea
           value={feedbackText}
           onChange={(e) => setFeedbackText(e.target.value)}
-          placeholder="Örn: Kaba tornalama için Vc=250 yerine 200 kullanılmalı, malzeme sert..."
+          placeholder={t("drawingAnalyzer", "feedbackPlaceholder")}
           rows={3}
           className="bg-background"
         />
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>İptal</Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>{t("drawingAnalyzer", "feedbackCancel")}</Button>
           <Button size="sm" onClick={handleSubmit} disabled={submitting || !feedbackText.trim() || rating === 0}>
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
-            Gönder
+            {t("drawingAnalyzer", "feedbackSend")}
           </Button>
         </div>
       </CardContent>
@@ -254,7 +254,7 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName }: 
   return (
     <div className="space-y-4 pt-2">
       <div className="flex justify-end gap-2 flex-wrap">
-        {userId && <FeedbackForm item={item} userId={userId} />}
+        {userId && <FeedbackForm item={item} userId={userId} t={t} />}
         {canSave && (
           <Button variant="outline" size="sm" onClick={() => onSave(item)}>
             <Save className="w-4 h-4 mr-2" />{t("drawingAnalyzer", "saveResult")}
@@ -344,7 +344,7 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName }: 
              {analysis.clampingStrategy && (<div><p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "clampingStrategy")}</p><p className="text-sm text-foreground">{analysis.clampingStrategy}</p></div>)}
              {analysis.clampingDetails && analysis.clampingDetails.length > 0 && (
                <div className="space-y-2">
-                 <p className="text-xs text-muted-foreground font-medium">{t("drawingAnalyzer", "clampingDetails") || "Bağlama Detayları"}</p>
+                 <p className="text-xs text-muted-foreground font-medium">{t("drawingAnalyzer", "clampingDetails")}</p>
                  {analysis.clampingDetails.map((cd, i) => (
                    <div key={i} className="p-2 rounded-md bg-secondary/30 border border-border/50 space-y-1">
                      <div className="flex items-center gap-2">
@@ -352,19 +352,19 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName }: 
                        <span className="text-xs font-medium text-foreground">{cd.clampingType}</span>
                      </div>
                      <p className="text-xs text-muted-foreground">{cd.description}</p>
-                     <div className="flex gap-3 text-xs">
-                       <span className="text-primary">⏱ Bağlama: {cd.clampingTime} dk</span>
-                       <span className="text-primary">⏱ Çözme: {cd.unclampingTime} dk</span>
-                     </div>
+                      <div className="flex gap-3 text-xs">
+                        <span className="text-primary">⏱ {t("drawingAnalyzer", "clampingTime")}: {cd.clampingTime} {t("common", "minute")}</span>
+                        <span className="text-primary">⏱ {t("drawingAnalyzer", "unclampingTime")}: {cd.unclampingTime} {t("common", "minute")}</span>
+                      </div>
                      {cd.notes && <p className="text-[10px] text-muted-foreground italic">{cd.notes}</p>}
                    </div>
                  ))}
-                 {analysis.totalClampingTime && (
-                   <div className="flex items-center gap-2 pt-1">
-                     <span className="text-xs text-muted-foreground">Toplam Bağlama Süresi:</span>
-                     <span className="text-sm font-semibold text-primary">{analysis.totalClampingTime} dk</span>
-                   </div>
-                 )}
+                  {analysis.totalClampingTime && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-xs text-muted-foreground">{t("drawingAnalyzer", "totalClampingTime")}:</span>
+                      <span className="text-sm font-semibold text-primary">{analysis.totalClampingTime} {t("common", "minute")}</span>
+                    </div>
+                  )}
                </div>
              )}
              <div><p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "difficultyNotes")}</p><p className="text-sm text-foreground">{analysis.difficultyNotes}</p></div>
@@ -466,7 +466,7 @@ const DrawingAnalyzer = () => {
     }
     setIsAnalyzingAll(false);
     setCurrentAnalyzing(0);
-    toast.success(t("drawingAnalyzer", "analysisComplete"));
+    toast.success(t("drawingAnalyzer", "batchAnalysisComplete"));
   };
 
   const removeItem = (id: string) => {
@@ -553,56 +553,56 @@ const DrawingAnalyzer = () => {
                   <Textarea placeholder={t("drawingAnalyzer", "additionalInfo")} value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} className="bg-secondary/30 border-border" rows={2} />
                 </div>
                 <div className="w-48 shrink-0 space-y-2">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Malzeme (opsiyonel)</p>
-                    <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
-                      <SelectTrigger className="bg-secondary/30 border-border">
-                        <SelectValue placeholder="Otomatik (AI)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auto">Otomatik (AI belirlesin)</SelectItem>
-                        {defaultMaterials.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Müşteri (opsiyonel)</p>
-                    <Select value={customerName} onValueChange={(val) => {
-                      setCustomerName(val);
-                      const found = activeCustomers.find(c => c.name === val);
-                      if (found) setSelectedFactory(found.factory);
-                    }}>
-                      <SelectTrigger className="bg-secondary/30 border-border">
-                        <SelectValue placeholder="Müşteri seçin..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {activeCustomers.map((c) => (
-                          <SelectItem key={c.id} value={c.name}>{c.name} <span className="text-xs text-muted-foreground ml-1">({c.factory})</span></SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Fabrika Seçimi</p>
-                    <Select value={selectedFactory} onValueChange={setSelectedFactory}>
-                      <SelectTrigger className="bg-secondary/30 border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {activeFactories.map((f) => (
-                          <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                   <div>
+                     <p className="text-xs text-muted-foreground mb-1">{t("drawingAnalyzer", "materialOptional")}</p>
+                     <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
+                       <SelectTrigger className="bg-secondary/30 border-border">
+                         <SelectValue placeholder={t("drawingAnalyzer", "materialAuto")} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="auto">{t("drawingAnalyzer", "materialAuto")}</SelectItem>
+                         {defaultMaterials.map((m) => (
+                           <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
                    </div>
-                   {customerName && customerSpecs && (
-                     <Button variant="outline" size="sm" onClick={() => setShowSpecsDialog(true)} className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
-                       <ClipboardList className="w-4 h-4" /> Müşteri Specleri
-                     </Button>
-                   )}
-                 </div>
+                   <div>
+                     <p className="text-xs text-muted-foreground mb-1">{t("drawingAnalyzer", "customerOptional")}</p>
+                     <Select value={customerName} onValueChange={(val) => {
+                       setCustomerName(val);
+                       const found = activeCustomers.find(c => c.name === val);
+                       if (found) setSelectedFactory(found.factory);
+                     }}>
+                       <SelectTrigger className="bg-secondary/30 border-border">
+                         <SelectValue placeholder={t("drawingAnalyzer", "customerPlaceholder")} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {activeCustomers.map((c) => (
+                           <SelectItem key={c.id} value={c.name}>{c.name} <span className="text-xs text-muted-foreground ml-1">({c.factory})</span></SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div>
+                     <p className="text-xs text-muted-foreground mb-1">{t("drawingAnalyzer", "factorySelection")}</p>
+                     <Select value={selectedFactory} onValueChange={setSelectedFactory}>
+                       <SelectTrigger className="bg-secondary/30 border-border">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {activeFactories.map((f) => (
+                           <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                    </div>
+                    {customerName && customerSpecs && (
+                      <Button variant="outline" size="sm" onClick={() => setShowSpecsDialog(true)} className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
+                        <ClipboardList className="w-4 h-4" /> {t("drawingAnalyzer", "customerSpecs")}
+                      </Button>
+                    )}
+                  </div>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">{items.length} {t("drawingAnalyzer", "filesSelected")}</p>
@@ -685,13 +685,13 @@ const DrawingAnalyzer = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-primary" />
-              {customerName} - Müşteri Specleri
+              {customerName} - {t("drawingAnalyzer", "customerSpecsTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="whitespace-pre-wrap text-sm text-foreground bg-secondary/30 rounded-lg p-4 border border-border max-h-80 overflow-y-auto">
-            {customerSpecs || "Bu müşteri için spec tanımlanmamış."}
+            {customerSpecs || t("drawingAnalyzer", "noSpecsDefined")}
           </div>
-          <p className="text-xs text-muted-foreground">Bu specler teknik resim analizi sırasında AI tarafından otomatik olarak dikkate alınır.</p>
+          <p className="text-xs text-muted-foreground">{t("drawingAnalyzer", "specsAutoNote")}</p>
         </DialogContent>
       </Dialog>
     </div>
