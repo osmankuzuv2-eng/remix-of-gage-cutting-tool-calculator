@@ -382,32 +382,47 @@ export default function ToolroomReport() {
               );
             })()}
           </div>
-          {supplierChartData.length > 0 && (
-            <div className="bg-card border border-border rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-                <Package className="w-4 h-4 text-amber-400" /> Tedarikçi Bazlı Harcama (€)
-              </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={supplierChartData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={75}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    {supplierChartData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => [`€ ${v.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}`, "Tutar"]} />
-                </PieChart>
-              </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Supplier Pie Chart — full width row */}
+      {supplierChartData.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+            <Package className="w-4 h-4 text-amber-400" /> Tedarikçi Bazlı Harcama (€)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={supplierChartData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                  labelLine={true}
+                >
+                  {supplierChartData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: number) => [`€ ${v.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}`, "Tutar"]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-1.5">
+              {supplierChartData.map((d, i) => (
+                <div key={d.name} className="flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+                    <span className="text-foreground truncate">{d.name}</span>
+                  </div>
+                  <span className="text-amber-400 font-semibold whitespace-nowrap">€ {d.value.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       )}
 
