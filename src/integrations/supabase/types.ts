@@ -931,6 +931,54 @@ export type Database = {
           },
         ]
       }
+      training_videos: {
+        Row: {
+          author: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty: string
+          duration_minutes: number | null
+          id: string
+          operation_type: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          url: string
+          view_count: number
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string
+          duration_minutes?: number | null
+          id?: string
+          operation_type?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          url: string
+          view_count?: number
+        }
+        Update: {
+          author?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string
+          duration_minutes?: number | null
+          id?: string
+          operation_type?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          url?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       user_module_permissions: {
         Row: {
           created_at: string
