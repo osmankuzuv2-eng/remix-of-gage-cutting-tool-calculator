@@ -62,6 +62,7 @@ export default function ToolroomReport() {
   const [filterFactory, setFilterFactory] = useState("all");
   const [filterYear, setFilterYear] = useState(currentYear);
   const [filterMonth, setFilterMonth] = useState<number | null>(null);
+  const [filterSupplier, setFilterSupplier] = useState("all");
   const [search, setSearch] = useState("");
 
   /* excel import */
