@@ -215,8 +215,11 @@ const RecordForm = ({ machines, initial, onSave, onClose, selectedFactory }: Rec
             <input type="date" value={form.scheduled_date} onChange={e => setForm(p => ({ ...p, scheduled_date: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "cost")} (₺)</label>
-            <input type="number" min={0} value={form.cost} onChange={e => setForm(p => ({ ...p, cost: Number(e.target.value) }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "cost")}</label>
+            <div className="flex items-center rounded-lg border border-border bg-background overflow-hidden">
+              <span className="px-3 py-2 text-sm font-semibold text-muted-foreground bg-muted/40 border-r border-border select-none">₺</span>
+              <input type="number" min={0} value={form.cost} onChange={e => setForm(p => ({ ...p, cost: Number(e.target.value) }))} className="flex-1 bg-transparent px-3 py-2 text-sm text-foreground outline-none" />
+            </div>
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "duration")}</label>
