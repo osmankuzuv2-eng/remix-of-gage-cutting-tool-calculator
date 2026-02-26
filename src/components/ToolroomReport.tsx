@@ -43,7 +43,7 @@ const downloadTemplate = async () => {
   ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF161A26" } };
   ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
   // Example row
-  ws.addRow(["Havacılık", currentYear, 1, "Sandvik", "Freze Ucu", "R290-12T308M-PM", 10, 45.50, "Stok tamamlama"]);
+  ws.addRow(["Havacılık", currentYear, 1, "Sandvik", "R290-12T308M-PM", "Freze Ucu", 10, 45.50, "Stok tamamlama"]);
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
