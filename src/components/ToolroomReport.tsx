@@ -189,8 +189,7 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
     toast.success("Kayıt güncellendi.");
     setEditRow(null); load();
   };
-
-
+  const load = useCallback(async () => {
     setLoading(true);
     const [{ data: pData }, { data: cData }, { data: rData }] = await Promise.all([
       (supabase as any).from("toolroom_purchases").select("*").order("year", { ascending: false }).order("month", { ascending: false }),
