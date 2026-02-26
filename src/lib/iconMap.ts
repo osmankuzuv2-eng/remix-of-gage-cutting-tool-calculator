@@ -2,14 +2,14 @@ import {
   Calculator, Clock, Database, DollarSign, History, GitCompare, Wrench, Circle,
   BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
   Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users,
-  TrendingUp, Brain, TrendingDown,
+  TrendingUp, Brain, TrendingDown, Video,
   type LucideIcon,
 } from "lucide-react";
 
 export const iconMap: Record<string, LucideIcon> = {
   Calculator, Clock, Database, DollarSign, History, GitCompare, Wrench, Circle,
   BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
-  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users, TrendingDown,
+  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users, TrendingDown, Video,
 };
 
 export const getIcon = (name: string): LucideIcon => iconMap[name] || Sparkles;
@@ -33,4 +33,5 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "maintenance": Wrench,
   "quiz": Brain,
   "time-improvements": TrendingDown,
+  "video-training": Video,
 };
