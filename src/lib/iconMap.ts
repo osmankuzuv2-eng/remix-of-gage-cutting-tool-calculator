@@ -2,7 +2,7 @@ import {
   Calculator, Clock, Database, DollarSign, History, GitCompare, Wrench, Circle,
   BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
   Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users,
-  TrendingUp, Brain, TrendingDown,
+  TrendingUp, Brain, TrendingDown, Video,
   type LucideIcon,
 } from "lucide-react";
 
