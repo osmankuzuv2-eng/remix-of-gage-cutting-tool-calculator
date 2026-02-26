@@ -167,7 +167,7 @@ const RecordForm = ({ machines, initial, onSave, onClose, selectedFactory }: Rec
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "machine")} *</label>
             <select value={form.machine_id} onChange={e => setForm(p => ({ ...p, machine_id: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
               <option value="">{t("maintenance", "select")}</option>
-              <option value="yardimci_tesisler">🏭 Yardımcı Tesisler</option>
+              <option value="yardimci_tesisler">🏭 {t("maintenance", "auxiliaryFacilities")}</option>
               {filteredMachines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
             </select>
           </div>
@@ -367,7 +367,7 @@ const ScheduleForm = ({ machines, initial, onSave, onClose, selectedFactory }: S
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "machine")} *</label>
             <select value={form.machine_id} onChange={e => setForm(p => ({ ...p, machine_id: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
               <option value="">{t("maintenance", "select")}</option>
-              <option value="yardimci_tesisler">🏭 Yardımcı Tesisler</option>
+              <option value="yardimci_tesisler">🏭 {t("maintenance", "auxiliaryFacilities")}</option>
               {filteredMachines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
             </select>
           </div>
@@ -503,7 +503,7 @@ const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: Checklist
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "duration")} (dk)</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "duration")}</label>
             <input type="number" min={0} value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
@@ -646,7 +646,7 @@ const MaintenanceModule = () => {
     const factoryMap = new Map<string, { name: string; count: number; cost: number; planned_maintenance: number; unplanned_failure: number; revision: number; service: number }>();
     for (const r of records) {
       const factory = getMachineFactory(r.machine_id);
-      const factoryName = factory === "yardimci" ? "Yardımcı Tesisler" : (activeFactories.find(f => f.name === factory)?.name || factory || "Diğer");
+      const factoryName = factory === "yardimci" ? t("maintenance", "auxiliaryFacilities") : (activeFactories.find(f => f.name === factory)?.name || factory || t("maintenance", "all"));
       const existing = factoryMap.get(factoryName) || { name: factoryName, count: 0, cost: 0, planned_maintenance: 0, unplanned_failure: 0, revision: 0, service: 0 };
       existing.count++;
       existing.cost += r.cost || 0;
@@ -699,11 +699,11 @@ const MaintenanceModule = () => {
               onChange={e => setFilterFactory(e.target.value)}
               className="bg-card text-sm text-foreground outline-none cursor-pointer rounded px-1 [&>option]:bg-card [&>option]:text-foreground"
             >
-              <option value="all">Tüm Fabrikalar</option>
+              <option value="all">{t("maintenance", "allFactories")}</option>
               {activeFactories.map(f => (
                 <option key={f.id} value={f.name}>{f.name}</option>
               ))}
-              <option value="yardimci">Yardımcı Tesisler</option>
+              <option value="yardimci">{t("maintenance", "auxiliaryFacilities")}</option>
             </select>
           </div>
           {alerts.length > 0 && (
@@ -826,7 +826,7 @@ const MaintenanceModule = () => {
           {dashboardData.perFactory.length > 0 && (
             <div className="p-4 rounded-xl bg-card border border-border">
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-primary" /> Fabrika Bazlı Bakım Dağılımı
+                <Building2 className="w-4 h-4 text-primary" /> {t("maintenance", "factoryDistributionChart")}
               </h4>
               <ResponsiveContainer width="100%" height={Math.max(200, dashboardData.perFactory.length * 60)}>
                 <BarChart data={dashboardData.perFactory} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
@@ -836,12 +836,12 @@ const MaintenanceModule = () => {
                   <RechartsTooltip
                     contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }}
                     formatter={(value: number, name: string) => {
-                      const labels: Record<string, string> = { planned_maintenance: "Planlı Bakım", unplanned_failure: "Plansız Arıza", revision: "Revizyon", service: "Servis" };
+                      const labels: Record<string, string> = { planned_maintenance: t("maintenance", "planned_maintenance"), unplanned_failure: t("maintenance", "unplanned_failure"), revision: t("maintenance", "revision"), service: t("maintenance", "service") };
                       return [value, labels[name] || name];
                     }}
                   />
                   <Legend formatter={(value) => {
-                    const labels: Record<string, string> = { planned_maintenance: "Planlı Bakım", unplanned_failure: "Plansız Arıza", revision: "Revizyon", service: "Servis" };
+                    const labels: Record<string, string> = { planned_maintenance: t("maintenance", "planned_maintenance"), unplanned_failure: t("maintenance", "unplanned_failure"), revision: t("maintenance", "revision"), service: t("maintenance", "service") };
                     return labels[value] || value;
                   }} />
                   <Bar dataKey="planned_maintenance" stackId="a" fill="hsl(var(--chart-1))" radius={[0, 0, 0, 0]} />
@@ -901,7 +901,7 @@ const MaintenanceModule = () => {
                       <td className="py-2 px-3 text-center text-foreground">{m.revision}</td>
                       <td className="py-2 px-3 text-center text-foreground">{m.service}</td>
                       <td className="py-2 px-3 text-right text-foreground">₺{m.cost.toLocaleString(locale)}</td>
-                      <td className="py-2 px-3 text-right text-foreground">{m.count > 0 ? Math.round(m.totalDuration / m.count) : 0} {language === "en" || language === "fr" ? "min" : "dk"}</td>
+                      <td className="py-2 px-3 text-right text-foreground">{m.count > 0 ? Math.round(m.totalDuration / m.count) : 0} {t("maintenance", "min")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -962,7 +962,7 @@ const MaintenanceModule = () => {
           {filterFactory !== "all" && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg">
               <Building2 className="w-3 h-3" />
-              <span>Fabrika filtresi: <strong className="text-foreground">{factoryLabel}</strong> — {filteredRecords.length} kayıt</span>
+              <span>{t("maintenance", "factoryFilter")}: <strong className="text-foreground">{factoryLabel}</strong> — {filteredRecords.length} {t("maintenance", "recordCount")}</span>
             </div>
           )}
 
@@ -1014,7 +1014,7 @@ const MaintenanceModule = () => {
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                         {r.technician_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{r.technician_name}</span>}
                         {r.cost > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />₺{r.cost.toLocaleString(locale)}</span>}
-                        {r.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{r.duration_minutes} {language === "en" || language === "fr" ? "min" : "dk"}</span>}
+                        {r.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{r.duration_minutes} {t("maintenance", "min")}</span>}
                         {r.scheduled_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(r.scheduled_date).toLocaleDateString(locale)}</span>}
                       </div>
                     </div>
@@ -1136,7 +1136,7 @@ const MaintenanceModule = () => {
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                     <span className="flex items-center gap-1"><User className="w-3 h-3" />{log.completed_by_name}</span>
-                    {log.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{log.duration_minutes} {language === "en" || language === "fr" ? "min" : "dk"}</span>}
+                    {log.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{log.duration_minutes} {t("maintenance", "min")}</span>}
                   </div>
                   <div className="grid grid-cols-2 gap-1">
                     {(log.checklist_results || []).map((item: ChecklistItem, i: number) => (
