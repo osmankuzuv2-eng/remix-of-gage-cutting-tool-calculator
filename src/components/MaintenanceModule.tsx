@@ -1018,14 +1018,16 @@ const MaintenanceModule = () => {
                         {r.scheduled_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(r.scheduled_date).toLocaleDateString(locale)}</span>}
                       </div>
                     </div>
-                    {userCanEdit && (
+                    {user && (
                       <div className="flex gap-1 shrink-0">
-                        <button onClick={() => { setEditingRecord(r); setShowRecordForm(true); }} className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+                        <button onClick={() => { setEditingRecord(r); setShowRecordForm(true); }} className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors" title={t("maintenance", "editRecord")}>
                           <Wrench className="w-4 h-4" />
                         </button>
-                        <button onClick={async () => { if (confirm(t("maintenance", "confirmDeleteRecord"))) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {userCanEdit && (
+                          <button onClick={async () => { if (confirm(t("maintenance", "confirmDeleteRecord"))) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors" title={t("maintenance", "deleteRecord")}>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
