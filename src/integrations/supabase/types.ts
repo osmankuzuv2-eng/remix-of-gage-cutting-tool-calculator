@@ -964,6 +964,57 @@ export type Database = {
           },
         ]
       }
+      toolroom_consumptions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          factory: string
+          id: string
+          month: number
+          notes: string | null
+          quantity: number
+          supplier: string
+          tool_code: string | null
+          tool_type: string
+          total_amount: number | null
+          unit_price: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          factory: string
+          id?: string
+          month: number
+          notes?: string | null
+          quantity?: number
+          supplier: string
+          tool_code?: string | null
+          tool_type: string
+          total_amount?: number | null
+          unit_price?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          factory?: string
+          id?: string
+          month?: number
+          notes?: string | null
+          quantity?: number
+          supplier?: string
+          tool_code?: string | null
+          tool_type?: string
+          total_amount?: number | null
+          unit_price?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       toolroom_purchases: {
         Row: {
           created_at: string
