@@ -63,16 +63,18 @@ interface RecordFormProps {
   onSave: (data: Partial<MaintenanceRecord>) => Promise<any>;
   onClose: () => void;
   selectedFactory?: string;
+  activeFactories: { id: string; name: string }[];
 }
 
-const RecordForm = ({ machines, initial, onSave, onClose, selectedFactory }: RecordFormProps) => {
+const RecordForm = ({ machines, initial, onSave, onClose, selectedFactory: initialFactory, activeFactories }: RecordFormProps) => {
   const { t } = useLanguage();
-  
-  // Filter machines by selected factory + always include Yardımcı Tesisler
+  const [formFactory, setFormFactory] = useState(initialFactory || "all");
+
+  // Filter machines by selected factory
   const filteredMachines = useMemo(() => {
-    if (!selectedFactory || selectedFactory === "all") return machines;
-    return machines.filter(m => m.factory === selectedFactory);
-  }, [machines, selectedFactory]);
+    if (!formFactory || formFactory === "all") return machines;
+    return machines.filter(m => m.factory === formFactory);
+  }, [machines, formFactory]);
 
   const [form, setForm] = useState({
     machine_id: initial?.machine_id || "",
@@ -160,7 +162,18 @@ const RecordForm = ({ machines, initial, onSave, onClose, selectedFactory }: Rec
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
-        <h3 className="text-lg font-bold text-foreground">{initial ? t("maintenance", "editRecord") : t("maintenance", "newRecordTitle")}</h3>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-lg font-bold text-foreground">{initial ? t("maintenance", "editRecord") : t("maintenance", "newRecordTitle")}</h3>
+          <select
+            value={formFactory}
+            onChange={e => { setFormFactory(e.target.value); setForm(p => ({ ...p, machine_id: "" })); }}
+            className="rounded-lg bg-background border border-border px-3 py-1.5 text-sm text-foreground [&>option]:bg-card [&>option]:text-foreground"
+          >
+            <option value="all">{t("maintenance", "allFactories")}</option>
+            {activeFactories.map(f => <option key={f.id} value={f.name}>{f.name}</option>)}
+            <option value="yardimci">{t("maintenance", "auxiliaryFacilities")}</option>
+          </select>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -1023,11 +1036,9 @@ const MaintenanceModule = () => {
                         <button onClick={() => { setEditingRecord(r); setShowRecordForm(true); }} className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors" title={t("maintenance", "editRecord")}>
                           <Wrench className="w-4 h-4" />
                         </button>
-                        {userCanEdit && (
-                          <button onClick={async () => { if (confirm(t("maintenance", "confirmDeleteRecord"))) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors" title={t("maintenance", "deleteRecord")}>
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button onClick={async () => { if (confirm(t("maintenance", "confirmDeleteRecord"))) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors" title={t("maintenance", "deleteRecord")}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1164,6 +1175,7 @@ const MaintenanceModule = () => {
           onSave={editingRecord ? (data) => updateRecord(editingRecord.id, data) : addRecord}
           onClose={() => { setShowRecordForm(false); setEditingRecord(null); }}
           selectedFactory={filterFactory}
+          activeFactories={activeFactories}
         />
       )}
       {showScheduleForm && (
