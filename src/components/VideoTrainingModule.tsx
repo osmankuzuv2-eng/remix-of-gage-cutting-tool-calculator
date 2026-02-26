@@ -111,6 +111,7 @@ export default function VideoTrainingModule() {
   const [filterOp, setFilterOp] = useState("all");
   const [filterDiff, setFilterDiff] = useState("all");
   const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
+  const [prevFilterOp, setPrevFilterOp] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
