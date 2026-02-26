@@ -639,6 +639,23 @@ const MaintenanceModule = () => {
     const avgDuration = totalCount > 0 ? Math.round(totalDuration / totalCount) : 0;
     const completedCount = records.filter(r => r.status === "completed").length;
 
+    // Factory-based chart data
+    const factoryMap = new Map<string, { name: string; count: number; cost: number; planned_maintenance: number; unplanned_failure: number; revision: number; service: number }>();
+    for (const r of records) {
+      const factory = getMachineFactory(r.machine_id);
+      const factoryName = factory === "yardimci" ? "Yardımcı Tesisler" : (activeFactories.find(f => f.name === factory)?.name || factory || "Diğer");
+      const existing = factoryMap.get(factoryName) || { name: factoryName, count: 0, cost: 0, planned_maintenance: 0, unplanned_failure: 0, revision: 0, service: 0 };
+      existing.count++;
+      existing.cost += r.cost || 0;
+      const mt = r.maintenance_type as string;
+      if (mt === "planned_maintenance") existing.planned_maintenance++;
+      else if (mt === "unplanned_failure") existing.unplanned_failure++;
+      else if (mt === "revision") existing.revision++;
+      else if (mt === "service") existing.service++;
+      factoryMap.set(factoryName, existing);
+    }
+    const perFactory = Array.from(factoryMap.values()).sort((a, b) => b.count - a.count);
+
     const typeData = [
       { name: t("maintenance", "planned_maintenance"), value: records.filter(r => r.maintenance_type === "planned_maintenance").length, color: "hsl(var(--chart-1))" },
       { name: t("maintenance", "unplanned_failure"), value: records.filter(r => r.maintenance_type === "unplanned_failure").length, color: "hsl(var(--chart-2))" },
@@ -653,8 +670,8 @@ const MaintenanceModule = () => {
       { name: t("maintenance", "cancelled"), value: records.filter(r => r.status === "cancelled").length, color: "hsl(var(--chart-3))" },
     ].filter(d => d.value > 0);
 
-    return { perMachine, totalCount, totalCost, avgDuration, totalDuration, completedCount, typeData, statusData };
-  }, [records, machines, t]);
+    return { perMachine, perFactory, totalCount, totalCost, avgDuration, totalDuration, completedCount, typeData, statusData };
+  }, [records, machines, activeFactories, t]);
 
   if (loading) return <div className="text-center py-12 text-muted-foreground">{t("common", "loading")}</div>;
 
@@ -801,6 +818,37 @@ const MaintenanceModule = () => {
               </div>
             )}
           </div>
+
+          {/* Factory-based chart */}
+          {dashboardData.perFactory.length > 0 && (
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" /> Fabrika Bazlı Bakım Dağılımı
+              </h4>
+              <ResponsiveContainer width="100%" height={Math.max(200, dashboardData.perFactory.length * 60)}>
+                <BarChart data={dashboardData.perFactory} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" width={130} tick={{ fill: "hsl(var(--foreground))", fontSize: 12, fontWeight: 600 }} />
+                  <RechartsTooltip
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }}
+                    formatter={(value: number, name: string) => {
+                      const labels: Record<string, string> = { planned_maintenance: "Planlı Bakım", unplanned_failure: "Plansız Arıza", revision: "Revizyon", service: "Servis" };
+                      return [value, labels[name] || name];
+                    }}
+                  />
+                  <Legend formatter={(value) => {
+                    const labels: Record<string, string> = { planned_maintenance: "Planlı Bakım", unplanned_failure: "Plansız Arıza", revision: "Revizyon", service: "Servis" };
+                    return labels[value] || value;
+                  }} />
+                  <Bar dataKey="planned_maintenance" stackId="a" fill="hsl(var(--chart-1))" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="unplanned_failure" stackId="a" fill="hsl(var(--chart-2))" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="revision" stackId="a" fill="hsl(var(--chart-3))" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="service" stackId="a" fill="hsl(var(--chart-4))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {dashboardData.perMachine.length > 0 && (
             <div className="p-4 rounded-xl bg-card border border-border">
