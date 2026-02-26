@@ -697,7 +697,7 @@ const MaintenanceModule = () => {
             <select
               value={filterFactory}
               onChange={e => setFilterFactory(e.target.value)}
-              className="bg-transparent text-sm text-foreground outline-none cursor-pointer"
+              className="bg-card text-sm text-foreground outline-none cursor-pointer rounded px-1 [&>option]:bg-card [&>option]:text-foreground"
             >
               <option value="all">Tüm Fabrikalar</option>
               {activeFactories.map(f => (
