@@ -261,6 +261,19 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
     setForm(emptyForm()); setShowForm(false); load();
   };
 
+  const [confirmDeleteMonth, setConfirmDeleteMonth] = useState(false);
+
+  const handleDeleteByMonth = async () => {
+    const table = activeTab === "purchases" ? "toolroom_purchases" : "toolroom_consumptions";
+    const ids = currentData.map(r => r.id);
+    if (ids.length === 0) return;
+    const { error } = await (supabase as any).from(table).delete().in("id", ids);
+    if (error) { toast.error("Silme hatası."); return; }
+    toast.success(`${ids.length} kayıt silindi.`);
+    setConfirmDeleteMonth(false);
+    load();
+  };
+
   const handleDeletePurchase = async (id: string) => {
     await (supabase as any).from("toolroom_purchases").delete().eq("id", id);
     toast.success("Kayıt silindi."); load();
@@ -528,7 +541,19 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <span className="text-sm font-semibold text-foreground">{currentData.length} kayıt</span>
-          <span className="text-sm font-bold text-amber-400">€ {currentTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-amber-400">€ {currentTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+            {hasEditAccess && currentData.length > 0 && (
+              <button
+                onClick={() => setConfirmDeleteMonth(true)}
+                className="flex items-center gap-1.5 text-xs text-destructive/70 hover:text-destructive border border-destructive/30 hover:border-destructive/60 rounded-lg px-2.5 py-1 transition-colors"
+                title="Filtredeki tüm kayıtları sil"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Tümünü Sil
+              </button>
+            )}
+          </div>
         </div>
         {loading ? (
           <div className="py-12 text-center text-muted-foreground text-sm">Yükleniyor...</div>
@@ -701,6 +726,32 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
                 <Upload className="w-4 h-4 mr-2" /> {preview.length} Kaydı Ekle
               </Button>
               <Button variant="outline" onClick={() => setShowPreview(false)}>İptal</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Month Modal */}
+      {confirmDeleteMonth && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/15 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground">Tümünü Sil</h3>
+                  <p className="text-xs text-muted-foreground">Bu işlem geri alınamaz</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Mevcut filtre kapsamındaki <span className="font-bold text-foreground">{currentData.length}</span> kayıt kalıcı olarak silinecek. Emin misiniz?
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={handleDeleteByMonth} variant="destructive" className="flex-1">Evet, Sil</Button>
+                <Button onClick={() => setConfirmDeleteMonth(false)} variant="outline" className="flex-1">İptal</Button>
+              </div>
             </div>
           </div>
         </div>
