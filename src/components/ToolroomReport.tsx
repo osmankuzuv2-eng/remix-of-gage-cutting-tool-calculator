@@ -33,8 +33,8 @@ const downloadTemplate = async () => {
     { header: "Yıl", key: "year", width: 8 },
     { header: "Ay (1-12)", key: "month", width: 10 },
     { header: "Tedarikçi", key: "supplier", width: 25 },
-    { header: "Takım Tipi", key: "tool_type", width: 25 },
     { header: "Takım Kodu", key: "tool_code", width: 18 },
+    { header: "Takım Tipi", key: "tool_type", width: 25 },
     { header: "Miktar", key: "quantity", width: 10 },
     { header: "Birim Fiyat (EUR)", key: "unit_price", width: 18 },
     { header: "Not", key: "notes", width: 30 },
@@ -43,7 +43,7 @@ const downloadTemplate = async () => {
   ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF161A26" } };
   ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
   // Example row
-  ws.addRow(["Havacılık", currentYear, 1, "Sandvik", "Freze Ucu", "R290-12T308M-PM", 10, 45.50, "Stok tamamlama"]);
+  ws.addRow(["Havacılık", currentYear, 1, "Sandvik", "R290-12T308M-PM", "Freze Ucu", 10, 45.50, "Stok tamamlama"]);
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
@@ -109,11 +109,12 @@ export default function ToolroomReport() {
         const year = Number(vals[2]);
         const month = Number(vals[3]);
         const supplier = String(vals[4] ?? "").trim();
-        const tool_type = String(vals[5] ?? "").trim();
+        const tool_code = String(vals[5] ?? "").trim() || null;
+        const tool_type = String(vals[6] ?? "").trim();
         if (!factory || !supplier || !tool_type || !year || !month) return;
         rows.push({
           factory, year, month, supplier, tool_type,
-          tool_code: String(vals[6] ?? "").trim() || null,
+          tool_code,
           quantity: Number(vals[7]) || 1,
           unit_price: Number(vals[8]) || 0,
           notes: String(vals[9] ?? "").trim() || null,
