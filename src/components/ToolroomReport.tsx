@@ -148,13 +148,16 @@ export default function ToolroomReport() {
   };
 
   /* ─── Filtered data ─── */
+  const supplierOptions = [...new Set(purchases.map(p => p.supplier))].sort();
+
   const filtered = purchases.filter(p => {
     const mF = filterFactory === "all" || p.factory === filterFactory;
     const mY = p.year === filterYear;
     const mM = filterMonth === null || p.month === filterMonth;
+    const mSup = filterSupplier === "all" || p.supplier === filterSupplier;
     const q = search.toLowerCase();
     const mS = !q || p.supplier.toLowerCase().includes(q) || p.tool_type.toLowerCase().includes(q) || (p.tool_code || "").toLowerCase().includes(q);
-    return mF && mY && mM && mS;
+    return mF && mY && mM && mSup && mS;
   });
 
   /* ─── Chart data ─── */
