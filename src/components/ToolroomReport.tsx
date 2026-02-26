@@ -564,10 +564,15 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
                     <td className="px-3 py-2 text-xs text-right font-semibold text-amber-400">€ {Number(row.total_amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground max-w-[120px] truncate">{row.notes || "—"}</td>
                     <td className="px-3 py-2">
-                      {isAdmin && (
-                        <button onClick={() => activeTab === "purchases" ? handleDeletePurchase(row.id) : handleDeleteConsumption(row.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      {hasEditAccess && (
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => openEdit(row)} className="text-muted-foreground hover:text-amber-400 transition-colors" title="Düzenle">
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => activeTab === "purchases" ? handleDeletePurchase(row.id) : handleDeleteConsumption(row.id)} className="text-muted-foreground hover:text-destructive transition-colors" title="Sil">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
