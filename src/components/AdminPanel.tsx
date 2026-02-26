@@ -686,6 +686,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           <TabsTrigger value="coatings" className="gap-2"><Shield className="w-4 h-4" /> Kaplamalar</TabsTrigger>
           <TabsTrigger value="improvements" className="gap-2"><TrendingDown className="w-4 h-4" /> İyileştirmeler</TabsTrigger>
           <TabsTrigger value="maintenance" className="gap-2"><Wrench className="w-4 h-4" /> Bakım Onarım</TabsTrigger>
+          <TabsTrigger value="toolroom" className="gap-2"><BarChart3 className="w-4 h-4" /> Takımhane</TabsTrigger>
           <TabsTrigger value="modules" className="gap-2"><Package className="w-4 h-4" /> Modüller</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
