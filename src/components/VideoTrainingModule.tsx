@@ -246,16 +246,36 @@ export default function VideoTrainingModule() {
         )}
       </div>
 
+      {/* Operation category pill buttons */}
+      <div className="flex flex-wrap gap-2">
+        {OPERATION_TYPES.map(op => {
+          const count = videos.filter(v => op.value === "all" ? true : v.operation_type === op.value).length;
+          const isActive = filterOp === op.value;
+          return (
+            <button
+              key={op.value}
+              onClick={() => setFilterOp(op.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
+                isActive
+                  ? "bg-violet-600 text-white border-violet-600 shadow-md scale-[1.04]"
+                  : "bg-card border-border text-muted-foreground hover:border-violet-500/50 hover:text-foreground hover:scale-[1.02]"
+              }`}
+            >
+              {op.label}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${isActive ? "bg-white/20" : "bg-muted"}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Video ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Select value={filterOp} onValueChange={setFilterOp}>
-          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-          <SelectContent>{OPERATION_TYPES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-        </Select>
         <Select value={filterDiff} onValueChange={setFilterDiff}>
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="Seviye" /></SelectTrigger>
           <SelectContent>
