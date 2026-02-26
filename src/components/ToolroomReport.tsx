@@ -154,6 +154,9 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
   const [form, setForm] = useState<ConsumptionInput>(emptyForm());
   const [saving, setSaving] = useState(false);
 
+  /* derived permission: admin OR explicitly granted from admin panel */
+  const hasEditAccess = isAdmin || canEditProp === true;
+
   useEffect(() => {
     if (!user) return;
     supabase.from("user_roles").select("role").eq("user_id", user.id).then(({ data }) => {
@@ -161,7 +164,33 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
     });
   }, [user]);
 
-  const load = useCallback(async () => {
+  const openEdit = (row: ToolroomPurchase | Consumption) => {
+    setEditRow(row);
+    setEditForm({
+      factory: row.factory, year: row.year, month: row.month,
+      supplier: row.supplier, tool_type: row.tool_type, tool_code: row.tool_code || "",
+      quantity: row.quantity, unit_price: row.unit_price, notes: row.notes || "",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editRow) return;
+    if (!editForm.factory || !editForm.supplier || !editForm.tool_type) { toast.error("Zorunlu alanları doldurun."); return; }
+    setEditSaving(true);
+    const table = activeTab === "purchases" ? "toolroom_purchases" : "toolroom_consumptions";
+    const { error } = await (supabase as any).from(table).update({
+      factory: editForm.factory, year: editForm.year, month: editForm.month,
+      supplier: editForm.supplier, tool_type: editForm.tool_type,
+      tool_code: editForm.tool_code || null, quantity: editForm.quantity,
+      unit_price: editForm.unit_price, notes: editForm.notes || null,
+    }).eq("id", editRow.id);
+    setEditSaving(false);
+    if (error) { toast.error("Güncelleme hatası."); return; }
+    toast.success("Kayıt güncellendi.");
+    setEditRow(null); load();
+  };
+
+
     setLoading(true);
     const [{ data: pData }, { data: cData }, { data: rData }] = await Promise.all([
       (supabase as any).from("toolroom_purchases").select("*").order("year", { ascending: false }).order("month", { ascending: false }),
