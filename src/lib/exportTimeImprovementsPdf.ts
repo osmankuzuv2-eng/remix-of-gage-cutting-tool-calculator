@@ -47,7 +47,7 @@ export const exportTimeImprovementsPdf = async (
 
   y = drawInfoBox(doc, y, margin, contentWidth, [
     { label: tr("export", "totalRecords"), value: items.length.toString() },
-    { label: tr("export", "colTimeImpr").replace(" %", ""), value: `${totalTimeSaved.toFixed(1)} ${tr("common", "minute")}` },
+    { label: tr("timeImprovements", "timeSaved"), value: `${totalTimeSaved.toFixed(1)} dk` },
     { label: tr("export", "colTimeImpr"), value: `%${avgTimeImpr.toFixed(1)}` },
     { label: tr("export", "colPriceImpr").replace(" %", ""), value: `${totalPriceSaved.toFixed(2)} ₺` },
   ]);
