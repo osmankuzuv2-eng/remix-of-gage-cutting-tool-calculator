@@ -38,6 +38,11 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
 const TypeBadge = ({ type }: { type: string }) => {
   const { t } = useLanguage();
   const map: Record<string, { label: string; cls: string }> = {
+    planned_maintenance: { label: t("maintenance", "planned_maintenance"), cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+    unplanned_failure: { label: t("maintenance", "unplanned_failure"), cls: "bg-red-500/20 text-red-400 border-red-500/30" },
+    revision: { label: t("maintenance", "revision"), cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+    service: { label: t("maintenance", "service"), cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+    // legacy
     preventive: { label: t("maintenance", "preventive"), cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
     predictive: { label: t("maintenance", "predictive"), cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
     corrective: { label: t("maintenance", "corrective"), cls: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
@@ -58,7 +63,7 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
   const { t } = useLanguage();
   const [form, setForm] = useState({
     machine_id: initial?.machine_id || "",
-    maintenance_type: initial?.maintenance_type || "preventive",
+    maintenance_type: initial?.maintenance_type || "planned_maintenance",
     title: initial?.title || "",
     description: initial?.description || "",
     status: initial?.status || "planned",
@@ -149,9 +154,10 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "maintenanceType")}</label>
             <select value={form.maintenance_type} onChange={e => setForm(p => ({ ...p, maintenance_type: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="preventive">{t("maintenance", "preventive")}</option>
-              <option value="predictive">{t("maintenance", "predictive")}</option>
-              <option value="corrective">{t("maintenance", "corrective")}</option>
+              <option value="planned_maintenance">{t("maintenance", "planned_maintenance")}</option>
+              <option value="unplanned_failure">{t("maintenance", "unplanned_failure")}</option>
+              <option value="revision">{t("maintenance", "revision")}</option>
+              <option value="service">{t("maintenance", "service")}</option>
             </select>
           </div>
           <div className="sm:col-span-2">
@@ -278,7 +284,7 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
   const [form, setForm] = useState({
     machine_id: initial?.machine_id || "",
     title: initial?.title || "",
-    maintenance_type: initial?.maintenance_type || "preventive",
+    maintenance_type: initial?.maintenance_type || "planned_maintenance",
     interval_hours: initial?.interval_hours ?? "",
     interval_days: initial?.interval_days ?? "",
     next_due_date: initial?.next_due_date || "",
@@ -337,8 +343,10 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "maintenanceType")}</label>
             <select value={form.maintenance_type} onChange={e => setForm(p => ({ ...p, maintenance_type: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
-              <option value="preventive">{t("maintenance", "preventive")}</option>
-              <option value="predictive">{t("maintenance", "predictive")}</option>
+              <option value="planned_maintenance">{t("maintenance", "planned_maintenance")}</option>
+              <option value="unplanned_failure">{t("maintenance", "unplanned_failure")}</option>
+              <option value="revision">{t("maintenance", "revision")}</option>
+              <option value="service">{t("maintenance", "service")}</option>
             </select>
           </div>
           <div className="sm:col-span-2">
@@ -504,20 +512,23 @@ const MaintenanceModule = () => {
 
   // Dashboard data
   const dashboardData = useMemo(() => {
-    const machineMap = new Map<string, { name: string; count: number; cost: number; totalDuration: number; preventive: number; predictive: number; corrective: number }>();
+    const machineMap = new Map<string, { name: string; count: number; cost: number; totalDuration: number; planned_maintenance: number; unplanned_failure: number; revision: number; service: number; other: number }>();
     
     for (const r of records) {
       const existing = machineMap.get(r.machine_id) || {
         name: getMachineName(r.machine_id),
         count: 0, cost: 0, totalDuration: 0,
-        preventive: 0, predictive: 0, corrective: 0,
+        planned_maintenance: 0, unplanned_failure: 0, revision: 0, service: 0, other: 0,
       };
       existing.count++;
       existing.cost += r.cost || 0;
       existing.totalDuration += r.duration_minutes || 0;
-      if (r.maintenance_type === "preventive") existing.preventive++;
-      else if (r.maintenance_type === "predictive") existing.predictive++;
-      else existing.corrective++;
+      const mt = r.maintenance_type as string;
+      if (mt === "planned_maintenance") existing.planned_maintenance++;
+      else if (mt === "unplanned_failure") existing.unplanned_failure++;
+      else if (mt === "revision") existing.revision++;
+      else if (mt === "service") existing.service++;
+      else existing.other++;
       machineMap.set(r.machine_id, existing);
     }
 
@@ -529,9 +540,10 @@ const MaintenanceModule = () => {
     const completedCount = records.filter(r => r.status === "completed").length;
 
     const typeData = [
-      { name: t("maintenance", "preventive"), value: records.filter(r => r.maintenance_type === "preventive").length, color: "hsl(var(--chart-1))" },
-      { name: t("maintenance", "predictive"), value: records.filter(r => r.maintenance_type === "predictive").length, color: "hsl(var(--chart-2))" },
-      { name: t("maintenance", "corrective"), value: records.filter(r => r.maintenance_type === "corrective").length, color: "hsl(var(--chart-3))" },
+      { name: t("maintenance", "planned_maintenance"), value: records.filter(r => r.maintenance_type === "planned_maintenance").length, color: "hsl(var(--chart-1))" },
+      { name: t("maintenance", "unplanned_failure"), value: records.filter(r => r.maintenance_type === "unplanned_failure").length, color: "hsl(var(--chart-2))" },
+      { name: t("maintenance", "revision"), value: records.filter(r => r.maintenance_type === "revision").length, color: "hsl(var(--chart-3))" },
+      { name: t("maintenance", "service"), value: records.filter(r => r.maintenance_type === "service").length, color: "hsl(var(--chart-4))" },
     ].filter(d => d.value > 0);
 
     const statusData = [
@@ -708,9 +720,10 @@ const MaintenanceModule = () => {
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "machine")}</th>
                     <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "total")}</th>
-                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "preventive")}</th>
-                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "predictive")}</th>
-                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "corrective")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "planned_maintenance")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "unplanned_failure")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "revision")}</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "service")}</th>
                     <th className="text-right py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "costLabel")}</th>
                     <th className="text-right py-2 px-3 text-muted-foreground font-medium">{t("maintenance", "avgDuration")}</th>
                   </tr>
@@ -720,9 +733,10 @@ const MaintenanceModule = () => {
                     <tr key={i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                       <td className="py-2 px-3 font-medium text-foreground">{m.name}</td>
                       <td className="py-2 px-3 text-center text-foreground">{m.count}</td>
-                      <td className="py-2 px-3 text-center text-foreground">{m.preventive}</td>
-                      <td className="py-2 px-3 text-center text-foreground">{m.predictive}</td>
-                      <td className="py-2 px-3 text-center text-foreground">{m.corrective}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.planned_maintenance}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.unplanned_failure}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.revision}</td>
+                      <td className="py-2 px-3 text-center text-foreground">{m.service}</td>
                       <td className="py-2 px-3 text-right text-foreground">€{m.cost.toLocaleString(locale)}</td>
                       <td className="py-2 px-3 text-right text-foreground">{m.count > 0 ? Math.round(m.totalDuration / m.count) : 0} {language === "en" || language === "fr" ? "min" : "dk"}</td>
                     </tr>
