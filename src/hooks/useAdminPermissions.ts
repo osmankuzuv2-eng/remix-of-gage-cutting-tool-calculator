@@ -12,6 +12,7 @@ export const ADMIN_PANEL_KEYS = [
   "admin_feedback",
   "admin_improvements",
   "admin_maintenance",
+  "admin_toolroom",
 ] as const;
 
 export type AdminPanelKey = (typeof ADMIN_PANEL_KEYS)[number];
