@@ -112,7 +112,7 @@ const parseExcelRows = async (file: File): Promise<ConsumptionInput[]> => {
   return rows;
 };
 
-export default function ToolroomReport() {
+export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boolean } = {}) {
   const { user } = useAuth();
   const { factories } = useFactories();
   const [activeTab, setActiveTab] = useState<"purchases" | "consumptions">("purchases");
@@ -123,6 +123,11 @@ export default function ToolroomReport() {
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  /* edit modal */
+  const [editRow, setEditRow] = useState<(ToolroomPurchase | Consumption) | null>(null);
+  const [editForm, setEditForm] = useState<ConsumptionInput>(emptyForm());
+  const [editSaving, setEditSaving] = useState(false);
 
   /* filters */
   const [filterFactory, setFilterFactory] = useState("all");
