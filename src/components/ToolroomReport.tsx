@@ -273,7 +273,7 @@ export default function ToolroomReport() {
 
       {/* Charts */}
       {purchases.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="bg-card border border-border rounded-xl p-4">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-400" /> {filterYear} Aylık Alım Trendi (€)
