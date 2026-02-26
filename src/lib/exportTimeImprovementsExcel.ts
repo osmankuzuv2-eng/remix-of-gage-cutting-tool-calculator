@@ -46,7 +46,8 @@ export const exportTimeImprovementsExcel = async (
 
   // Date row
   ws.mergeCells("A3:L3");
-  ws.getCell("A3").value = `${tr("export", "colDate")}: ${new Date().toLocaleDateString()}  |  ${tr("export", "totalRecords")}: ${items.length}`;
+  const earnedTime = items.reduce((s, i) => s + (i.old_time_minutes - i.new_time_minutes), 0);
+  ws.getCell("A3").value = `${tr("export", "colDate")}: ${new Date().toLocaleDateString()}  |  ${tr("export", "totalRecords")}: ${items.length}  |  Kazanılan Süre: ${earnedTime.toFixed(1)} dk`;
   ws.getCell("A3").font = { name: "Aptos", size: 10, color: { argb: "FF555555" } };
   ws.getRow(3).height = 24;
 
@@ -116,8 +117,12 @@ export const exportTimeImprovementsExcel = async (
 
   const totalOldTime = items.reduce((s, i) => s + i.old_time_minutes, 0);
   const totalNewTime = items.reduce((s, i) => s + i.new_time_minutes, 0);
+  const totalEarnedTime = totalOldTime - totalNewTime;
   const totalOldPrice = items.reduce((s, i) => s + Number(i.old_price), 0);
   const totalNewPrice = items.reduce((s, i) => s + Number(i.new_price), 0);
+
+  // Add earned time label in merged summary
+  sumRow.getCell(1).value = `${tr("export", "total")} | Kazanılan Süre: ${totalEarnedTime.toFixed(1)} dk`;
 
   [totalOldTime, totalNewTime, "", totalOldPrice.toFixed(2), totalNewPrice.toFixed(2), ""].forEach((val, i) => {
     const cell = sumRow.getCell(7 + i);
