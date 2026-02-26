@@ -111,7 +111,6 @@ export default function ToolroomReport() {
           quantity: Number(vals[7]) || 1,
           unit_price: Number(vals[8]) || 0,
           notes: String(vals[9] ?? "").trim() || null,
-          created_by: user?.id ?? null,
         });
       });
       setPreview(rows);
