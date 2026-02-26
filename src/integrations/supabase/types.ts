@@ -224,6 +224,39 @@ export type Database = {
         }
         Relationships: []
       }
+      factory_revenues: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          factory: string
+          id: string
+          month: number
+          revenue: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          factory: string
+          id?: string
+          month: number
+          revenue?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          factory?: string
+          id?: string
+          month?: number
+          revenue?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       machines: {
         Row: {
           brand: string
