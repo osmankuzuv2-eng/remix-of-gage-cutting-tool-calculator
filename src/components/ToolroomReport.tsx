@@ -304,6 +304,32 @@ export default function ToolroomReport() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {supplierChartData.length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                <Package className="w-4 h-4 text-amber-400" /> Tedarikçi Bazlı Harcama (€)
+              </h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={supplierChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={75}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {supplierChartData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => [`€ ${v.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}`, "Tutar"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 
