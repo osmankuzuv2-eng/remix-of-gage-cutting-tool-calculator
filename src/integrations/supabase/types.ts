@@ -941,6 +941,8 @@ export type Database = {
           duration_minutes: number | null
           id: string
           operation_type: string
+          pdf_docs: Json | null
+          subtitle_languages: string[] | null
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -956,6 +958,8 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           operation_type?: string
+          pdf_docs?: Json | null
+          subtitle_languages?: string[] | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -971,6 +975,8 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           operation_type?: string
+          pdf_docs?: Json | null
+          subtitle_languages?: string[] | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -1059,6 +1065,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          timestamp_seconds: number
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note: string
+          timestamp_seconds?: number
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          timestamp_seconds?: number
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_notes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "training_videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       work_orders: {
         Row: {
