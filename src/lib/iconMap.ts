@@ -33,5 +33,5 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "maintenance": Wrench,
   "quiz": Brain,
   "time-improvements": TrendingDown,
-  "video-training": BookOpen,
+  "video-training": Video,
 };
