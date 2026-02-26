@@ -46,7 +46,7 @@ export const exportTimeImprovementsExcel = async (
 
   // Date row
   ws.mergeCells("A3:L3");
-  const earnedTime = items.reduce((s, i) => s + (i.old_time_minutes - i.new_time_minutes), 0);
+  const earnedTime = items.reduce((s, i) => s + (i.old_time_minutes - i.new_time_minutes) * ((i as any).order_quantity || 1), 0);
   ws.getCell("A3").value = `${tr("export", "colDate")}: ${new Date().toLocaleDateString()}  |  ${tr("export", "totalRecords")}: ${items.length}  |  Kazanılan Süre: ${earnedTime.toFixed(1)} dk`;
   ws.getCell("A3").font = { name: "Aptos", size: 10, color: { argb: "FF555555" } };
   ws.getRow(3).height = 24;

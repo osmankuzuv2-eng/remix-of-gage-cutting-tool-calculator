@@ -41,7 +41,7 @@ export const exportTimeImprovementsPdf = async (
   let y = await drawHeader(doc, `${tr("export", "improvementsTitle")} - ${factory}`);
 
   // Summary
-  const totalTimeSaved = items.reduce((s, i) => s + (i.old_time_minutes - i.new_time_minutes), 0);
+  const totalTimeSaved = items.reduce((s, i) => s + (i.old_time_minutes - i.new_time_minutes) * ((i as any).order_quantity || 1), 0);
   const avgTimeImpr = items.length > 0 ? items.reduce((s, i) => s + Number(i.improvement_percent), 0) / items.length : 0;
   const totalPriceSaved = items.reduce((s, i) => s + (Number(i.old_price) - Number(i.new_price)), 0);
 
