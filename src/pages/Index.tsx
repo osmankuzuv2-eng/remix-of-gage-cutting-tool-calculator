@@ -322,6 +322,7 @@ const Index = () => {
             {visibleTab === "tolerance" && hasAccess("tolerance") && <ToleranceGuide />}
             {visibleTab === "quiz" && hasAccess("quiz") && <QuizModule />}
             {visibleTab === "time-improvements" && hasAccess("time-improvements") && <TimeImprovements isAdmin={isAdmin} />}
+            {visibleTab === "video-training" && hasAccess("video-training") && <VideoTrainingModule />}
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             
