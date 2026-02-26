@@ -1240,6 +1240,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           <MaintenanceModule />
         </TabsContent>
 
+        {/* ── Toolroom Tab ── */}
+        <TabsContent value="toolroom" className="space-y-4 mt-4">
+          {!canEdit("admin_toolroom" as any) && <ReadOnlyBanner />}
+          <ToolroomReport canEdit={canEdit("admin_toolroom" as any)} />
+        </TabsContent>
+
         {/* ── Quiz Tab ── */}
         <TabsContent value="quiz" className="space-y-4 mt-4">
           <QuizAdminPanel />
