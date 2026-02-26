@@ -13,7 +13,7 @@ import { useFactories } from "@/hooks/useFactories";
 import { toast } from "sonner";
 import { exportToolroomPdf, type ToolroomPurchase } from "@/lib/exportToolroomPdf";
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, LineChart, Line, PieChart, Pie, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend, Cell
 } from "recharts";
 import * as ExcelJS from "exceljs";
@@ -177,6 +177,16 @@ export default function ToolroomReport() {
     total: purchases.filter(p => p.factory === f.name && p.year === filterYear).reduce((s, i) => s + Number(i.total_amount), 0),
   })).filter(f => f.total > 0);
 
+  const supplierChartData = Object.entries(
+    filtered.reduce((acc, p) => {
+      acc[p.supplier] = (acc[p.supplier] || 0) + Number(p.total_amount);
+      return acc;
+    }, {} as Record<string, number>)
+  )
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
   const totalFiltered = filtered.reduce((s, i) => s + Number(i.total_amount), 0);
   const totalYear = purchases.filter(p => p.year === filterYear && (filterFactory === "all" || p.factory === filterFactory)).reduce((s, i) => s + Number(i.total_amount), 0);
 
@@ -263,7 +273,7 @@ export default function ToolroomReport() {
 
       {/* Charts */}
       {purchases.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="bg-card border border-border rounded-xl p-4">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-400" /> {filterYear} Aylık Alım Trendi (€)
@@ -294,6 +304,32 @@ export default function ToolroomReport() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {supplierChartData.length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                <Package className="w-4 h-4 text-amber-400" /> Tedarikçi Bazlı Harcama (€)
+              </h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={supplierChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={75}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {supplierChartData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => [`€ ${v.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}`, "Tutar"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 
