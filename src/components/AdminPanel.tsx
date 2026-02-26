@@ -15,9 +15,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, TrendingDown, Building2, Factory, Lock, Camera, Package, Upload, FileText, Wrench } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, TrendingDown, Building2, Factory, Lock, Camera, Package, Upload, FileText, Wrench, BarChart3 } from "lucide-react";
 import TimeImprovements from "@/components/TimeImprovements";
 import MaintenanceModule from "@/components/MaintenanceModule";
+import ToolroomReport from "@/components/ToolroomReport";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -686,6 +687,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           <TabsTrigger value="coatings" className="gap-2"><Shield className="w-4 h-4" /> Kaplamalar</TabsTrigger>
           <TabsTrigger value="improvements" className="gap-2"><TrendingDown className="w-4 h-4" /> İyileştirmeler</TabsTrigger>
           <TabsTrigger value="maintenance" className="gap-2"><Wrench className="w-4 h-4" /> Bakım Onarım</TabsTrigger>
+          <TabsTrigger value="toolroom" className="gap-2"><BarChart3 className="w-4 h-4" /> Takımhane</TabsTrigger>
           <TabsTrigger value="modules" className="gap-2"><Package className="w-4 h-4" /> Modüller</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
@@ -1237,6 +1239,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         {/* ── Maintenance Tab ── */}
         <TabsContent value="maintenance" className="space-y-4 mt-4">
           <MaintenanceModule />
+        </TabsContent>
+
+        {/* ── Toolroom Tab ── */}
+        <TabsContent value="toolroom" className="space-y-4 mt-4">
+          {!canEdit("admin_toolroom" as any) && <ReadOnlyBanner />}
+          <ToolroomReport canEdit={canEdit("admin_toolroom" as any)} />
         </TabsContent>
 
         {/* ── Quiz Tab ── */}

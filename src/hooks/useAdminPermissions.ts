@@ -12,6 +12,7 @@ export const ADMIN_PANEL_KEYS = [
   "admin_feedback",
   "admin_improvements",
   "admin_maintenance",
+  "admin_toolroom",
 ] as const;
 
 export type AdminPanelKey = (typeof ADMIN_PANEL_KEYS)[number];
@@ -26,6 +27,7 @@ export const ADMIN_PANEL_LABELS: Record<AdminPanelKey, string> = {
   admin_feedback: "AI Eğitim",
   admin_improvements: "İyileştirmeler",
   admin_maintenance: "Bakım Onarım",
+  admin_toolroom: "Takımhane Raporu",
 };
 
 export interface AdminPermission {

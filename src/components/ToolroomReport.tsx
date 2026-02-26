@@ -112,7 +112,7 @@ const parseExcelRows = async (file: File): Promise<ConsumptionInput[]> => {
   return rows;
 };
 
-export default function ToolroomReport() {
+export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boolean } = {}) {
   const { user } = useAuth();
   const { factories } = useFactories();
   const [activeTab, setActiveTab] = useState<"purchases" | "consumptions">("purchases");
@@ -123,6 +123,11 @@ export default function ToolroomReport() {
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  /* edit modal */
+  const [editRow, setEditRow] = useState<(ToolroomPurchase | Consumption) | null>(null);
+  const [editForm, setEditForm] = useState<ConsumptionInput>(emptyForm());
+  const [editSaving, setEditSaving] = useState(false);
 
   /* filters */
   const [filterFactory, setFilterFactory] = useState("all");
@@ -149,6 +154,9 @@ export default function ToolroomReport() {
   const [form, setForm] = useState<ConsumptionInput>(emptyForm());
   const [saving, setSaving] = useState(false);
 
+  /* derived permission: admin OR explicitly granted from admin panel */
+  const hasEditAccess = isAdmin || canEditProp === true;
+
   useEffect(() => {
     if (!user) return;
     supabase.from("user_roles").select("role").eq("user_id", user.id).then(({ data }) => {
@@ -156,6 +164,31 @@ export default function ToolroomReport() {
     });
   }, [user]);
 
+  const openEdit = (row: ToolroomPurchase | Consumption) => {
+    setEditRow(row);
+    setEditForm({
+      factory: row.factory, year: row.year, month: row.month,
+      supplier: row.supplier, tool_type: row.tool_type, tool_code: row.tool_code || "",
+      quantity: row.quantity, unit_price: row.unit_price, notes: row.notes || "",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editRow) return;
+    if (!editForm.factory || !editForm.supplier || !editForm.tool_type) { toast.error("Zorunlu alanları doldurun."); return; }
+    setEditSaving(true);
+    const table = activeTab === "purchases" ? "toolroom_purchases" : "toolroom_consumptions";
+    const { error } = await (supabase as any).from(table).update({
+      factory: editForm.factory, year: editForm.year, month: editForm.month,
+      supplier: editForm.supplier, tool_type: editForm.tool_type,
+      tool_code: editForm.tool_code || null, quantity: editForm.quantity,
+      unit_price: editForm.unit_price, notes: editForm.notes || null,
+    }).eq("id", editRow.id);
+    setEditSaving(false);
+    if (error) { toast.error("Güncelleme hatası."); return; }
+    toast.success("Kayıt güncellendi.");
+    setEditRow(null); load();
+  };
   const load = useCallback(async () => {
     setLoading(true);
     const [{ data: pData }, { data: cData }, { data: rData }] = await Promise.all([
@@ -531,10 +564,15 @@ export default function ToolroomReport() {
                     <td className="px-3 py-2 text-xs text-right font-semibold text-amber-400">€ {Number(row.total_amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground max-w-[120px] truncate">{row.notes || "—"}</td>
                     <td className="px-3 py-2">
-                      {isAdmin && (
-                        <button onClick={() => activeTab === "purchases" ? handleDeletePurchase(row.id) : handleDeleteConsumption(row.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      {hasEditAccess && (
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => openEdit(row)} className="text-muted-foreground hover:text-amber-400 transition-colors" title="Düzenle">
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => activeTab === "purchases" ? handleDeletePurchase(row.id) : handleDeleteConsumption(row.id)} className="text-muted-foreground hover:text-destructive transition-colors" title="Sil">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -663,6 +701,81 @@ export default function ToolroomReport() {
                 <Upload className="w-4 h-4 mr-2" /> {preview.length} Kaydı Ekle
               </Button>
               <Button variant="outline" onClick={() => setShowPreview(false)}>İptal</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editRow && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h3 className="font-bold text-foreground">Kaydı Düzenle</h3>
+              <button onClick={() => setEditRow(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="text-xs text-muted-foreground mb-1 block">Fabrika *</label>
+                <Select value={editForm.factory} onValueChange={v => setEditForm(f => ({ ...f, factory: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Fabrika seç" /></SelectTrigger>
+                  <SelectContent className="z-[60] bg-popover border border-border shadow-lg">
+                    {factories.filter(f => f.is_active).map(f => <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Yıl *</label>
+                <Select value={String(editForm.year)} onValueChange={v => setEditForm(f => ({ ...f, year: Number(v) }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="z-[60] bg-popover border border-border shadow-lg">
+                    {YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Ay *</label>
+                <Select value={String(editForm.month)} onValueChange={v => setEditForm(f => ({ ...f, month: Number(v) }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="z-[60] bg-popover border border-border shadow-lg">
+                    {MONTHS.map((m, i) => <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs text-muted-foreground mb-1 block">Tedarikçi *</label>
+                <Input value={editForm.supplier} onChange={e => setEditForm(f => ({ ...f, supplier: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Takım Kodu</label>
+                <Input value={editForm.tool_code || ""} onChange={e => setEditForm(f => ({ ...f, tool_code: e.target.value }))} className="font-mono" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Takım Tipi *</label>
+                <Input value={editForm.tool_type} onChange={e => setEditForm(f => ({ ...f, tool_type: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Miktar *</label>
+                <Input type="number" min={1} value={editForm.quantity} onChange={e => setEditForm(f => ({ ...f, quantity: Number(e.target.value) }))} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Birim Fiyat (€) *</label>
+                <Input type="number" min={0} step={0.01} value={editForm.unit_price} onChange={e => setEditForm(f => ({ ...f, unit_price: Number(e.target.value) }))} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs text-muted-foreground mb-1 block">Not</label>
+                <Input value={editForm.notes || ""} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <div className="col-span-2 bg-muted/30 rounded-lg px-3 py-2 text-sm flex justify-between">
+                <span className="text-muted-foreground">Toplam:</span>
+                <span className="font-bold text-amber-400">€ {(editForm.quantity * editForm.unit_price).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+            <div className="flex gap-3 p-4 border-t border-border">
+              <Button onClick={handleEditSave} disabled={editSaving} className="flex-1 bg-amber-600 hover:bg-amber-700">
+                <Check className="w-4 h-4 mr-2" /> {editSaving ? "Kaydediliyor..." : "Güncelle"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditRow(null)}>İptal</Button>
             </div>
           </div>
         </div>
