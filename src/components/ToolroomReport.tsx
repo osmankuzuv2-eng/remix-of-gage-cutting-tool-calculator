@@ -731,6 +731,32 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
         </div>
       )}
 
+      {/* Confirm Delete Month Modal */}
+      {confirmDeleteMonth && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/15 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground">Tümünü Sil</h3>
+                  <p className="text-xs text-muted-foreground">Bu işlem geri alınamaz</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Mevcut filtre kapsamındaki <span className="font-bold text-foreground">{currentData.length}</span> kayıt kalıcı olarak silinecek. Emin misiniz?
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={handleDeleteByMonth} variant="destructive" className="flex-1">Evet, Sil</Button>
+                <Button onClick={() => setConfirmDeleteMonth(false)} variant="outline" className="flex-1">İptal</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Modal */}
       {editRow && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
