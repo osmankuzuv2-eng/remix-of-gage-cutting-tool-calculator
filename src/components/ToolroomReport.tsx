@@ -62,6 +62,7 @@ export default function ToolroomReport() {
   const [filterFactory, setFilterFactory] = useState("all");
   const [filterYear, setFilterYear] = useState(currentYear);
   const [filterMonth, setFilterMonth] = useState<number | null>(null);
+  const [filterSupplier, setFilterSupplier] = useState("all");
   const [search, setSearch] = useState("");
 
   /* excel import */
@@ -147,13 +148,16 @@ export default function ToolroomReport() {
   };
 
   /* ─── Filtered data ─── */
+  const supplierOptions = [...new Set(purchases.map(p => p.supplier))].sort();
+
   const filtered = purchases.filter(p => {
     const mF = filterFactory === "all" || p.factory === filterFactory;
     const mY = p.year === filterYear;
     const mM = filterMonth === null || p.month === filterMonth;
+    const mSup = filterSupplier === "all" || p.supplier === filterSupplier;
     const q = search.toLowerCase();
     const mS = !q || p.supplier.toLowerCase().includes(q) || p.tool_type.toLowerCase().includes(q) || (p.tool_code || "").toLowerCase().includes(q);
-    return mF && mY && mM && mS;
+    return mF && mY && mM && mSup && mS;
   });
 
   /* ─── Chart data ─── */
@@ -222,6 +226,15 @@ export default function ToolroomReport() {
           <SelectContent>
             <SelectItem value="all">Tüm Aylar</SelectItem>
             {MONTHS.map((m, i) => <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterSupplier} onValueChange={setFilterSupplier}>
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="Tüm Tedarikçiler" />
+          </SelectTrigger>
+          <SelectContent className="z-50 bg-popover border border-border shadow-lg">
+            <SelectItem value="all">Tüm Tedarikçiler</SelectItem>
+            {supplierOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <div className="relative flex-1 min-w-[180px]">
