@@ -261,6 +261,19 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
     setForm(emptyForm()); setShowForm(false); load();
   };
 
+  const [confirmDeleteMonth, setConfirmDeleteMonth] = useState(false);
+
+  const handleDeleteByMonth = async () => {
+    const table = activeTab === "purchases" ? "toolroom_purchases" : "toolroom_consumptions";
+    const ids = currentData.map(r => r.id);
+    if (ids.length === 0) return;
+    const { error } = await (supabase as any).from(table).delete().in("id", ids);
+    if (error) { toast.error("Silme hatası."); return; }
+    toast.success(`${ids.length} kayıt silindi.`);
+    setConfirmDeleteMonth(false);
+    load();
+  };
+
   const handleDeletePurchase = async (id: string) => {
     await (supabase as any).from("toolroom_purchases").delete().eq("id", id);
     toast.success("Kayıt silindi."); load();
