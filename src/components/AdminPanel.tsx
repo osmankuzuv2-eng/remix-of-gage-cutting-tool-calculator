@@ -15,9 +15,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, TrendingDown, Building2, Factory, Lock, Camera, Package, Upload, FileText, Wrench } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, TrendingDown, Building2, Factory, Lock, Camera, Package, Upload, FileText, Wrench, BarChart3 } from "lucide-react";
 import TimeImprovements from "@/components/TimeImprovements";
 import MaintenanceModule from "@/components/MaintenanceModule";
+import ToolroomReport from "@/components/ToolroomReport";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
