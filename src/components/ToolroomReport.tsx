@@ -109,11 +109,12 @@ export default function ToolroomReport() {
         const year = Number(vals[2]);
         const month = Number(vals[3]);
         const supplier = String(vals[4] ?? "").trim();
-        const tool_type = String(vals[5] ?? "").trim();
+        const tool_code = String(vals[5] ?? "").trim() || null;
+        const tool_type = String(vals[6] ?? "").trim();
         if (!factory || !supplier || !tool_type || !year || !month) return;
         rows.push({
           factory, year, month, supplier, tool_type,
-          tool_code: String(vals[6] ?? "").trim() || null,
+          tool_code,
           quantity: Number(vals[7]) || 1,
           unit_price: Number(vals[8]) || 0,
           notes: String(vals[9] ?? "").trim() || null,
