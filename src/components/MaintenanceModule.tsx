@@ -1,13 +1,18 @@
 import { useState, useRef, useMemo } from "react";
-import { Wrench, Calendar, AlertTriangle, ClipboardCheck, Plus, Trash2, ChevronDown, ChevronUp, Clock, DollarSign, User, CheckCircle2, XCircle, CircleDot, Filter, Search, Camera, Image, X, ZoomIn, Upload, BarChart3, TrendingUp, Activity } from "lucide-react";
+import { Wrench, Calendar, AlertTriangle, ClipboardCheck, Plus, Trash2, ChevronDown, ChevronUp, Clock, DollarSign, User, CheckCircle2, XCircle, CircleDot, Filter, Search, Camera, Image, X, ZoomIn, Upload, BarChart3, TrendingUp, Activity, Download, FileSpreadsheet, FileText, Building2 } from "lucide-react";
 import { useMaintenance, MaintenanceRecord, MaintenanceSchedule, ChecklistItem, MaintenancePhoto } from "@/hooks/useMaintenance";
 import { useMachines, Machine } from "@/hooks/useMachines";
+import { useFactories } from "@/hooks/useFactories";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { exportMaintenancePdf } from "@/lib/exportMaintenancePdf";
+import { exportMaintenanceExcel } from "@/lib/exportMaintenanceExcel";
 
 // ---- Sub-components ----
 
@@ -57,10 +62,18 @@ interface RecordFormProps {
   initial?: Partial<MaintenanceRecord>;
   onSave: (data: Partial<MaintenanceRecord>) => Promise<any>;
   onClose: () => void;
+  selectedFactory?: string;
 }
 
-const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => {
+const RecordForm = ({ machines, initial, onSave, onClose, selectedFactory }: RecordFormProps) => {
   const { t } = useLanguage();
+  
+  // Filter machines by selected factory + always include Yardımcı Tesisler
+  const filteredMachines = useMemo(() => {
+    if (!selectedFactory || selectedFactory === "all") return machines;
+    return machines.filter(m => m.factory === selectedFactory);
+  }, [machines, selectedFactory]);
+
   const [form, setForm] = useState({
     machine_id: initial?.machine_id || "",
     maintenance_type: initial?.maintenance_type || "planned_maintenance",
@@ -123,7 +136,13 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
   };
 
   const handleSubmit = async () => {
-    if (!form.machine_id || !form.title) {
+    if (!form.machine_id && form.machine_id !== "yardimci_tesisler") {
+      if (!form.machine_id) {
+        toast({ title: t("common", "error"), description: t("maintenance", "machineAndTitleRequired"), variant: "destructive" });
+        return;
+      }
+    }
+    if (!form.title) {
       toast({ title: t("common", "error"), description: t("maintenance", "machineAndTitleRequired"), variant: "destructive" });
       return;
     }
@@ -148,7 +167,8 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "machine")} *</label>
             <select value={form.machine_id} onChange={e => setForm(p => ({ ...p, machine_id: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
               <option value="">{t("maintenance", "select")}</option>
-              {machines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
+              <option value="yardimci_tesisler">🏭 Yardımcı Tesisler</option>
+              {filteredMachines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
             </select>
           </div>
           <div>
@@ -195,7 +215,7 @@ const RecordForm = ({ machines, initial, onSave, onClose }: RecordFormProps) => 
             <input type="date" value={form.scheduled_date} onChange={e => setForm(p => ({ ...p, scheduled_date: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "cost")}</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "cost")} (₺)</label>
             <input type="number" min={0} value={form.cost} onChange={e => setForm(p => ({ ...p, cost: Number(e.target.value) }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
@@ -277,10 +297,17 @@ interface ScheduleFormProps {
   initial?: Partial<MaintenanceSchedule>;
   onSave: (data: Partial<MaintenanceSchedule>) => Promise<any>;
   onClose: () => void;
+  selectedFactory?: string;
 }
 
-const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps) => {
+const ScheduleForm = ({ machines, initial, onSave, onClose, selectedFactory }: ScheduleFormProps) => {
   const { t } = useLanguage();
+  
+  const filteredMachines = useMemo(() => {
+    if (!selectedFactory || selectedFactory === "all") return machines;
+    return machines.filter(m => m.factory === selectedFactory);
+  }, [machines, selectedFactory]);
+
   const [form, setForm] = useState({
     machine_id: initial?.machine_id || "",
     title: initial?.title || "",
@@ -337,7 +364,8 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "machine")} *</label>
             <select value={form.machine_id} onChange={e => setForm(p => ({ ...p, machine_id: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
               <option value="">{t("maintenance", "select")}</option>
-              {machines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
+              <option value="yardimci_tesisler">🏭 Yardımcı Tesisler</option>
+              {filteredMachines.map(m => <option key={m.id} value={m.id}>{m.label} ({m.code})</option>)}
             </select>
           </div>
           <div>
@@ -354,47 +382,61 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
             <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "intervalHours")}</label>
-            <input type="number" min={0} value={form.interval_hours} onChange={e => setForm(p => ({ ...p, interval_hours: e.target.value }))} placeholder="500" className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "everyXDays")} ({t("maintenance", "intervalDays")})</label>
+            <input type="number" min={0} value={form.interval_days} onChange={e => setForm(p => ({ ...p, interval_days: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "intervalDays")}</label>
-            <input type="number" min={0} value={form.interval_days} onChange={e => setForm(p => ({ ...p, interval_days: e.target.value }))} placeholder="90" className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "currentHours")}</label>
-            <input type="number" min={0} value={form.current_hours} onChange={e => setForm(p => ({ ...p, current_hours: Number(e.target.value) }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "everyXHours")} ({t("maintenance", "intervalHours")})</label>
+            <input type="number" min={0} value={form.interval_hours} onChange={e => setForm(p => ({ ...p, interval_hours: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "nextDueDate")}</label>
             <input type="date" value={form.next_due_date} onChange={e => setForm(p => ({ ...p, next_due_date: e.target.value }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "currentHours")}</label>
+            <input type="number" min={0} value={form.current_hours} onChange={e => setForm(p => ({ ...p, current_hours: Number(e.target.value) }))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
+          </div>
+          <div className="sm:col-span-2 flex items-center gap-2">
+            <input type="checkbox" id="is_active" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} className="rounded" />
+            <label htmlFor="is_active" className="text-sm text-foreground">{t("maintenance", "active")}</label>
+          </div>
         </div>
 
-        {/* Checklist builder */}
-        <div>
-          <label className="text-xs text-muted-foreground mb-2 block font-semibold">{t("maintenance", "checklist")}</label>
-          <div className="space-y-1 mb-2">
-            {checklistItems.map((item, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 bg-background rounded-lg border border-border">
-                <ClipboardCheck className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm text-foreground flex-1">{item}</span>
-                <button onClick={() => setChecklistItems(p => p.filter((_, idx) => idx !== i))} className="text-destructive hover:text-destructive/80">
-                  <XCircle className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+        {/* Checklist Builder */}
+        <div className="space-y-2">
+          <label className="text-xs text-muted-foreground font-semibold block">{t("maintenance", "checklist")}</label>
           <div className="flex gap-2">
-            <input value={newItem} onChange={e => setNewItem(e.target.value)} onKeyDown={e => e.key === "Enter" && addChecklistItem()} placeholder={t("maintenance", "addItemPlaceholder")} className="flex-1 rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
-            <button onClick={addChecklistItem} className="px-3 py-2 rounded-lg bg-primary/20 text-primary text-sm font-medium hover:bg-primary/30 transition-colors">{t("maintenance", "addItem")}</button>
+            <input
+              value={newItem}
+              onChange={e => setNewItem(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && addChecklistItem()}
+              placeholder={t("maintenance", "addChecklistItem")}
+              className="flex-1 rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground"
+            />
+            <button onClick={addChecklistItem} className="px-3 py-2 rounded-lg bg-primary/20 text-primary text-sm hover:bg-primary/30 transition-colors">
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
+          {checklistItems.length > 0 && (
+            <div className="space-y-1">
+              {checklistItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+                  <CircleDot className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <span className="text-sm text-foreground flex-1">{item}</span>
+                  <button onClick={() => setChecklistItems(p => p.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">{t("maintenance", "cancelled")}</button>
           <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
-            {saving ? t("common", "saving") : t("common", "save")}
+            {saving ? t("common", "saving") : initial ? t("maintenance", "update") : t("common", "save")}
           </button>
         </div>
       </div>
@@ -406,80 +448,75 @@ const ScheduleForm = ({ machines, initial, onSave, onClose }: ScheduleFormProps)
 interface ChecklistExecProps {
   schedule: MaintenanceSchedule;
   machineName: string;
-  onComplete: (results: ChecklistItem[], duration: number, notes: string) => Promise<any>;
+  onComplete: (results: ChecklistItem[], duration: number, notes?: string) => Promise<any>;
   onClose: () => void;
 }
 
 const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: ChecklistExecProps) => {
   const { t } = useLanguage();
   const [items, setItems] = useState<ChecklistItem[]>(
-    schedule.checklist.map(c => ({ ...c, checked: false, note: "" }))
+    schedule.checklist.map(c => ({ ...c, checked: false }))
   );
   const [duration, setDuration] = useState(0);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const toggle = (idx: number) => {
-    setItems(p => p.map((item, i) => i === idx ? { ...item, checked: !item.checked } : item));
-  };
-
-  const setNote = (idx: number, note: string) => {
-    setItems(p => p.map((item, i) => i === idx ? { ...item, note } : item));
+  const toggle = (i: number) => {
+    setItems(p => p.map((item, idx) => idx === i ? { ...item, checked: !item.checked } : item));
   };
 
   const allChecked = items.every(i => i.checked);
 
   const handleSubmit = async () => {
     setSaving(true);
-    const err = await onComplete(items, duration, notes);
+    const err = await onComplete(items, duration, notes || undefined);
     setSaving(false);
     if (!err) {
-      toast({ title: t("common", "success"), description: t("maintenance", "checklistComplete") });
+      toast({ title: t("common", "success"), description: t("maintenance", "checklistCompleted") });
       onClose();
+    } else {
+      toast({ title: t("common", "error"), description: err.message, variant: "destructive" });
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
-        <div>
-          <h3 className="text-lg font-bold text-foreground">{t("maintenance", "checklistTitle")}</h3>
-          <p className="text-sm text-muted-foreground">{schedule.title} — {machineName}</p>
-        </div>
+        <h3 className="text-lg font-bold text-foreground">{t("maintenance", "applyChecklist")}</h3>
+        <p className="text-sm text-muted-foreground">{schedule.title} — <span className="text-foreground font-medium">{machineName}</span></p>
 
         <div className="space-y-2">
           {items.map((item, i) => (
-            <div key={i} className={`p-3 rounded-xl border transition-all duration-200 ${item.checked ? "bg-emerald-500/10 border-emerald-500/30" : "bg-background border-border"}`}>
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => toggle(i)}>
-                {item.checked ? <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> : <CircleDot className="w-5 h-5 text-muted-foreground shrink-0" />}
-                <span className={`text-sm font-medium ${item.checked ? "text-emerald-400 line-through" : "text-foreground"}`}>{item.item}</span>
-              </div>
-              <input placeholder={t("maintenance", "noteOptional")} value={item.note || ""} onChange={e => setNote(i, e.target.value)} className="mt-2 w-full rounded-lg bg-background/50 border border-border/50 px-3 py-1.5 text-xs text-foreground" onClick={e => e.stopPropagation()} />
+            <div
+              key={i}
+              onClick={() => toggle(i)}
+              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${item.checked ? "bg-emerald-500/10 border-emerald-500/30" : "bg-muted/20 border-border hover:bg-muted/40"}`}
+            >
+              {item.checked ? <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> : <CircleDot className="w-5 h-5 text-muted-foreground shrink-0" />}
+              <span className={`text-sm ${item.checked ? "text-foreground" : "text-muted-foreground"}`}>{item.item}</span>
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "duration")}</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "duration")} (dk)</label>
             <input type="number" min={0} value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "completedItems")}</label>
-            <div className="flex items-center h-[38px] text-sm font-mono text-primary">{items.filter(i => i.checked).length} / {items.length}</div>
+            <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "notes")}</label>
+            <input value={notes} onChange={e => setNotes(e.target.value)} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground" />
           </div>
         </div>
 
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">{t("maintenance", "generalNote")}</label>
-          <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground resize-none" />
-        </div>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">{t("maintenance", "cancelled")}</button>
-          <button onClick={handleSubmit} disabled={saving || !allChecked} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-50">
-            {saving ? t("common", "saving") : t("maintenance", "complete")}
-          </button>
+        <div className="flex justify-between items-center pt-2">
+          <span className="text-xs text-muted-foreground">{items.filter(i => i.checked).length}/{items.length} {t("maintenance", "checklistItems")}</span>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors">{t("maintenance", "cancelled")}</button>
+            <button onClick={handleSubmit} disabled={saving || !allChecked} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-50">
+              {saving ? t("common", "saving") : t("maintenance", "complete")}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -489,8 +526,11 @@ const ChecklistExec = ({ schedule, machineName, onComplete, onClose }: Checklist
 // ---- Main Module ----
 const MaintenanceModule = () => {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
+  const { canEdit } = useAdminPermissions();
   const { records, schedules, checklistLogs, loading, addRecord, updateRecord, deleteRecord, addSchedule, updateSchedule, deleteSchedule, completeChecklist, getAlerts } = useMaintenance();
   const { machines } = useMachines();
+  const { activeFactories } = useFactories();
   const [showRecordForm, setShowRecordForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MaintenanceRecord | null>(null);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -498,17 +538,77 @@ const MaintenanceModule = () => {
   const [checklistSchedule, setChecklistSchedule] = useState<MaintenanceSchedule | null>(null);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterFactory, setFilterFactory] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const locale = language === "fr" ? "fr-FR" : language === "en" ? "en-US" : "tr-TR";
   const alerts = getAlerts();
-  const getMachineName = (id: string) => machines.find(m => m.id === id)?.label || "—";
+
+  // Can this user edit maintenance?
+  const userCanEdit = canEdit("admin_maintenance");
+
+  const getMachineName = (id: string) => {
+    if (id === "yardimci_tesisler") return "Yardımcı Tesisler";
+    return machines.find(m => m.id === id)?.label || "—";
+  };
+
+  const getMachineFactory = (id: string) => {
+    if (id === "yardimci_tesisler") return "yardimci";
+    return machines.find(m => m.id === id)?.factory || "";
+  };
 
   const filteredRecords = records.filter(r => {
+    if (filterFactory !== "all") {
+      const mFactory = getMachineFactory(r.machine_id);
+      if (filterFactory === "yardimci" && r.machine_id !== "yardimci_tesisler") return false;
+      if (filterFactory !== "yardimci" && mFactory !== filterFactory) return false;
+    }
     if (filterType !== "all" && r.maintenance_type !== filterType) return false;
     if (search && !r.title.toLowerCase().includes(search.toLowerCase()) && !getMachineName(r.machine_id).toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const factoryLabel = useMemo(() => {
+    if (filterFactory === "all") return "";
+    if (filterFactory === "yardimci") return "Yardımcı Tesisler";
+    return activeFactories.find(f => f.name === filterFactory)?.name || filterFactory;
+  }, [filterFactory, activeFactories]);
+
+  // Build export rows
+  const buildExportRecords = () => filteredRecords.map(r => ({
+    title: r.title,
+    machine_name: getMachineName(r.machine_id),
+    factory: getMachineFactory(r.machine_id) || factoryLabel,
+    maintenance_type: r.maintenance_type,
+    status: r.status,
+    priority: r.priority,
+    technician_name: r.technician_name,
+    cost: r.cost || 0,
+    duration_minutes: r.duration_minutes || 0,
+    scheduled_date: r.scheduled_date,
+    completed_date: r.completed_date,
+    notes: r.notes,
+    created_at: r.created_at,
+  }));
+
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      await exportMaintenancePdf(buildExportRecords(), factoryLabel);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      await exportMaintenanceExcel(buildExportRecords(), factoryLabel);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Dashboard data
   const dashboardData = useMemo(() => {
@@ -561,7 +661,7 @@ const MaintenanceModule = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
           <Wrench className="w-5 h-5 text-white" />
         </div>
@@ -569,11 +669,29 @@ const MaintenanceModule = () => {
           <h2 className="text-xl font-bold text-foreground">{t("maintenance", "title")}</h2>
           <p className="text-xs text-muted-foreground">{t("maintenance", "subtitle")}</p>
         </div>
-        {alerts.length > 0 && (
-          <Badge className="ml-auto bg-red-500/20 text-red-400 border-red-500/30 border animate-pulse">
-            <AlertTriangle className="w-3 h-3 mr-1" />{alerts.length} {t("maintenance", "alertCount")}
-          </Badge>
-        )}
+
+        {/* Factory Filter in Header */}
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 bg-background border border-border rounded-lg px-3 py-1.5">
+            <Building2 className="w-4 h-4 text-muted-foreground" />
+            <select
+              value={filterFactory}
+              onChange={e => setFilterFactory(e.target.value)}
+              className="bg-transparent text-sm text-foreground outline-none cursor-pointer"
+            >
+              <option value="all">Tüm Fabrikalar</option>
+              {activeFactories.map(f => (
+                <option key={f.id} value={f.name}>{f.name}</option>
+              ))}
+              <option value="yardimci">Yardımcı Tesisler</option>
+            </select>
+          </div>
+          {alerts.length > 0 && (
+            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 border animate-pulse">
+              <AlertTriangle className="w-3 h-3 mr-1" />{alerts.length} {t("maintenance", "alertCount")}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Alerts Banner */}
@@ -605,7 +723,6 @@ const MaintenanceModule = () => {
 
         {/* ---- Dashboard Tab ---- */}
         <TabsContent value="dashboard" className="space-y-6">
-          {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-4 rounded-xl bg-card border border-border">
               <div className="flex items-center gap-2 mb-2">
@@ -623,7 +740,7 @@ const MaintenanceModule = () => {
                 </div>
                 <span className="text-xs text-muted-foreground">{t("maintenance", "totalCost")}</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">€{dashboardData.totalCost.toLocaleString(locale)}</p>
+              <p className="text-2xl font-bold text-foreground">₺{dashboardData.totalCost.toLocaleString(locale)}</p>
             </div>
             <div className="p-4 rounded-xl bg-card border border-border">
               <div className="flex items-center gap-2 mb-2">
@@ -645,9 +762,7 @@ const MaintenanceModule = () => {
             </div>
           </div>
 
-          {/* Charts Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Type Distribution Pie */}
             {dashboardData.typeData.length > 0 && (
               <div className="p-4 rounded-xl bg-card border border-border">
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -667,7 +782,6 @@ const MaintenanceModule = () => {
               </div>
             )}
 
-            {/* Status Distribution Pie */}
             {dashboardData.statusData.length > 0 && (
               <div className="p-4 rounded-xl bg-card border border-border">
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -688,7 +802,6 @@ const MaintenanceModule = () => {
             )}
           </div>
 
-          {/* Per-Machine Bar Chart */}
           {dashboardData.perMachine.length > 0 && (
             <div className="p-4 rounded-xl bg-card border border-border">
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -701,7 +814,7 @@ const MaintenanceModule = () => {
                   <YAxis dataKey="name" type="category" width={120} tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }} />
                   <RechartsTooltip
                     contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }}
-                    formatter={(value: number, name: string) => [name === "cost" ? `€${value}` : `${value}`, name === "cost" ? t("maintenance", "costLabel") : name === "count" ? t("maintenance", "maintenanceCount") : t("maintenance", "durationLabel")]}
+                    formatter={(value: number, name: string) => [name === "cost" ? `₺${value.toLocaleString(locale)}` : `${value}`, name === "cost" ? t("maintenance", "costLabel") : name === "count" ? t("maintenance", "maintenanceCount") : t("maintenance", "durationLabel")]}
                   />
                   <Legend formatter={(value) => value === "count" ? t("maintenance", "maintenanceCount") : value === "cost" ? t("maintenance", "costLabel") : t("maintenance", "durationLabel")} />
                   <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} name="count" />
@@ -711,7 +824,6 @@ const MaintenanceModule = () => {
             </div>
           )}
 
-          {/* Per-Machine Detail Table */}
           {dashboardData.perMachine.length > 0 && (
             <div className="p-4 rounded-xl bg-card border border-border overflow-x-auto">
               <h4 className="text-sm font-semibold text-foreground mb-3">{t("maintenance", "machineSummaryTable")}</h4>
@@ -737,7 +849,7 @@ const MaintenanceModule = () => {
                       <td className="py-2 px-3 text-center text-foreground">{m.unplanned_failure}</td>
                       <td className="py-2 px-3 text-center text-foreground">{m.revision}</td>
                       <td className="py-2 px-3 text-center text-foreground">{m.service}</td>
-                      <td className="py-2 px-3 text-right text-foreground">€{m.cost.toLocaleString(locale)}</td>
+                      <td className="py-2 px-3 text-right text-foreground">₺{m.cost.toLocaleString(locale)}</td>
                       <td className="py-2 px-3 text-right text-foreground">{m.count > 0 ? Math.round(m.totalDuration / m.count) : 0} {language === "en" || language === "fr" ? "min" : "dk"}</td>
                     </tr>
                   ))}
@@ -757,20 +869,51 @@ const MaintenanceModule = () => {
         {/* ---- Records Tab ---- */}
         <TabsContent value="records" className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-[180px]">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("maintenance", "search")} className="w-full rounded-lg bg-background border border-border pl-9 pr-3 py-2 text-sm text-foreground" />
             </div>
             <select value={filterType} onChange={e => setFilterType(e.target.value)} className="rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground">
               <option value="all">{t("maintenance", "all")}</option>
-              <option value="preventive">{t("maintenance", "preventive")}</option>
-              <option value="predictive">{t("maintenance", "predictive")}</option>
-              <option value="corrective">{t("maintenance", "corrective")}</option>
+              <option value="planned_maintenance">{t("maintenance", "planned_maintenance")}</option>
+              <option value="unplanned_failure">{t("maintenance", "unplanned_failure")}</option>
+              <option value="revision">{t("maintenance", "revision")}</option>
+              <option value="service">{t("maintenance", "service")}</option>
             </select>
-            <button onClick={() => { setEditingRecord(null); setShowRecordForm(true); }} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
-              <Plus className="w-4 h-4" /> {t("maintenance", "newRecord")}
+
+            {/* Export buttons */}
+            <button
+              onClick={handleExportPdf}
+              disabled={exporting || filteredRecords.length === 0}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/20 text-red-400 text-sm hover:bg-red-500/30 transition-colors disabled:opacity-50"
+              title="PDF İndir"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">PDF</span>
             </button>
+            <button
+              onClick={handleExportExcel}
+              disabled={exporting || filteredRecords.length === 0}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+              title="Excel İndir"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </button>
+
+            {userCanEdit && (
+              <button onClick={() => { setEditingRecord(null); setShowRecordForm(true); }} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
+                <Plus className="w-4 h-4" /> {t("maintenance", "newRecord")}
+              </button>
+            )}
           </div>
+
+          {filterFactory !== "all" && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg">
+              <Building2 className="w-3 h-3" />
+              <span>Fabrika filtresi: <strong className="text-foreground">{factoryLabel}</strong> — {filteredRecords.length} kayıt</span>
+            </div>
+          )}
 
           {filteredRecords.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -792,7 +935,6 @@ const MaintenanceModule = () => {
                       <p className="text-sm text-muted-foreground">{getMachineName(r.machine_id)}</p>
                       {r.description && <p className="text-xs text-muted-foreground mt-1">{r.description}</p>}
                       
-                      {/* Photo thumbnails */}
                       {r.photos && (r.photos as MaintenancePhoto[]).length > 0 && (
                         <div className="flex gap-1.5 mt-2 flex-wrap">
                           {(r.photos as MaintenancePhoto[]).map((photo, pi) => (
@@ -820,19 +962,21 @@ const MaintenanceModule = () => {
 
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                         {r.technician_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{r.technician_name}</span>}
-                        {r.cost > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />€{r.cost}</span>}
+                        {r.cost > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />₺{r.cost.toLocaleString(locale)}</span>}
                         {r.duration_minutes > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{r.duration_minutes} {language === "en" || language === "fr" ? "min" : "dk"}</span>}
                         {r.scheduled_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(r.scheduled_date).toLocaleDateString(locale)}</span>}
                       </div>
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <button onClick={() => { setEditingRecord(r); setShowRecordForm(true); }} className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
-                        <Wrench className="w-4 h-4" />
-                      </button>
-                      <button onClick={async () => { if (confirm(t("maintenance", "confirmDeleteRecord"))) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {userCanEdit && (
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => { setEditingRecord(r); setShowRecordForm(true); }} className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+                          <Wrench className="w-4 h-4" />
+                        </button>
+                        <button onClick={async () => { if (confirm(t("maintenance", "confirmDeleteRecord"))) await deleteRecord(r.id); }} className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -842,11 +986,13 @@ const MaintenanceModule = () => {
 
         {/* ---- Schedules Tab ---- */}
         <TabsContent value="schedules" className="space-y-4">
-          <div className="flex justify-end">
-            <button onClick={() => { setEditingSchedule(null); setShowScheduleForm(true); }} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
-              <Plus className="w-4 h-4" /> {t("maintenance", "newPlan")}
-            </button>
-          </div>
+          {userCanEdit && (
+            <div className="flex justify-end">
+              <button onClick={() => { setEditingSchedule(null); setShowScheduleForm(true); }} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
+                <Plus className="w-4 h-4" /> {t("maintenance", "newPlan")}
+              </button>
+            </div>
+          )}
 
           {schedules.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -870,12 +1016,16 @@ const MaintenanceModule = () => {
                         <button onClick={() => setChecklistSchedule(s)} className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors" title={t("maintenance", "applyChecklist")}>
                           <ClipboardCheck className="w-4 h-4" />
                         </button>
-                        <button onClick={() => { setEditingSchedule(s); setShowScheduleForm(true); }} className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground transition-colors">
-                          <Wrench className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={async () => { if (confirm(t("maintenance", "confirmDeletePlan"))) await deleteSchedule(s.id); }} className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {userCanEdit && (
+                          <>
+                            <button onClick={() => { setEditingSchedule(s); setShowScheduleForm(true); }} className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground transition-colors">
+                              <Wrench className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={async () => { if (confirm(t("maintenance", "confirmDeletePlan"))) await deleteSchedule(s.id); }} className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -893,7 +1043,6 @@ const MaintenanceModule = () => {
                       {s.last_performed_at && <div>{t("maintenance", "lastMaintenance")}: {new Date(s.last_performed_at).toLocaleDateString(locale)}</div>}
                     </div>
 
-                    {/* Hours progress bar */}
                     {hoursPercent !== null && (
                       <div className="mt-3">
                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -906,7 +1055,6 @@ const MaintenanceModule = () => {
                       </div>
                     )}
 
-                    {/* Checklist preview */}
                     {s.checklist.length > 0 && (
                       <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
                         <ClipboardCheck className="w-3 h-3" />
@@ -962,6 +1110,7 @@ const MaintenanceModule = () => {
           initial={editingRecord || undefined}
           onSave={editingRecord ? (data) => updateRecord(editingRecord.id, data) : addRecord}
           onClose={() => { setShowRecordForm(false); setEditingRecord(null); }}
+          selectedFactory={filterFactory}
         />
       )}
       {showScheduleForm && (
@@ -970,6 +1119,7 @@ const MaintenanceModule = () => {
           initial={editingSchedule || undefined}
           onSave={editingSchedule ? (data) => updateSchedule(editingSchedule.id, data) : addSchedule}
           onClose={() => { setShowScheduleForm(false); setEditingSchedule(null); }}
+          selectedFactory={filterFactory}
         />
       )}
       {checklistSchedule && (
