@@ -705,6 +705,81 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      {editRow && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h3 className="font-bold text-foreground">Kaydı Düzenle</h3>
+              <button onClick={() => setEditRow(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="text-xs text-muted-foreground mb-1 block">Fabrika *</label>
+                <Select value={editForm.factory} onValueChange={v => setEditForm(f => ({ ...f, factory: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Fabrika seç" /></SelectTrigger>
+                  <SelectContent className="z-[60] bg-popover border border-border shadow-lg">
+                    {factories.filter(f => f.is_active).map(f => <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Yıl *</label>
+                <Select value={String(editForm.year)} onValueChange={v => setEditForm(f => ({ ...f, year: Number(v) }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="z-[60] bg-popover border border-border shadow-lg">
+                    {YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Ay *</label>
+                <Select value={String(editForm.month)} onValueChange={v => setEditForm(f => ({ ...f, month: Number(v) }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="z-[60] bg-popover border border-border shadow-lg">
+                    {MONTHS.map((m, i) => <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs text-muted-foreground mb-1 block">Tedarikçi *</label>
+                <Input value={editForm.supplier} onChange={e => setEditForm(f => ({ ...f, supplier: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Takım Kodu</label>
+                <Input value={editForm.tool_code || ""} onChange={e => setEditForm(f => ({ ...f, tool_code: e.target.value }))} className="font-mono" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Takım Tipi *</label>
+                <Input value={editForm.tool_type} onChange={e => setEditForm(f => ({ ...f, tool_type: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Miktar *</label>
+                <Input type="number" min={1} value={editForm.quantity} onChange={e => setEditForm(f => ({ ...f, quantity: Number(e.target.value) }))} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Birim Fiyat (€) *</label>
+                <Input type="number" min={0} step={0.01} value={editForm.unit_price} onChange={e => setEditForm(f => ({ ...f, unit_price: Number(e.target.value) }))} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs text-muted-foreground mb-1 block">Not</label>
+                <Input value={editForm.notes || ""} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <div className="col-span-2 bg-muted/30 rounded-lg px-3 py-2 text-sm flex justify-between">
+                <span className="text-muted-foreground">Toplam:</span>
+                <span className="font-bold text-amber-400">€ {(editForm.quantity * editForm.unit_price).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+            <div className="flex gap-3 p-4 border-t border-border">
+              <Button onClick={handleEditSave} disabled={editSaving} className="flex-1 bg-amber-600 hover:bg-amber-700">
+                <Check className="w-4 h-4 mr-2" /> {editSaving ? "Kaydediliyor..." : "Güncelle"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditRow(null)}>İptal</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
