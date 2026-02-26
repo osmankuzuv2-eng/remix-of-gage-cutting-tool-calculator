@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   BarChart3, Upload, FileDown, Plus, Trash2, Search, Filter,
-  TrendingUp, Package, DollarSign, Building2, ChevronDown, X
+  TrendingUp, Package, DollarSign, Building2, ChevronDown, X, Percent, Edit2, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
