@@ -92,8 +92,14 @@ export default function ToolroomReport() {
     if (!file) return;
     setImporting(true);
     try {
+      const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target?.result as ArrayBuffer);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
       const wb = new ExcelJS.Workbook();
-      await wb.xlsx.load(await file.arrayBuffer());
+      await wb.xlsx.load(buffer);
       const ws = wb.worksheets[0];
       const rows: Omit<ToolroomPurchase, "id" | "total_amount">[] = [];
       ws.eachRow((row, idx) => {
