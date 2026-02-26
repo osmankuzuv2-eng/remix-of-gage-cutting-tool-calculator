@@ -13,8 +13,8 @@ import { useFactories } from "@/hooks/useFactories";
 import { toast } from "sonner";
 import { exportToolroomPdf, type ToolroomPurchase } from "@/lib/exportToolroomPdf";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend, Cell
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell
 } from "recharts";
 import * as ExcelJS from "exceljs";
 
