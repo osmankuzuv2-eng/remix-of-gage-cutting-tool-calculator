@@ -228,6 +228,15 @@ export default function ToolroomReport() {
             {MONTHS.map((m, i) => <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={filterSupplier} onValueChange={setFilterSupplier}>
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="Tüm Tedarikçiler" />
+          </SelectTrigger>
+          <SelectContent className="z-50 bg-popover border border-border shadow-lg">
+            <SelectItem value="all">Tüm Tedarikçiler</SelectItem>
+            {supplierOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Tedarikçi, takım ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
