@@ -27,6 +27,7 @@ export const ADMIN_PANEL_LABELS: Record<AdminPanelKey, string> = {
   admin_feedback: "AI Eğitim",
   admin_improvements: "İyileştirmeler",
   admin_maintenance: "Bakım Onarım",
+  admin_toolroom: "Takımhane Raporu",
 };
 
 export interface AdminPermission {
