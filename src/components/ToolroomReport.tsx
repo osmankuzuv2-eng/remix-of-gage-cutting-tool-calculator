@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   BarChart3, Upload, FileDown, Plus, Trash2, Search, Filter,
-  TrendingUp, Package, DollarSign, Building2, ChevronDown, X
+  TrendingUp, Package, DollarSign, Building2, ChevronDown, X, Percent, Edit2, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,11 @@ export default function ToolroomReport() {
   const [filterSupplier, setFilterSupplier] = useState("all");
   const [search, setSearch] = useState("");
 
+  /* revenues */
+  const [revenues, setRevenues] = useState<Record<string, number>>({});
+  const [editingRevenue, setEditingRevenue] = useState<string | null>(null);
+  const [revenueInput, setRevenueInput] = useState("");
+
   /* excel import */
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -80,12 +85,32 @@ export default function ToolroomReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any).from("toolroom_purchases").select("*").order("year", { ascending: false }).order("month", { ascending: false });
-    if (data) setPurchases(data as ToolroomPurchase[]);
+    const [{ data: purchasesData }, { data: revenueData }] = await Promise.all([
+      (supabase as any).from("toolroom_purchases").select("*").order("year", { ascending: false }).order("month", { ascending: false }),
+      (supabase as any).from("factory_revenues").select("*").eq("year", filterYear),
+    ]);
+    if (purchasesData) setPurchases(purchasesData as ToolroomPurchase[]);
+    if (revenueData) {
+      const map: Record<string, number> = {};
+      (revenueData as any[]).forEach(r => { map[r.factory] = Number(r.revenue); });
+      setRevenues(map);
+    }
     setLoading(false);
-  }, []);
+  }, [filterYear]);
 
   useEffect(() => { load(); }, [load]);
+
+  const saveRevenue = async (factory: string) => {
+    const val = Number(revenueInput);
+    if (isNaN(val) || val < 0) { toast.error("Geçerli bir ciro girin."); return; }
+    await (supabase as any).from("factory_revenues").upsert(
+      { factory, year: filterYear, month: filterMonth ?? 0, revenue: val, created_by: user?.id },
+      { onConflict: "factory,year,month" }
+    );
+    setRevenues(prev => ({ ...prev, [factory]: val }));
+    setEditingRevenue(null);
+    toast.success("Ciro kaydedildi.");
+  };
 
   /* ─── Excel parse ─── */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -290,19 +315,72 @@ export default function ToolroomReport() {
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-              <Building2 className="w-4 h-4 text-amber-400" /> {filterYear} Fabrika Bazlı Maliyet (€)
+              <Percent className="w-4 h-4 text-amber-400" /> Takım Alımının Ciroya Etkisi ({filterYear})
             </h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={factoryData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip formatter={(v: number) => [`€ ${v.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}`, "Tutar"]} />
-                <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-                  {factoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {/* Revenue input per factory */}
+            <div className="space-y-2 mb-3 max-h-[120px] overflow-y-auto pr-1">
+              {activeFactories.map(f => {
+                const purchase = purchases.filter(p => p.factory === f.name && p.year === filterYear).reduce((s, i) => s + Number(i.total_amount), 0);
+                const rev = revenues[f.name] || 0;
+                const pct = rev > 0 ? (purchase / rev) * 100 : null;
+                return (
+                  <div key={f.name} className="flex items-center gap-2 text-xs">
+                    <span className="w-24 truncate text-muted-foreground font-medium">{f.name}</span>
+                    {editingRevenue === f.name ? (
+                      <div className="flex items-center gap-1 flex-1">
+                        <span className="text-muted-foreground">€</span>
+                        <Input
+                          className="h-6 text-xs py-0 px-1.5 flex-1"
+                          value={revenueInput}
+                          onChange={e => setRevenueInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") saveRevenue(f.name); if (e.key === "Escape") setEditingRevenue(null); }}
+                          autoFocus
+                        />
+                        <button onClick={() => saveRevenue(f.name)} className="text-emerald-400 hover:text-emerald-300"><Check className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setEditingRevenue(null)} className="text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <span className="text-foreground">€ {rev > 0 ? rev.toLocaleString("tr-TR") : "—"}</span>
+                        <button onClick={() => { setEditingRevenue(f.name); setRevenueInput(rev > 0 ? String(rev) : ""); }} className="text-muted-foreground hover:text-amber-400"><Edit2 className="w-3 h-3" /></button>
+                        {pct !== null && (
+                          <span className={`ml-auto font-bold ${pct > 5 ? "text-red-400" : pct > 2 ? "text-amber-400" : "text-emerald-400"}`}>
+                            %{pct.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Bar chart */}
+            {(() => {
+              const revenueImpactData = activeFactories
+                .map(f => {
+                  const purchase = purchases.filter(p => p.factory === f.name && p.year === filterYear).reduce((s, i) => s + Number(i.total_amount), 0);
+                  const rev = revenues[f.name] || 0;
+                  const pct = rev > 0 ? parseFloat(((purchase / rev) * 100).toFixed(2)) : 0;
+                  return { name: f.name.length > 8 ? f.name.slice(0, 8) + "…" : f.name, pct };
+                })
+                .filter(d => d.pct > 0);
+              if (revenueImpactData.length === 0) return <p className="text-xs text-muted-foreground text-center py-8">Fabrikaların ciro bilgisini girin.</p>;
+              return (
+                <ResponsiveContainer width="100%" height={130}>
+                  <BarChart data={revenueImpactData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickFormatter={v => `%${v}`} />
+                    <Tooltip formatter={(v: number) => [`%${v}`, "Ciro Etkisi"]} />
+                    <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
+                      {revenueImpactData.map((d, i) => (
+                        <Cell key={i} fill={d.pct > 5 ? "#ef4444" : d.pct > 2 ? "#f59e0b" : "#10b981"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              );
+            })()}
           </div>
           {supplierChartData.length > 0 && (
             <div className="bg-card border border-border rounded-xl p-4">
