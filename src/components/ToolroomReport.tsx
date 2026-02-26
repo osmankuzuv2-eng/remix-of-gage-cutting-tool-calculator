@@ -177,6 +177,16 @@ export default function ToolroomReport() {
     total: purchases.filter(p => p.factory === f.name && p.year === filterYear).reduce((s, i) => s + Number(i.total_amount), 0),
   })).filter(f => f.total > 0);
 
+  const supplierChartData = Object.entries(
+    filtered.reduce((acc, p) => {
+      acc[p.supplier] = (acc[p.supplier] || 0) + Number(p.total_amount);
+      return acc;
+    }, {} as Record<string, number>)
+  )
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
   const totalFiltered = filtered.reduce((s, i) => s + Number(i.total_amount), 0);
   const totalYear = purchases.filter(p => p.year === filterYear && (filterFactory === "all" || p.factory === filterFactory)).reduce((s, i) => s + Number(i.total_amount), 0);
 
