@@ -65,6 +65,11 @@ export default function ToolroomReport() {
   const [filterSupplier, setFilterSupplier] = useState("all");
   const [search, setSearch] = useState("");
 
+  /* revenues */
+  const [revenues, setRevenues] = useState<Record<string, number>>({});
+  const [editingRevenue, setEditingRevenue] = useState<string | null>(null);
+  const [revenueInput, setRevenueInput] = useState("");
+
   /* excel import */
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -80,12 +85,32 @@ export default function ToolroomReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any).from("toolroom_purchases").select("*").order("year", { ascending: false }).order("month", { ascending: false });
-    if (data) setPurchases(data as ToolroomPurchase[]);
+    const [{ data: purchasesData }, { data: revenueData }] = await Promise.all([
+      (supabase as any).from("toolroom_purchases").select("*").order("year", { ascending: false }).order("month", { ascending: false }),
+      (supabase as any).from("factory_revenues").select("*").eq("year", filterYear),
+    ]);
+    if (purchasesData) setPurchases(purchasesData as ToolroomPurchase[]);
+    if (revenueData) {
+      const map: Record<string, number> = {};
+      (revenueData as any[]).forEach(r => { map[r.factory] = Number(r.revenue); });
+      setRevenues(map);
+    }
     setLoading(false);
-  }, []);
+  }, [filterYear]);
 
   useEffect(() => { load(); }, [load]);
+
+  const saveRevenue = async (factory: string) => {
+    const val = Number(revenueInput);
+    if (isNaN(val) || val < 0) { toast.error("Geçerli bir ciro girin."); return; }
+    await (supabase as any).from("factory_revenues").upsert(
+      { factory, year: filterYear, month: filterMonth ?? 0, revenue: val, created_by: user?.id },
+      { onConflict: "factory,year,month" }
+    );
+    setRevenues(prev => ({ ...prev, [factory]: val }));
+    setEditingRevenue(null);
+    toast.success("Ciro kaydedildi.");
+  };
 
   /* ─── Excel parse ─── */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
