@@ -541,7 +541,19 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <span className="text-sm font-semibold text-foreground">{currentData.length} kayıt</span>
-          <span className="text-sm font-bold text-amber-400">€ {currentTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-amber-400">€ {currentTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+            {hasEditAccess && currentData.length > 0 && (
+              <button
+                onClick={() => setConfirmDeleteMonth(true)}
+                className="flex items-center gap-1.5 text-xs text-destructive/70 hover:text-destructive border border-destructive/30 hover:border-destructive/60 rounded-lg px-2.5 py-1 transition-colors"
+                title="Filtredeki tüm kayıtları sil"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Tümünü Sil
+              </button>
+            )}
+          </div>
         </div>
         {loading ? (
           <div className="py-12 text-center text-muted-foreground text-sm">Yükleniyor...</div>
