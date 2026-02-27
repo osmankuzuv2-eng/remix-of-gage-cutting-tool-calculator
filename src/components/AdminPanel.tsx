@@ -41,6 +41,7 @@ interface UserData {
   id: string;
   email: string;
   created_at: string;
+  language?: string;
   profile: { display_name: string | null; company: string | null; position: string | null; custom_title: string | null; title_color: string | null; avatar_url: string | null } | null;
   roles: string[];
   permissions: { module_key: string; granted: boolean }[];
