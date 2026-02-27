@@ -135,10 +135,10 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
     // Toplam işleme süresi: sadece makine süreleri (dakika)
     const totalMachiningMinutes = turningTime + millingTime + fiveAxisTime;
 
-    const baseSubtotal = setupCostTotal + machineCost + totalMaterialCost * orderQuantity + toolCost + coatingCost + heatTreatmentCost;
+    const baseSubtotal = setupCostTotal + machineCost + totalMaterialCost + toolCost + coatingCost + heatTreatmentCost;
     const shippingCost = baseSubtotal * (shippingRate / 100);
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
-    const subtotal = setupCostTotal + machineCost + totalMaterialCost * orderQuantity + additionalCosts;
+    const subtotal = setupCostTotal + machineCost + totalMaterialCost + additionalCosts;
     const scrapCost = subtotal * (scrapRate / 100);
     const totalBeforeProfit = subtotal + scrapCost;
     const profit = totalBeforeProfit * (profitMargin / 100);
@@ -148,7 +148,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
       volumeCm3: volumeCm3.toFixed(2),
       weightKg: weightKg.toFixed(3),
       materialCostPerPart: materialCostPerPart.toFixed(2),
-      totalMaterialCost: (totalMaterialCost * orderQuantity).toFixed(2),
+      totalMaterialCost: totalMaterialCost.toFixed(2),
       totalMachiningMinutes: totalMachiningMinutes.toFixed(1),
       setupCost: setupCostTotal.toFixed(2),
       setupCostPerPart: setupCostPerPart.toFixed(2),
