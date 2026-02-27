@@ -300,14 +300,14 @@ export default function VideoTrainingModule() {
 
       {/* Grid */}
       {loading ? (
-        <div className="text-center py-16 text-muted-foreground">Yükleniyor...</div>
+        <div className="text-center py-16 text-muted-foreground">{t("video", "loading")}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <Youtube className="w-12 h-12 text-muted-foreground/40 mx-auto" />
-          <p className="text-muted-foreground">{videos.length === 0 ? "Henüz video eklenmemiş." : "Arama sonucu bulunamadı."}</p>
+          <p className="text-muted-foreground">{videos.length === 0 ? t("video", "noVideos") : t("video", "noResults")}</p>
           {isAdmin && videos.length === 0 && (
             <Button onClick={() => setShowAddDialog(true)} variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" /> İlk Videoyu Ekle
+              <Plus className="w-4 h-4" /> {t("video", "addFirstVideo")}
             </Button>
           )}
         </div>
