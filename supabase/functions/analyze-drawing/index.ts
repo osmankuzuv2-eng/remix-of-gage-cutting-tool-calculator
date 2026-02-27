@@ -530,7 +530,6 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
     });
   }
 });
-      method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
