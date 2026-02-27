@@ -461,7 +461,7 @@ export default function VideoTrainingModule() {
               {user && (
                 <div className="border border-border rounded-xl p-4 space-y-3">
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <StickyNote className="w-4 h-4 text-violet-400" /> Zaman Damgalı Notlar
+                    <StickyNote className="w-4 h-4 text-violet-400" /> {t("video", "timestampedNotes")}
                   </h4>
 
                   {/* Add note */}
@@ -473,14 +473,14 @@ export default function VideoTrainingModule() {
                         value={noteTime}
                         onChange={e => setNoteTime(Number(e.target.value))}
                         className="bg-transparent w-12 text-xs text-foreground outline-none"
-                        placeholder="sn"
+                        placeholder={t("video", "seconds")}
                       />
-                      <span className="text-xs text-muted-foreground">sn</span>
+                      <span className="text-xs text-muted-foreground">{t("video", "seconds")}</span>
                     </div>
                     <Input
                       value={noteText}
                       onChange={e => setNoteText(e.target.value)}
-                      placeholder="Not ekle... (video saniyesi gir)"
+                      placeholder={t("video", "addNote")}
                       className="flex-1 text-sm"
                       onKeyDown={e => { if (e.key === "Enter") handleAddNote(); }}
                     />
@@ -491,7 +491,7 @@ export default function VideoTrainingModule() {
 
                   {/* Notes list */}
                   {notes.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-2">Henüz not eklenmedi.</p>
+                    <p className="text-xs text-muted-foreground text-center py-2">{t("video", "noNotes")}</p>
                   ) : (
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {notes.map(n => (
