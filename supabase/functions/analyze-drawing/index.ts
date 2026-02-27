@@ -400,7 +400,7 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: finalSystemPrompt },
           {
@@ -412,8 +412,8 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
           },
         ],
         temperature: 0,
-        seed: 42,
         top_p: 1,
+        response_format: { type: "json_object" },
       }),
     });
 
