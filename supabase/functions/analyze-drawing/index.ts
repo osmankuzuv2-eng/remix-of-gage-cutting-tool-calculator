@@ -431,7 +431,36 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    let content = data.choices?.[0]?.message?.content || "";
+
+    // If empty response, retry with fallback model
+    if (!content.trim()) {
+      console.info("Empty response on attempt 0, retrying with fallback model...");
+      const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-pro",
+          messages: [
+            { role: "system", content: finalSystemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: userMessage },
+                imageContent,
+              ],
+            },
+          ],
+        }),
+      });
+      if (fallbackResp.ok) {
+        const fallbackData = await fallbackResp.json();
+        content = fallbackData.choices?.[0]?.message?.content || "";
+      }
+    }
 
     // Parse JSON from response - with robust error recovery
     let jsonStr = "";
