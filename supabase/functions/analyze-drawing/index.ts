@@ -393,7 +393,143 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
       userMessage += language === "en" ? ` CUSTOMER SPECS (you must strictly comply with these requirements): ${customerSpecs}` : language === "fr" ? ` SPÉCIFICATIONS CLIENT (vous devez strictement respecter ces exigences): ${customerSpecs}` : ` MÜŞTERİ SPECLERİ (bu gereksinimlere kesinlikle uymalısın): ${customerSpecs}`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Helper: call AI with retry on empty response
+    const callAI = async (attempt: number): Promise<string> => {
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: attempt === 0 ? "google/gemini-2.5-pro" : "openai/gpt-5",
+          messages: [
+            { role: "system", content: finalSystemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: userMessage },
+                imageContent,
+              ],
+            },
+          ],
+          temperature: 0,
+          top_p: 1,
+        }),
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        console.error(`AI Gateway error (attempt ${attempt}):`, resp.status, errorText);
+        if (resp.status === 429) throw new Error("RATE_LIMIT");
+        if (resp.status === 402) throw new Error("PAYMENT");
+        throw new Error(`AI analiz hatası (${resp.status})`);
+      }
+
+      const data = await resp.json();
+      return data.choices?.[0]?.message?.content || "";
+    };
+
+    let content = await callAI(0);
+    if (!content || content.trim().length < 10) {
+      console.log("Empty response on attempt 0, retrying with fallback model...");
+      content = await callAI(1);
+    }
+    if (!content || content.trim().length < 10) {
+      console.error("Both attempts returned empty content");
+      throw new Error("AI yanıtı boş döndü, lütfen tekrar deneyin.");
+    }
+
+    // Strip markdown code blocks
+    const stripped = content
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```\s*$/i, "")
+      .trim();
+
+    // Extract JSON object
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("Could not parse response:", content.substring(0, 500));
+      throw new Error("AI yanıtı işlenemedi");
+    }
+
+    // Sanitize: replace all literal control characters (U+0000-U+001F) inside JSON string values
+    // Strategy: parse character by character, tracking if we're inside a string
+    const sanitizeJson = (raw: string): string => {
+      let result = "";
+      let inString = false;
+      let escaped = false;
+      for (let i = 0; i < raw.length; i++) {
+        const ch = raw[i];
+        const code = raw.charCodeAt(i);
+        if (escaped) {
+          result += ch;
+          escaped = false;
+          continue;
+        }
+        if (ch === "\\") {
+          escaped = true;
+          result += ch;
+          continue;
+        }
+        if (ch === '"') {
+          inString = !inString;
+          result += ch;
+          continue;
+        }
+        if (inString && code >= 0x00 && code <= 0x1F) {
+          // Replace unescaped control chars inside strings with escaped versions
+          if (code === 0x09) { result += "\\t"; continue; }
+          if (code === 0x0A) { result += "\\n"; continue; }
+          if (code === 0x0D) { result += "\\r"; continue; }
+          result += " "; // replace other control chars with space
+          continue;
+        }
+        result += ch;
+      }
+      return result;
+    };
+
+    const jsonStr = sanitizeJson(jsonMatch[0]);
+
+    let analysis;
+    try {
+      analysis = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error("JSON parse error after sanitize:", parseErr.message);
+      // Last resort: fix trailing commas
+      const fixed = jsonStr.replace(/,\s*([}\]])/g, '$1');
+      try {
+        analysis = JSON.parse(fixed);
+        console.log("JSON fixed successfully with trailing comma fix");
+      } catch (fixErr) {
+        console.error("Could not fix JSON:", fixErr.message);
+        console.error("Raw content (first 2000 chars):", jsonStr.substring(0, 2000));
+        throw new Error("AI yanıtı JSON formatında işlenemedi, lütfen tekrar deneyin.");
+      }
+    }
+
+    return new Response(JSON.stringify({ analysis }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Error:", error.message);
+    if (error.message === "RATE_LIMIT") {
+      return new Response(JSON.stringify({ error: "Çok fazla istek gönderildi, lütfen biraz bekleyin." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (error.message === "PAYMENT") {
+      return new Response(JSON.stringify({ error: "Kredi limiti aşıldı." }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: error.message || "Bir hata oluştu, lütfen tekrar deneyin." }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
