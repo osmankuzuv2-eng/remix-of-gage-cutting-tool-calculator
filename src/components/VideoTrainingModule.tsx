@@ -430,12 +430,12 @@ export default function VideoTrainingModule() {
                   <Badge variant="outline" className={getDiff(selectedVideo.difficulty)!.cls}>{getDiff(selectedVideo.difficulty)!.label}</Badge>
                 )}
                 {selectedVideo.duration_minutes && (
-                  <Badge variant="outline" className="text-muted-foreground"><Clock className="w-3 h-3 mr-1" />{selectedVideo.duration_minutes} dk</Badge>
+                  <Badge variant="outline" className="text-muted-foreground"><Clock className="w-3 h-3 mr-1" />{selectedVideo.duration_minutes} {t("video", "durationMin")}</Badge>
                 )}
                 <a href={selectedVideo.url} target="_blank" rel="noopener noreferrer"
                   className="ml-auto flex items-center gap-1 text-xs text-violet-400 hover:underline">
                   <ExternalLink className="w-3 h-3" />
-                  {detectPlatform(selectedVideo.url) === "vimeo" ? "Vimeo'da Aç" : "YouTube'da Aç"}
+                  {detectPlatform(selectedVideo.url) === "vimeo" ? t("video", "openOnVimeo") : t("video", "openOnYoutube")}
                 </a>
               </div>
 
