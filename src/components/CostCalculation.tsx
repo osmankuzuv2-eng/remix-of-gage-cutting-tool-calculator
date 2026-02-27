@@ -330,7 +330,7 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
             </div>
           </div>
           <div className="space-y-2">
-            <ResultRow label={`${t("costCalc", "totalMachining")} ${t("common", "time")}`} value={`${calculations.totalMachiningHours} ${t("common", "hour")}`} />
+            <ResultRow label={`${t("costCalc", "totalMachining")} ${t("common", "time")}`} value={`${calculations.totalMachiningMinutes} dk`} />
             <ResultRow label={`${t("costCalc", "materialCost")} (${calculations.weightKg} kg × €${materialPricePerKg})`} value={`€${calculations.totalMaterialCost}`} />
             <ResultRow label={`${t("costCalc", "setupRate") || "Setup Maliyeti"} (${setupTime} dk × €${laborRate})`} value={`€${calculations.setupCost}`} />
             <ResultRow label={t("costCalc", "machineCostLabel")} value={`€${calculations.machineCost}`} />
