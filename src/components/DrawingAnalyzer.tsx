@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star, FileSpreadsheet, ClipboardList } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star, FileSpreadsheet, ClipboardList, BotMessageSquare, Lightbulb, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
