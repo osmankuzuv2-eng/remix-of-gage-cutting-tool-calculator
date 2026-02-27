@@ -120,22 +120,46 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
     if (shapeType === "round") volumeCm3 = Math.PI * Math.pow(diameter / 20, 2) * (length / 10);
     else volumeCm3 = (length / 10) * (width / 10) * (height / 10);
     const weightKg = (volumeCm3 * density) / 1000;
+
+    // Malzeme maliyeti: 1x çarpan (sipariş adeti çarpılmaz)
     const materialCostPerPart = weightKg * materialPricePerKg;
-    const totalMaterialCost = materialCostPerPart * orderQuantity;
+    const totalMaterialCost = materialCostPerPart; // 1 adet için
+
+    // Makine işleme maliyeti: parça başı süre × ücret × adet
     const machineCost = (turningRate * turningTime + millingRate * millingTime + fiveAxisRate * fiveAxisTime) * orderQuantity;
-    const setupCost = setupTime * laborRate;
-    const totalMachiningMinutes = setupTime + (turningTime + millingTime + fiveAxisTime) * orderQuantity;
-    const totalMachiningHours = totalMachiningMinutes / 60;
-    const baseSubtotal = setupCost + machineCost + totalMaterialCost + toolCost + coatingCost + heatTreatmentCost;
+
+    // Setup maliyeti: setupTime × setupRate / orderQuantity (adet başına bölünür)
+    const setupCostTotal = setupTime * laborRate;
+    const setupCostPerPart = orderQuantity > 0 ? setupCostTotal / orderQuantity : setupCostTotal;
+
+    // Toplam işleme süresi: sadece makine süreleri (dakika)
+    const totalMachiningMinutes = turningTime + millingTime + fiveAxisTime;
+
+    const baseSubtotal = setupCostTotal + machineCost + totalMaterialCost * orderQuantity + toolCost + coatingCost + heatTreatmentCost;
     const shippingCost = baseSubtotal * (shippingRate / 100);
     const additionalCosts = toolCost + shippingCost + coatingCost + heatTreatmentCost;
-    const subtotal = setupCost + machineCost + totalMaterialCost + additionalCosts;
+    const subtotal = setupCostTotal + machineCost + totalMaterialCost * orderQuantity + additionalCosts;
     const scrapCost = subtotal * (scrapRate / 100);
     const totalBeforeProfit = subtotal + scrapCost;
     const profit = totalBeforeProfit * (profitMargin / 100);
     const grandTotal = totalBeforeProfit + profit;
     const costPerPart = orderQuantity > 0 ? grandTotal / orderQuantity : 0;
-    return { volumeCm3: volumeCm3.toFixed(2), weightKg: weightKg.toFixed(3), materialCostPerPart: materialCostPerPart.toFixed(2), totalMaterialCost: totalMaterialCost.toFixed(2), totalMachiningHours: totalMachiningHours.toFixed(1), setupCost: setupCost.toFixed(2), machineCost: machineCost.toFixed(2), shippingCost: shippingCost.toFixed(2), additionalCosts: additionalCosts.toFixed(2), scrapCost: scrapCost.toFixed(2), profit: profit.toFixed(2), grandTotal: grandTotal.toFixed(2), costPerPart: costPerPart.toFixed(2) };
+    return {
+      volumeCm3: volumeCm3.toFixed(2),
+      weightKg: weightKg.toFixed(3),
+      materialCostPerPart: materialCostPerPart.toFixed(2),
+      totalMaterialCost: (totalMaterialCost * orderQuantity).toFixed(2),
+      totalMachiningMinutes: totalMachiningMinutes.toFixed(1),
+      setupCost: setupCostTotal.toFixed(2),
+      setupCostPerPart: setupCostPerPart.toFixed(2),
+      machineCost: machineCost.toFixed(2),
+      shippingCost: shippingCost.toFixed(2),
+      additionalCosts: additionalCosts.toFixed(2),
+      scrapCost: scrapCost.toFixed(2),
+      profit: profit.toFixed(2),
+      grandTotal: grandTotal.toFixed(2),
+      costPerPart: costPerPart.toFixed(2),
+    };
   }, [setupTime, turningTime, millingTime, fiveAxisTime, orderQuantity, laborRate, turningRate, millingRate, fiveAxisRate, toolCost, shippingRate, coatingCost, heatTreatmentCost, scrapRate, profitMargin, shapeType, diameter, length, width, height, materialPricePerKg, currentMaterial]);
 
   return (
