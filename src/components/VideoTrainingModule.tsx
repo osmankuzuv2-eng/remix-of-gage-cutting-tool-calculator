@@ -273,12 +273,12 @@ export default function VideoTrainingModule() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Video ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder={t("video", "searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={filterDiff} onValueChange={setFilterDiff}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Seviye" /></SelectTrigger>
+          <SelectTrigger className="w-[140px]"><SelectValue placeholder={t("video", "level")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tüm Seviyeler</SelectItem>
+            <SelectItem value="all">{t("video", "allLevels")}</SelectItem>
             {DIFFICULTY_LEVELS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
           </SelectContent>
         </Select>
