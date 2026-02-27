@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       }
 
       case "update_user": {
-        const { user_id, email, display_name, is_admin, module_permissions, custom_title, title_color, admin_panel_permissions } = params;
+        const { user_id, email, display_name, is_admin, module_permissions, custom_title, title_color, admin_panel_permissions, default_language } = params;
 
         if (!user_id) {
           return new Response(JSON.stringify({ error: "user_id required" }), {
@@ -198,6 +198,13 @@ Deno.serve(async (req) => {
           if (ap.length > 0) {
             await supabaseAdmin.from("admin_panel_permissions").insert(ap);
           }
+        }
+
+        // Update default language preference
+        if (default_language !== undefined) {
+          await supabaseAdmin.from("user_preferences")
+            .update({ language: default_language })
+            .eq("user_id", user_id);
         }
 
         return new Response(JSON.stringify({ success: true }), {
