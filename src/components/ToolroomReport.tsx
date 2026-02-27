@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFactories } from "@/hooks/useFactories";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { toast } from "sonner";
 import { exportToolroomPdf, type ToolroomPurchase } from "@/lib/exportToolroomPdf";
 import {
@@ -115,6 +116,21 @@ const parseExcelRows = async (file: File): Promise<ConsumptionInput[]> => {
 export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boolean } = {}) {
   const { user } = useAuth();
   const { factories } = useFactories();
+  const { t } = useLanguage();
+  const MONTHS_LOCALIZED = [
+    t("common", "monthly") !== "Aylık" ? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] : ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"],
+  ][0];
+  // Use the localized months from translations
+  const getMonths = () => {
+    const lang = t("common", "save") === "Save" ? "en" : t("common", "save") === "Enregistrer" ? "fr" : "tr";
+    const m: Record<string, string[]> = {
+      tr: ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"],
+      en: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      fr: ["Jan","Fév","Mar","Avr","Mai","Jui","Jul","Aoû","Sep","Oct","Nov","Déc"],
+    };
+    return m[lang] || m.tr;
+  };
+  const localMonths = getMonths();
   const [activeTab, setActiveTab] = useState<"purchases" | "consumptions">("purchases");
 
   /* purchases */
@@ -329,39 +345,39 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-amber-400" />
-            Aylık Takımhane Raporu
+            {t("toolroom", "title")}
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">Fabrika bazlı takım alımları, sarfiyat ve maliyet analizi</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("toolroom", "subtitle")}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {activeTab === "purchases" ? (
             <>
               <Button variant="outline" size="sm" onClick={downloadPurchaseTemplate} className="gap-1.5 text-xs">
-                <FileDown className="w-3.5 h-3.5" /> Alım Şablonu
+                <FileDown className="w-3.5 h-3.5" /> {t("toolroom", "purchaseTemplate")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => purchaseFileRef.current?.click()} disabled={importing} className="gap-1.5 text-xs">
-                <Upload className="w-3.5 h-3.5" /> {importing ? "Yükleniyor..." : "Excel Yükle"}
+                <Upload className="w-3.5 h-3.5" /> {importing ? t("toolroom", "uploading") : t("toolroom", "excelUpload")}
               </Button>
               <input ref={purchaseFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handlePurchaseFile} />
               <Button size="sm" onClick={() => exportToolroomPdf(filtered, filterFactory, filterYear, filterMonth)} className="gap-1.5 text-xs bg-amber-600 hover:bg-amber-700">
-                <FileDown className="w-3.5 h-3.5" /> PDF Rapor
+                <FileDown className="w-3.5 h-3.5" /> {t("toolroom", "pdfReport")}
               </Button>
             </>
           ) : (
             <>
               <Button variant="outline" size="sm" onClick={downloadConsumptionTemplate} className="gap-1.5 text-xs">
-                <FileDown className="w-3.5 h-3.5" /> Sarfiyat Şablonu
+                <FileDown className="w-3.5 h-3.5" /> {t("toolroom", "consumptionTemplate")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => consumptionFileRef.current?.click()} disabled={importing} className="gap-1.5 text-xs">
-                <Upload className="w-3.5 h-3.5" /> {importing ? "Yükleniyor..." : "Excel Yükle"}
+                <Upload className="w-3.5 h-3.5" /> {importing ? t("toolroom", "uploading") : t("toolroom", "excelUpload")}
               </Button>
               <input ref={consumptionFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleConsumptionFile} />
               <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="w-3.5 h-3.5" /> Manuel Giriş
+                <Plus className="w-3.5 h-3.5" /> {t("toolroom", "manualEntry")}
               </Button>
             </>
           )}
@@ -370,7 +386,7 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
 
       {/* Tabs */}
       <div className="flex gap-1 bg-muted/30 rounded-lg p-1 w-fit">
-        {([["purchases", "Alımlar", "text-amber-400"], ["consumptions", "Sarfiyat", "text-emerald-400"]] as const).map(([key, label, color]) => (
+        {([["purchases", t("toolroom", "purchases"), "text-amber-400"], ["consumptions", t("toolroom", "consumptions"), "text-emerald-400"]] as const).map(([key, label, color]) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}

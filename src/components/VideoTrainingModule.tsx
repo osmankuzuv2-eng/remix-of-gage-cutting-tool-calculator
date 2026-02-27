@@ -4,6 +4,7 @@ import {
   FileText, StickyNote, Globe, X, Download, Link2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -40,24 +41,18 @@ interface VideoNote {
   created_at: string;
 }
 
-/* ─── Constants ──────────────────────────────────────── */
-const OPERATION_TYPES = [
-  { value: "all", label: "Tümü" },
-  { value: "turning", label: "Tornalama" },
-  { value: "milling", label: "Frezeleme" },
-  { value: "grinding", label: "Taşlama" },
-  { value: "drilling", label: "Delme" },
-  { value: "threading", label: "Diş Açma" },
-  { value: "programming", label: "CNC Programlama" },
-  { value: "measurement", label: "Ölçüm" },
-  { value: "maintenance", label: "Bakım" },
-  { value: "other", label: "Diğer" },
-];
+/* ─── Constants (keys only, labels resolved via t()) ─── */
+const OPERATION_TYPE_VALUES = ["all", "turning", "milling", "grinding", "drilling", "threading", "programming", "measurement", "maintenance", "other"] as const;
+const OPERATION_TYPE_KEYS: Record<string, string> = {
+  all: "opAll", turning: "opTurning", milling: "opMilling", grinding: "opGrinding",
+  drilling: "opDrilling", threading: "opThreading", programming: "opProgramming",
+  measurement: "opMeasurement", maintenance: "opMaintenance", other: "opOther",
+};
 
-const DIFFICULTY_LEVELS = [
-  { value: "beginner", label: "Başlangıç", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
-  { value: "intermediate", label: "Orta", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
-  { value: "advanced", label: "İleri", cls: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
+const DIFFICULTY_LEVELS_CONFIG = [
+  { value: "beginner", key: "diffBeginner", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+  { value: "intermediate", key: "diffIntermediate", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+  { value: "advanced", key: "diffAdvanced", cls: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
 ];
 
 const SUBTITLE_LANGS = [
@@ -103,6 +98,10 @@ const formatSeconds = (s: number) => {
 /* ─── Component ──────────────────────────────────────── */
 export default function VideoTrainingModule() {
   const { user } = useAuth();
+  const { t } = useLanguage();
+
+  const OPERATION_TYPES = OPERATION_TYPE_VALUES.map(v => ({ value: v, label: t("video", OPERATION_TYPE_KEYS[v] || "opOther") }));
+  const DIFFICULTY_LEVELS = DIFFICULTY_LEVELS_CONFIG.map(d => ({ ...d, label: t("video", d.key) }));
 
   /* state */
   const [videos, setVideos] = useState<TrainingVideo[]>([]);
@@ -209,7 +208,7 @@ export default function VideoTrainingModule() {
 
   const handleDelete = async (id: string) => {
     await (supabase as any).from("training_videos").delete().eq("id", id);
-    toast.success("Video silindi.");
+    toast.success(t("video", "deleteSuccess"));
     load();
   };
 
@@ -235,13 +234,13 @@ export default function VideoTrainingModule() {
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-violet-400" />
-            Video Eğitim Kütüphanesi
+            {t("video", "title")}
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">Operasyon bazlı CNC eğitim videoları</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("video", "subtitle")}</p>
         </div>
         {isAdmin && (
           <Button onClick={() => setShowAddDialog(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
-            <Plus className="w-4 h-4" /> Video Ekle
+            <Plus className="w-4 h-4" /> {t("video", "addVideo")}
           </Button>
         )}
       </div>
@@ -274,12 +273,12 @@ export default function VideoTrainingModule() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Video ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder={t("video", "searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={filterDiff} onValueChange={setFilterDiff}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Seviye" /></SelectTrigger>
+          <SelectTrigger className="w-[140px]"><SelectValue placeholder={t("video", "level")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tüm Seviyeler</SelectItem>
+            <SelectItem value="all">{t("video", "allLevels")}</SelectItem>
             {DIFFICULTY_LEVELS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -288,9 +287,9 @@ export default function VideoTrainingModule() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Toplam Video", value: videos.length },
-          { label: "Operasyon", value: [...new Set(videos.map(v => v.operation_type))].length },
-          { label: "İzlenme", value: videos.reduce((s, v) => s + v.view_count, 0) },
+          { label: t("video", "totalVideos"), value: videos.length },
+          { label: t("video", "operations"), value: [...new Set(videos.map(v => v.operation_type))].length },
+          { label: t("video", "views"), value: videos.reduce((s, v) => s + v.view_count, 0) },
         ].map(s => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-violet-400">{s.value}</div>
@@ -301,14 +300,14 @@ export default function VideoTrainingModule() {
 
       {/* Grid */}
       {loading ? (
-        <div className="text-center py-16 text-muted-foreground">Yükleniyor...</div>
+        <div className="text-center py-16 text-muted-foreground">{t("video", "loading")}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <Youtube className="w-12 h-12 text-muted-foreground/40 mx-auto" />
-          <p className="text-muted-foreground">{videos.length === 0 ? "Henüz video eklenmemiş." : "Arama sonucu bulunamadı."}</p>
+          <p className="text-muted-foreground">{videos.length === 0 ? t("video", "noVideos") : t("video", "noResults")}</p>
           {isAdmin && videos.length === 0 && (
             <Button onClick={() => setShowAddDialog(true)} variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" /> İlk Videoyu Ekle
+              <Plus className="w-4 h-4" /> {t("video", "addFirstVideo")}
             </Button>
           )}
         </div>
@@ -431,12 +430,12 @@ export default function VideoTrainingModule() {
                   <Badge variant="outline" className={getDiff(selectedVideo.difficulty)!.cls}>{getDiff(selectedVideo.difficulty)!.label}</Badge>
                 )}
                 {selectedVideo.duration_minutes && (
-                  <Badge variant="outline" className="text-muted-foreground"><Clock className="w-3 h-3 mr-1" />{selectedVideo.duration_minutes} dk</Badge>
+                  <Badge variant="outline" className="text-muted-foreground"><Clock className="w-3 h-3 mr-1" />{selectedVideo.duration_minutes} {t("video", "durationMin")}</Badge>
                 )}
                 <a href={selectedVideo.url} target="_blank" rel="noopener noreferrer"
                   className="ml-auto flex items-center gap-1 text-xs text-violet-400 hover:underline">
                   <ExternalLink className="w-3 h-3" />
-                  {detectPlatform(selectedVideo.url) === "vimeo" ? "Vimeo'da Aç" : "YouTube'da Aç"}
+                  {detectPlatform(selectedVideo.url) === "vimeo" ? t("video", "openOnVimeo") : t("video", "openOnYoutube")}
                 </a>
               </div>
 
@@ -444,7 +443,7 @@ export default function VideoTrainingModule() {
               {selectedVideo.pdf_docs?.length > 0 && (
                 <div className="border border-border rounded-xl p-4 space-y-2">
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-violet-400" /> Ek Dökümanlar
+                    <FileText className="w-4 h-4 text-violet-400" /> {t("video", "attachments")}
                   </h4>
                   <div className="space-y-1.5">
                     {selectedVideo.pdf_docs.map((doc, i) => (
@@ -462,7 +461,7 @@ export default function VideoTrainingModule() {
               {user && (
                 <div className="border border-border rounded-xl p-4 space-y-3">
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <StickyNote className="w-4 h-4 text-violet-400" /> Zaman Damgalı Notlar
+                    <StickyNote className="w-4 h-4 text-violet-400" /> {t("video", "timestampedNotes")}
                   </h4>
 
                   {/* Add note */}
@@ -474,14 +473,14 @@ export default function VideoTrainingModule() {
                         value={noteTime}
                         onChange={e => setNoteTime(Number(e.target.value))}
                         className="bg-transparent w-12 text-xs text-foreground outline-none"
-                        placeholder="sn"
+                        placeholder={t("video", "seconds")}
                       />
-                      <span className="text-xs text-muted-foreground">sn</span>
+                      <span className="text-xs text-muted-foreground">{t("video", "seconds")}</span>
                     </div>
                     <Input
                       value={noteText}
                       onChange={e => setNoteText(e.target.value)}
-                      placeholder="Not ekle... (video saniyesi gir)"
+                      placeholder={t("video", "addNote")}
                       className="flex-1 text-sm"
                       onKeyDown={e => { if (e.key === "Enter") handleAddNote(); }}
                     />
@@ -492,7 +491,7 @@ export default function VideoTrainingModule() {
 
                   {/* Notes list */}
                   {notes.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-2">Henüz not eklenmedi.</p>
+                    <p className="text-xs text-muted-foreground text-center py-2">{t("video", "noNotes")}</p>
                   ) : (
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {notes.map(n => (
@@ -535,35 +534,35 @@ export default function VideoTrainingModule() {
       {/* ─── Add Dialog ── */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Yeni Video Ekle</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("video", "newVideoDialog")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Başlık *</label>
-              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Video başlığı" />
+              <label className="text-xs text-muted-foreground mb-1 block">{t("video", "titleLabel")}</label>
+              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder={t("video", "titlePlaceholder")} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Video URL * (YouTube veya Vimeo)</label>
-              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder="https://youtube.com/watch?v=... veya https://vimeo.com/..." />
+              <label className="text-xs text-muted-foreground mb-1 block">{t("video", "urlLabel")}</label>
+              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder={t("video", "urlPlaceholder")} />
               {form.url && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Platform: <span className="text-violet-400 capitalize">{detectPlatform(form.url)}</span>
+                  {t("video", "platform")} <span className="text-violet-400 capitalize">{detectPlatform(form.url)}</span>
                 </p>
               )}
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Açıklama</label>
-              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Kısa açıklama" rows={2} />
+              <label className="text-xs text-muted-foreground mb-1 block">{t("video", "descriptionLabel")}</label>
+              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder={t("video", "descriptionPlaceholder")} rows={2} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Operasyon</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "operation")}</label>
                 <Select value={form.operation_type} onValueChange={v => setForm(p => ({ ...p, operation_type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{OPERATION_TYPES.filter(o => o.value !== "all").map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Seviye</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "difficulty")}</label>
                 <Select value={form.difficulty} onValueChange={v => setForm(p => ({ ...p, difficulty: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{DIFFICULTY_LEVELS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
@@ -572,19 +571,19 @@ export default function VideoTrainingModule() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Süre (dk)</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "durationLabel")}</label>
                 <Input type="number" value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: e.target.value }))} placeholder="15" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Yazar</label>
-                <Input value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} placeholder="Eğitmen adı" />
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "authorLabel")}</label>
+                <Input value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} placeholder={t("video", "authorPlaceholder")} />
               </div>
             </div>
 
             {/* Subtitle languages */}
             <div>
               <label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1">
-                <Globe className="w-3 h-3" /> Altyazı Dilleri
+                <Globe className="w-3 h-3" /> {t("video", "subtitleLangs")}
               </label>
               <div className="flex gap-2">
                 {SUBTITLE_LANGS.map(sl => (
@@ -617,8 +616,8 @@ export default function VideoTrainingModule() {
                 </div>
               ))}
               <div className="flex gap-2 mt-1">
-                <Input value={form.pdfName} onChange={e => setForm(p => ({ ...p, pdfName: e.target.value }))} placeholder="Döküman adı" className="text-xs h-8" />
-                <Input value={form.pdfUrl} onChange={e => setForm(p => ({ ...p, pdfUrl: e.target.value }))} placeholder="PDF URL" className="text-xs h-8" />
+                <Input value={form.pdfName} onChange={e => setForm(p => ({ ...p, pdfName: e.target.value }))} placeholder={t("video", "docNamePlaceholder")} className="text-xs h-8" />
+                <Input value={form.pdfUrl} onChange={e => setForm(p => ({ ...p, pdfUrl: e.target.value }))} placeholder={t("video", "docUrlPlaceholder")} className="text-xs h-8" />
                 <Button size="sm" variant="outline" className="h-8 shrink-0"
                   onClick={() => {
                     if (!form.pdfName || !form.pdfUrl) return;
@@ -630,8 +629,8 @@ export default function VideoTrainingModule() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleAdd} className="flex-1 bg-violet-600 hover:bg-violet-700">Ekle</Button>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>İptal</Button>
+              <Button onClick={handleAdd} className="flex-1 bg-violet-600 hover:bg-violet-700">{t("video", "add")}</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{t("video", "cancel")}</Button>
             </div>
           </div>
         </DialogContent>
