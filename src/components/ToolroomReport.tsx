@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFactories } from "@/hooks/useFactories";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { toast } from "sonner";
 import { exportToolroomPdf, type ToolroomPurchase } from "@/lib/exportToolroomPdf";
 import {
