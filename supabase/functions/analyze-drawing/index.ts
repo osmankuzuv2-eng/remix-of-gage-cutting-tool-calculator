@@ -411,9 +411,6 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
             ],
           },
         ],
-        temperature: 0,
-        seed: 42,
-        top_p: 1,
       }),
     });
 
