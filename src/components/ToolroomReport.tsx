@@ -131,6 +131,7 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
     return m[lang] || m.tr;
   };
   const localMonths = getMonths();
+  const [activeTab, setActiveTab] = useState<"purchases" | "consumptions">("purchases");
 
   /* purchases */
   const [purchases, setPurchases] = useState<ToolroomPurchase[]>([]);
