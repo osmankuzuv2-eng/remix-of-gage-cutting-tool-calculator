@@ -287,9 +287,9 @@ export default function VideoTrainingModule() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Toplam Video", value: videos.length },
-          { label: "Operasyon", value: [...new Set(videos.map(v => v.operation_type))].length },
-          { label: "İzlenme", value: videos.reduce((s, v) => s + v.view_count, 0) },
+          { label: t("video", "totalVideos"), value: videos.length },
+          { label: t("video", "operations"), value: [...new Set(videos.map(v => v.operation_type))].length },
+          { label: t("video", "views"), value: videos.reduce((s, v) => s + v.view_count, 0) },
         ].map(s => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-violet-400">{s.value}</div>
