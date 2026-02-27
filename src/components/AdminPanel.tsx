@@ -41,6 +41,7 @@ interface UserData {
   id: string;
   email: string;
   created_at: string;
+  language?: string;
   profile: { display_name: string | null; company: string | null; position: string | null; custom_title: string | null; title_color: string | null; avatar_url: string | null } | null;
   roles: string[];
   permissions: { module_key: string; granted: boolean }[];
@@ -78,6 +79,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [newPassword, setNewPassword] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newIsAdmin, setNewIsAdmin] = useState(false);
+  const [newDefaultLanguage, setNewDefaultLanguage] = useState("tr");
   const [newPermissions, setNewPermissions] = useState<Record<string, boolean>>({});
   const [newAdminPerms, setNewAdminPerms] = useState<Record<string, { can_view: boolean; can_edit: boolean }>>({});
 
@@ -85,6 +87,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [editEmail, setEditEmail] = useState("");
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editIsAdmin, setEditIsAdmin] = useState(false);
+  const [editDefaultLanguage, setEditDefaultLanguage] = useState("tr");
   const [editPermissions, setEditPermissions] = useState<Record<string, boolean>>({});
   const [editCustomTitle, setEditCustomTitle] = useState("");
   const [editTitleColor, setEditTitleColor] = useState("");
@@ -172,6 +175,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         is_admin: newIsAdmin,
         module_permissions,
         admin_panel_permissions,
+        default_language: newDefaultLanguage,
       });
       toast({ title: t("common", "success"), description: t("admin", "userCreated") });
       setShowCreateDialog(false);
@@ -207,6 +211,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         admin_panel_permissions,
         custom_title: editCustomTitle,
         title_color: editTitleColor,
+        default_language: editDefaultLanguage,
       });
       toast({ title: t("common", "success"), description: t("admin", "userUpdated") });
       setShowEditDialog(false);
@@ -256,6 +261,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setEditIsAdmin(user.roles.includes("admin"));
     setEditCustomTitle(user.profile?.custom_title || "");
     setEditTitleColor(user.profile?.title_color || "");
+    setEditDefaultLanguage(user.language || "tr");
     const perms: Record<string, boolean> = {};
     ALL_MODULES.forEach((m) => {
       const found = user.permissions.find((p) => p.module_key === m);
@@ -322,6 +328,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setNewPassword("");
     setNewDisplayName("");
     setNewIsAdmin(false);
+    setNewDefaultLanguage("tr");
     setNewPermissions({});
     const ap: Record<string, { can_view: boolean; can_edit: boolean }> = {};
     ADMIN_PANEL_KEYS.forEach((k) => { ap[k] = { can_view: true, can_edit: false }; });
@@ -1296,6 +1303,17 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               <Label>{t("admin", "displayName")}</Label>
               <Input value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} />
             </div>
+            <div className="space-y-2">
+              <Label>Varsayılan Dil</Label>
+              <Select value={newDefaultLanguage} onValueChange={setNewDefaultLanguage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tr">🇹🇷 Türkçe</SelectItem>
+                  <SelectItem value="en">🇬🇧 English</SelectItem>
+                  <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <label className="flex items-center gap-2">
               <Switch checked={newIsAdmin} onCheckedChange={setNewIsAdmin} />
               <span className="text-foreground font-medium">{t("admin", "adminRole")}</span>
@@ -1365,6 +1383,17 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
             <div className="space-y-2">
               <Label>{t("admin", "displayName")}</Label>
               <Input value={editDisplayName} onChange={(e) => setEditDisplayName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Varsayılan Dil</Label>
+              <Select value={editDefaultLanguage} onValueChange={setEditDefaultLanguage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tr">🇹🇷 Türkçe</SelectItem>
+                  <SelectItem value="en">🇬🇧 English</SelectItem>
+                  <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <label className="flex items-center gap-2">
               <Switch checked={editIsAdmin} onCheckedChange={setEditIsAdmin} />
