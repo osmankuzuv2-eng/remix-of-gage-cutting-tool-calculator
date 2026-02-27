@@ -413,8 +413,6 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
               ],
             },
           ],
-          temperature: 0,
-          top_p: 1,
         }),
       });
 
