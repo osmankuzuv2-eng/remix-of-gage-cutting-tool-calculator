@@ -1303,6 +1303,17 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               <Label>{t("admin", "displayName")}</Label>
               <Input value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} />
             </div>
+            <div className="space-y-2">
+              <Label>Varsayılan Dil</Label>
+              <Select value={newDefaultLanguage} onValueChange={setNewDefaultLanguage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tr">🇹🇷 Türkçe</SelectItem>
+                  <SelectItem value="en">🇬🇧 English</SelectItem>
+                  <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <label className="flex items-center gap-2">
               <Switch checked={newIsAdmin} onCheckedChange={setNewIsAdmin} />
               <span className="text-foreground font-medium">{t("admin", "adminRole")}</span>
