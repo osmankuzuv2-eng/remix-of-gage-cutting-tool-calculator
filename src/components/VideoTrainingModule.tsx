@@ -545,17 +545,17 @@ export default function VideoTrainingModule() {
               <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder={t("video", "urlPlaceholder")} />
               {form.url && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Platform: <span className="text-violet-400 capitalize">{detectPlatform(form.url)}</span>
+                  {t("video", "platform")} <span className="text-violet-400 capitalize">{detectPlatform(form.url)}</span>
                 </p>
               )}
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Açıklama</label>
-              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Kısa açıklama" rows={2} />
+              <label className="text-xs text-muted-foreground mb-1 block">{t("video", "descriptionLabel")}</label>
+              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder={t("video", "descriptionPlaceholder")} rows={2} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Operasyon</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "operation")}</label>
                 <Select value={form.operation_type} onValueChange={v => setForm(p => ({ ...p, operation_type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{OPERATION_TYPES.filter(o => o.value !== "all").map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
