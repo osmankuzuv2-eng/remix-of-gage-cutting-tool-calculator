@@ -98,6 +98,10 @@ const formatSeconds = (s: number) => {
 /* ─── Component ──────────────────────────────────────── */
 export default function VideoTrainingModule() {
   const { user } = useAuth();
+  const { t } = useLanguage();
+
+  const OPERATION_TYPES = OPERATION_TYPE_VALUES.map(v => ({ value: v, label: t("video", OPERATION_TYPE_KEYS[v] || "opOther") }));
+  const DIFFICULTY_LEVELS = DIFFICULTY_LEVELS_CONFIG.map(d => ({ ...d, label: t("video", d.key) }));
 
   /* state */
   const [videos, setVideos] = useState<TrainingVideo[]>([]);
