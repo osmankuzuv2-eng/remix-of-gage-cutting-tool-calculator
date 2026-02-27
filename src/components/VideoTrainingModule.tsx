@@ -562,7 +562,7 @@ export default function VideoTrainingModule() {
                 </Select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Seviye</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "difficulty")}</label>
                 <Select value={form.difficulty} onValueChange={v => setForm(p => ({ ...p, difficulty: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{DIFFICULTY_LEVELS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
@@ -571,19 +571,19 @@ export default function VideoTrainingModule() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Süre (dk)</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "durationLabel")}</label>
                 <Input type="number" value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: e.target.value }))} placeholder="15" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Yazar</label>
-                <Input value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} placeholder="Eğitmen adı" />
+                <label className="text-xs text-muted-foreground mb-1 block">{t("video", "authorLabel")}</label>
+                <Input value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} placeholder={t("video", "authorPlaceholder")} />
               </div>
             </div>
 
             {/* Subtitle languages */}
             <div>
               <label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1">
-                <Globe className="w-3 h-3" /> Altyazı Dilleri
+                <Globe className="w-3 h-3" /> {t("video", "subtitleLangs")}
               </label>
               <div className="flex gap-2">
                 {SUBTITLE_LANGS.map(sl => (
