@@ -616,8 +616,8 @@ export default function VideoTrainingModule() {
                 </div>
               ))}
               <div className="flex gap-2 mt-1">
-                <Input value={form.pdfName} onChange={e => setForm(p => ({ ...p, pdfName: e.target.value }))} placeholder="Döküman adı" className="text-xs h-8" />
-                <Input value={form.pdfUrl} onChange={e => setForm(p => ({ ...p, pdfUrl: e.target.value }))} placeholder="PDF URL" className="text-xs h-8" />
+                <Input value={form.pdfName} onChange={e => setForm(p => ({ ...p, pdfName: e.target.value }))} placeholder={t("video", "docNamePlaceholder")} className="text-xs h-8" />
+                <Input value={form.pdfUrl} onChange={e => setForm(p => ({ ...p, pdfUrl: e.target.value }))} placeholder={t("video", "docUrlPlaceholder")} className="text-xs h-8" />
                 <Button size="sm" variant="outline" className="h-8 shrink-0"
                   onClick={() => {
                     if (!form.pdfName || !form.pdfUrl) return;
@@ -629,8 +629,8 @@ export default function VideoTrainingModule() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleAdd} className="flex-1 bg-violet-600 hover:bg-violet-700">Ekle</Button>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>İptal</Button>
+              <Button onClick={handleAdd} className="flex-1 bg-violet-600 hover:bg-violet-700">{t("video", "add")}</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{t("video", "cancel")}</Button>
             </div>
           </div>
         </DialogContent>
