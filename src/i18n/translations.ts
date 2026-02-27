@@ -444,17 +444,6 @@ export const translations = {
     unclampingTime: { tr: "Çözme", en: "Unclamping", fr: "Débridage" },
     totalClampingTime: { tr: "Toplam Bağlama Süresi", en: "Total Clamping Time", fr: "Temps de bridage total" },
     batchAnalysisComplete: { tr: "Tüm analizler tamamlandı!", en: "All analyses complete!", fr: "Toutes les analyses terminées !" },
-    // Analysis Chat
-    analysisChatTitle: { tr: "Analizi AI ile Tartış", en: "Discuss Analysis with AI", fr: "Discuter l'analyse avec l'IA" },
-    analysisChatSubtitle: { tr: "Operasyon süreleri, parametreler veya strateji hakkında soru sorun", en: "Ask about operation times, parameters or strategy", fr: "Posez des questions sur les temps, paramètres ou stratégie" },
-    analysisChatPlaceholder: { tr: "Ör: Neden kaba tornalama 8 dk olarak belirlendi?", en: "E.g.: Why was rough turning set to 8 min?", fr: "Ex : Pourquoi l'ébauche a été fixée à 8 min ?" },
-    analysisChatThinking: { tr: "Analiz inceleniyor...", en: "Reviewing analysis...", fr: "Analyse en cours..." },
-    analysisChatClear: { tr: "Sohbeti Temizle", en: "Clear Chat", fr: "Effacer la discussion" },
-    analysisChatOpen: { tr: "AI ile Tartış", en: "Discuss with AI", fr: "Discuter avec l'IA" },
-    analysisChatSuggestion1: { tr: "Neden bu kesme hızları seçildi?", en: "Why were these cutting speeds chosen?", fr: "Pourquoi ces vitesses de coupe ?" },
-    analysisChatSuggestion2: { tr: "Takım ömürleri nasıl hesaplandı?", en: "How were tool lives calculated?", fr: "Comment les durées de vie sont calculées ?" },
-    analysisChatSuggestion3: { tr: "Toplam süreyi nasıl düşürebilirim?", en: "How can I reduce total time?", fr: "Comment réduire le temps total ?" },
-    analysisChatSuggestion4: { tr: "Bağlama stratejisi neden bu şekilde?", en: "Why this clamping strategy?", fr: "Pourquoi cette stratégie de bridage ?" },
   },
 
   // ─── AI Learning Module ───

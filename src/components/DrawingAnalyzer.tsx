@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star, FileSpreadsheet, ClipboardList, BotMessageSquare, Lightbulb, X } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Upload, FileImage, Loader2, Clock, Wrench, AlertTriangle, CheckCircle, Trash2, Info, Download, Plus, Save, ChevronDown, ChevronRight, MessageSquarePlus, Send, Star, FileSpreadsheet, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { materials as defaultMaterials, Material } from "@/data/materials";
-import ReactMarkdown from "react-markdown";
 
 // ─── File conversion helpers ───
 
@@ -250,187 +249,7 @@ const FeedbackForm = ({ item, userId, t }: { item: DrawingItem; userId: string; 
   );
 };
 
-// ─── Analysis Chat Panel ───
-
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cnc-ai-chat`;
-
-type ChatMsg = { role: "user" | "assistant"; content: string };
-
-async function streamAnalysisChat(messages: ChatMsg[], analysisContext: string, language: string, onDelta: (t: string) => void, onDone: () => void, onError: (m: string) => void) {
-  const systemContext = messages.length === 0 ? analysisContext : undefined;
-  const payload = systemContext ? [{ role: "user", content: systemContext }, ...messages] : messages;
-  const resp = await fetch(CHAT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-    body: JSON.stringify({ messages: payload, language }),
-  });
-  if (!resp.ok) { onError("Error " + resp.status); return; }
-  if (!resp.body) { onError("Stream error"); return; }
-  const reader = resp.body.getReader(); const dec = new TextDecoder(); let buf = ""; let done = false;
-  while (!done) {
-    const { done: rd, value } = await reader.read(); if (rd) break;
-    buf += dec.decode(value, { stream: true });
-    let idx: number;
-    while ((idx = buf.indexOf("\n")) !== -1) {
-      let line = buf.slice(0, idx); buf = buf.slice(idx + 1);
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (!line.startsWith("data: ")) continue;
-      const json = line.slice(6).trim();
-      if (json === "[DONE]") { done = true; break; }
-      try { const c = JSON.parse(json).choices?.[0]?.delta?.content; if (c) onDelta(c); } catch { buf = line + "\n" + buf; break; }
-    }
-  }
-  onDone();
-}
-
-const AnalysisChatPanel = ({ analysis, language, t }: { analysis: AnalysisResult; language: string; t: (s: string, k: string) => string }) => {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
-
-  const analysisContext = `Sen bu teknik resim analizinin sonucunu inceleyen bir CNC uzmanısın. Kullanıcı bu sonuç hakkında sorular soracak.
-
-ANALIZ SONUCU:
-Parça: ${analysis.partName}
-Malzeme: ${analysis.material}
-Ölçüler: ${analysis.overallDimensions}
-Karmaşıklık: ${analysis.complexity}
-Kurulum süresi: ${analysis.setupTime} dk
-Toplam süre: ${analysis.totalEstimatedTime} dk
-Toleranslar: ${analysis.tolerances}
-Yüzey kalitesi: ${analysis.surfaceFinish}
-
-OPERASYONLAR:
-${analysis.operations.map(op => `Adım ${op.step}: ${op.operation} | Tezgah: ${op.machine} | Takım: ${op.tool} | Vc=${op.cuttingSpeed} | n=${op.spindleSpeed || "-"} | f=${op.feedRate} | ap=${op.depthOfCut} | Süre: ${op.estimatedTime} dk | Not: ${op.notes}`).join("\n")}
-
-ÖNERİLER: ${analysis.recommendations.join("; ")}
-NOTLAR: ${analysis.difficultyNotes}
-
-Kullanıcının sorularını detaylı ve teknik olarak cevapla. Özellikle neden bu süre ve parametrelerin seçildiğini Taylor denklemi ve imalat prensiplerini kullanarak açıkla.`;
-
-  const send = async (text: string) => {
-    if (!text.trim() || loading) return;
-    const userMsg: ChatMsg = { role: "user", content: text.trim() };
-    // First message: prepend context as hidden system user message
-    const historyForApi = messages.length === 0
-      ? [{ role: "user" as const, content: analysisContext }, { role: "assistant" as const, content: "Analizi inceledim, sorularınızı bekliyorum." }, userMsg]
-      : [...messages, userMsg];
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
-    let soFar = "";
-    const upsert = (chunk: string) => {
-      soFar += chunk;
-      setMessages(prev => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: soFar } : m);
-        return [...prev, { role: "assistant", content: soFar }];
-      });
-    };
-    try {
-      await streamAnalysisChat(historyForApi, analysisContext, language, upsert, () => setLoading(false), (err) => { toast.error(err); setLoading(false); });
-    } catch { toast.error("Bağlantı hatası"); setLoading(false); }
-  };
-
-  const suggestions = [
-    t("drawingAnalyzer", "analysisChatSuggestion1"),
-    t("drawingAnalyzer", "analysisChatSuggestion2"),
-    t("drawingAnalyzer", "analysisChatSuggestion3"),
-    t("drawingAnalyzer", "analysisChatSuggestion4"),
-  ];
-
-  if (!open) {
-    return (
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)} className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10">
-        <BotMessageSquare className="w-4 h-4" /> {t("drawingAnalyzer", "analysisChatOpen")}
-      </Button>
-    );
-  }
-
-  return (
-    <Card className="bg-card border-primary/20 border">
-      <CardContent className="p-0">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-primary/5 rounded-t-lg">
-          <div className="flex items-center gap-2">
-            <BotMessageSquare className="w-4 h-4 text-primary" />
-            <p className="text-sm font-semibold text-foreground">{t("drawingAnalyzer", "analysisChatTitle")}</p>
-          </div>
-          <div className="flex gap-1">
-            {messages.length > 0 && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMessages([])}>
-                <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
-              <X className="w-3.5 h-3.5 text-muted-foreground" />
-            </Button>
-          </div>
-        </div>
-
-        <div ref={scrollRef} className="h-72 overflow-y-auto p-3 space-y-3">
-          {messages.length === 0 ? (
-            <div className="space-y-2 py-2">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-                <Lightbulb className="w-3.5 h-3.5 text-primary" />
-                <span>{t("drawingAnalyzer", "analysisChatSubtitle")}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {suggestions.map((s) => (
-                  <button key={s} onClick={() => send(s)} className="text-left text-xs p-2.5 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-primary/40 transition-all text-foreground">
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <>
-              {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs ${m.role === "user" ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary/50 border border-border text-foreground rounded-bl-sm"}`}>
-                    {m.role === "user" ? <p>{m.content}</p> : (
-                      <div className="prose prose-xs prose-invert max-w-none [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_code]:text-primary [&_h3]:text-foreground [&_h4]:text-foreground">
-                        <ReactMarkdown>{m.content}</ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {loading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />{t("drawingAnalyzer", "analysisChatThinking")}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="p-3 border-t border-border bg-secondary/10">
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              placeholder={t("drawingAnalyzer", "analysisChatPlaceholder")}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-              disabled={loading}
-            />
-            <Button size="sm" onClick={() => send(input)} disabled={!input.trim() || loading} className="shrink-0">
-              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName, language }: { item: DrawingItem; t: (s: string, k: string) => string; onSave: (item: DrawingItem) => void; canSave: boolean; userId?: string; customerName?: string; language: string }) => {
+const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName }: { item: DrawingItem; t: (s: string, k: string) => string; onSave: (item: DrawingItem) => void; canSave: boolean; userId?: string; customerName?: string }) => {
   const analysis = item.analysis!;
   return (
     <div className="space-y-4 pt-2">
@@ -552,9 +371,6 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName, la
           </CardContent>
         </Card>
       </div>
-
-      {/* Analysis Chat */}
-      <AnalysisChatPanel analysis={analysis} language={language} t={t} />
     </div>
   );
 };
@@ -856,7 +672,7 @@ const DrawingAnalyzer = () => {
                   </div>
                 )}
                 {item.status === "completed" && item.analysis && (
-                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} userId={user?.id} customerName={customerName} language={language} />
+                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} userId={user?.id} customerName={customerName} />
                 )}
               </div>
             </CollapsibleContent>
