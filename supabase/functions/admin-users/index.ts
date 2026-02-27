@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       }
 
       case "create_user": {
-        const { email, password, display_name, is_admin, module_permissions, admin_panel_permissions } = params;
+        const { email, password, display_name, is_admin, module_permissions, admin_panel_permissions, default_language } = params;
         
         if (!email || !password) {
           return new Response(JSON.stringify({ error: "Email and password required" }), {
