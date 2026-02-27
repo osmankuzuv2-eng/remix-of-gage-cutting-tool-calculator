@@ -853,7 +853,7 @@ const DrawingAnalyzer = () => {
                   </div>
                 )}
                 {item.status === "completed" && item.analysis && (
-                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} userId={user?.id} customerName={customerName} />
+                  <AnalysisResultCard item={item} t={t} onSave={handleSaveResult} canSave={!!user} userId={user?.id} customerName={customerName} language={language} />
                 )}
               </div>
             </CollapsibleContent>
