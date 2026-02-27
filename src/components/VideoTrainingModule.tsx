@@ -534,15 +534,15 @@ export default function VideoTrainingModule() {
       {/* ─── Add Dialog ── */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Yeni Video Ekle</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("video", "newVideoDialog")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Başlık *</label>
-              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Video başlığı" />
+              <label className="text-xs text-muted-foreground mb-1 block">{t("video", "titleLabel")}</label>
+              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder={t("video", "titlePlaceholder")} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Video URL * (YouTube veya Vimeo)</label>
-              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder="https://youtube.com/watch?v=... veya https://vimeo.com/..." />
+              <label className="text-xs text-muted-foreground mb-1 block">{t("video", "urlLabel")}</label>
+              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder={t("video", "urlPlaceholder")} />
               {form.url && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Platform: <span className="text-violet-400 capitalize">{detectPlatform(form.url)}</span>
