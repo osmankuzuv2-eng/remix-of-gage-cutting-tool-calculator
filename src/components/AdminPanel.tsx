@@ -211,6 +211,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         admin_panel_permissions,
         custom_title: editCustomTitle,
         title_color: editTitleColor,
+        default_language: editDefaultLanguage,
       });
       toast({ title: t("common", "success"), description: t("admin", "userUpdated") });
       setShowEditDialog(false);
