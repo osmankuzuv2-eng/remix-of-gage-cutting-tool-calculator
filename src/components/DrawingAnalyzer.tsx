@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { materials as defaultMaterials, Material } from "@/data/materials";
+import ReactMarkdown from "react-markdown";
 
 // ─── File conversion helpers ───
 
