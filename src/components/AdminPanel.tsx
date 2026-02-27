@@ -79,6 +79,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [newPassword, setNewPassword] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newIsAdmin, setNewIsAdmin] = useState(false);
+  const [newDefaultLanguage, setNewDefaultLanguage] = useState("tr");
   const [newPermissions, setNewPermissions] = useState<Record<string, boolean>>({});
   const [newAdminPerms, setNewAdminPerms] = useState<Record<string, { can_view: boolean; can_edit: boolean }>>({});
 
@@ -86,6 +87,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [editEmail, setEditEmail] = useState("");
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editIsAdmin, setEditIsAdmin] = useState(false);
+  const [editDefaultLanguage, setEditDefaultLanguage] = useState("tr");
   const [editPermissions, setEditPermissions] = useState<Record<string, boolean>>({});
   const [editCustomTitle, setEditCustomTitle] = useState("");
   const [editTitleColor, setEditTitleColor] = useState("");
