@@ -175,6 +175,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         is_admin: newIsAdmin,
         module_permissions,
         admin_panel_permissions,
+        default_language: newDefaultLanguage,
       });
       toast({ title: t("common", "success"), description: t("admin", "userCreated") });
       setShowCreateDialog(false);
