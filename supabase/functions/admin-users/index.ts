@@ -136,6 +136,13 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Set default language preference
+        if (default_language) {
+          await supabaseAdmin.from("user_preferences")
+            .update({ language: default_language })
+            .eq("user_id", newUser.user.id);
+        }
+
         return new Response(JSON.stringify({ user: newUser.user }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
