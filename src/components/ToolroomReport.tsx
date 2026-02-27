@@ -116,7 +116,21 @@ const parseExcelRows = async (file: File): Promise<ConsumptionInput[]> => {
 export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boolean } = {}) {
   const { user } = useAuth();
   const { factories } = useFactories();
-  const [activeTab, setActiveTab] = useState<"purchases" | "consumptions">("purchases");
+  const { t } = useLanguage();
+  const MONTHS_LOCALIZED = [
+    t("common", "monthly") !== "Aylık" ? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] : ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"],
+  ][0];
+  // Use the localized months from translations
+  const getMonths = () => {
+    const lang = t("common", "save") === "Save" ? "en" : t("common", "save") === "Enregistrer" ? "fr" : "tr";
+    const m: Record<string, string[]> = {
+      tr: ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"],
+      en: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      fr: ["Jan","Fév","Mar","Avr","Mai","Jui","Jul","Aoû","Sep","Oct","Nov","Déc"],
+    };
+    return m[lang] || m.tr;
+  };
+  const localMonths = getMonths();
 
   /* purchases */
   const [purchases, setPurchases] = useState<ToolroomPurchase[]>([]);
