@@ -386,7 +386,7 @@ export default function ToolroomReport({ canEdit: canEditProp }: { canEdit?: boo
 
       {/* Tabs */}
       <div className="flex gap-1 bg-muted/30 rounded-lg p-1 w-fit">
-        {([["purchases", "Alımlar", "text-amber-400"], ["consumptions", "Sarfiyat", "text-emerald-400"]] as const).map(([key, label, color]) => (
+        {([["purchases", t("toolroom", "purchases"), "text-amber-400"], ["consumptions", t("toolroom", "consumptions"), "text-emerald-400"]] as const).map(([key, label, color]) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
