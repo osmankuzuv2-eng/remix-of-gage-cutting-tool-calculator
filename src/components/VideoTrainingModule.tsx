@@ -443,7 +443,7 @@ export default function VideoTrainingModule() {
               {selectedVideo.pdf_docs?.length > 0 && (
                 <div className="border border-border rounded-xl p-4 space-y-2">
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-violet-400" /> Ek Dökümanlar
+                    <FileText className="w-4 h-4 text-violet-400" /> {t("video", "attachments")}
                   </h4>
                   <div className="space-y-1.5">
                     {selectedVideo.pdf_docs.map((doc, i) => (
