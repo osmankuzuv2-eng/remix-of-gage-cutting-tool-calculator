@@ -261,6 +261,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setEditIsAdmin(user.roles.includes("admin"));
     setEditCustomTitle(user.profile?.custom_title || "");
     setEditTitleColor(user.profile?.title_color || "");
+    setEditDefaultLanguage(user.language || "tr");
     const perms: Record<string, boolean> = {};
     ALL_MODULES.forEach((m) => {
       const found = user.permissions.find((p) => p.module_key === m);
