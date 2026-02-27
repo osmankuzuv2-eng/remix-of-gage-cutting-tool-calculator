@@ -552,6 +552,9 @@ const AnalysisResultCard = ({ item, t, onSave, canSave, userId, customerName, la
           </CardContent>
         </Card>
       </div>
+
+      {/* Analysis Chat */}
+      <AnalysisChatPanel analysis={analysis} language={language} t={t} />
     </div>
   );
 };
