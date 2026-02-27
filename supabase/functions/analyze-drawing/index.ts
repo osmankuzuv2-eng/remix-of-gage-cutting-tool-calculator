@@ -445,7 +445,15 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
       console.error("Could not parse response:", content.substring(0, 500));
       throw new Error("AI yanıtı işlenemedi");
     }
-    jsonStr = jsonMatch[0];
+    // Remove bad control characters inside JSON strings (e.g. unescaped newlines, tabs)
+    jsonStr = jsonMatch[0].replace(/[\u0000-\u001F\u007F]/g, (ch, offset, str) => {
+      // Only replace control chars that are INSIDE string values (not structural whitespace)
+      // Replace with space to keep value readable
+      const before = str.lastIndexOf('"', offset);
+      const afterColon = str.lastIndexOf(':', offset);
+      if (before > afterColon) return " ";
+      return ch;
+    });
 
     let analysis;
     try {
