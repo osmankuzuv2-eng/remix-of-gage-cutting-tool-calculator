@@ -234,13 +234,13 @@ export default function VideoTrainingModule() {
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-violet-400" />
-            Video Eğitim Kütüphanesi
+            {t("video", "title")}
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">Operasyon bazlı CNC eğitim videoları</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("video", "subtitle")}</p>
         </div>
         {isAdmin && (
           <Button onClick={() => setShowAddDialog(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
-            <Plus className="w-4 h-4" /> Video Ekle
+            <Plus className="w-4 h-4" /> {t("video", "addVideo")}
           </Button>
         )}
       </div>
