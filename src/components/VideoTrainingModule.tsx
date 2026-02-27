@@ -41,24 +41,18 @@ interface VideoNote {
   created_at: string;
 }
 
-/* ─── Constants ──────────────────────────────────────── */
-const OPERATION_TYPES = [
-  { value: "all", label: "Tümü" },
-  { value: "turning", label: "Tornalama" },
-  { value: "milling", label: "Frezeleme" },
-  { value: "grinding", label: "Taşlama" },
-  { value: "drilling", label: "Delme" },
-  { value: "threading", label: "Diş Açma" },
-  { value: "programming", label: "CNC Programlama" },
-  { value: "measurement", label: "Ölçüm" },
-  { value: "maintenance", label: "Bakım" },
-  { value: "other", label: "Diğer" },
-];
+/* ─── Constants (keys only, labels resolved via t()) ─── */
+const OPERATION_TYPE_VALUES = ["all", "turning", "milling", "grinding", "drilling", "threading", "programming", "measurement", "maintenance", "other"] as const;
+const OPERATION_TYPE_KEYS: Record<string, string> = {
+  all: "opAll", turning: "opTurning", milling: "opMilling", grinding: "opGrinding",
+  drilling: "opDrilling", threading: "opThreading", programming: "opProgramming",
+  measurement: "opMeasurement", maintenance: "opMaintenance", other: "opOther",
+};
 
-const DIFFICULTY_LEVELS = [
-  { value: "beginner", label: "Başlangıç", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
-  { value: "intermediate", label: "Orta", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
-  { value: "advanced", label: "İleri", cls: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
+const DIFFICULTY_LEVELS_CONFIG = [
+  { value: "beginner", key: "diffBeginner", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+  { value: "intermediate", key: "diffIntermediate", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+  { value: "advanced", key: "diffAdvanced", cls: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
 ];
 
 const SUBTITLE_LANGS = [
