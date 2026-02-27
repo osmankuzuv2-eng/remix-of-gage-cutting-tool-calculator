@@ -240,27 +240,27 @@ TOLERANS VE YUZEY KALITESI STRATEJISI:
 - Konsantriklik/koaksiyalite: Tek baglamada tum kritik capler islenmeli
 - Konumsal tolerans (delik pozisyonu): Freze ile islenmeli, torna delik delme yetersiz kalabilir
 
-GERCEKCI ISLEM SURELERI (referans - VERIMLI strateji, HIZLI URETIM):
+GERCEKCI ISLEM SURELERI (referans - DENGELI strateji, ORTALAMA SURELER - ne cok hizli ne cok yavas):
 Normal celik/aluminyum:
-- Alin tornalama: 0.2-0.6 dk
-- Kaba tornalama (kisa parca <100mm): 0.5-2 dk
-- Kaba tornalama (uzun parca >100mm): 1.5-4 dk
-- Ince tornalama: 0.3-1.2 dk
-- Delme (kisa L<3D): 0.2-0.5 dk
-- Delme (derin L>3D): 0.5-2 dk (peck drilling dahil)
-- Dis tornalama: 0.5-1.5 dk (paso sayisina bagli)
-- Kanal tornalama: 0.2-1.0 dk
-- Pah kirma: 0.05-0.15 dk (basit pah 3-5 sn, buyuk pah 8-10 sn)
-- Kaba frezeleme: 2-8 dk (yuzey alanina gore)
-- Ince frezeleme: 1-4 dk
-- Cep frezeleme: 3-12 dk (hacme gore)
-- Taslama: 3-10 dk
+- Alin tornalama: 0.4-1.0 dk
+- Kaba tornalama (kisa parca <100mm): 1.0-3.5 dk
+- Kaba tornalama (uzun parca >100mm): 2.5-6 dk
+- Ince tornalama: 0.6-2.0 dk
+- Delme (kisa L<3D): 0.3-0.8 dk
+- Delme (derin L>3D): 0.8-2.5 dk (peck drilling dahil)
+- Dis tornalama: 0.8-2.5 dk (paso sayisina bagli)
+- Kanal tornalama: 0.4-1.5 dk
+- Pah kirma: 0.08-0.20 dk (basit pah 5-8 sn, buyuk pah 10-15 sn)
+- Kaba frezeleme: 3-12 dk (yuzey alanina gore)
+- Ince frezeleme: 2-6 dk
+- Cep frezeleme: 5-18 dk (hacme gore)
+- Taslama: 4-12 dk
 
-Super alasim / Titanyum (3-5 KAT fazla):
-- Kaba tornalama: 3-14 dk
-- Ince tornalama: 1.5-4 dk
-- Delme: 1.5-4 dk (kisa), 3-8 dk (derin)
-- Frezeleme: 8-30 dk
+Super alasim / Titanyum (3-5 KAT fazla - takim omru cok kisa, dikkatli ol):
+- Kaba tornalama: 5-18 dk
+- Ince tornalama: 2.5-6 dk
+- Delme: 2-5 dk (kisa), 4-10 dk (derin)
+- Frezeleme: 12-40 dk
 
 HAZIRLIK SURESI (DETAYLI):
 - Is parcasi baglama (ayna): 1-3 dk
