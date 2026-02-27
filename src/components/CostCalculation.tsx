@@ -331,8 +331,8 @@ const CostCalculation = ({ customMaterials = [], materialPrices = {} }: CostCalc
           </div>
           <div className="space-y-2">
             <ResultRow label={`${t("costCalc", "totalMachining")} ${t("common", "time")}`} value={`${calculations.totalMachiningMinutes} dk`} />
-            <ResultRow label={`${t("costCalc", "materialCost")} (${calculations.weightKg} kg × €${materialPricePerKg})`} value={`€${calculations.totalMaterialCost}`} />
-            <ResultRow label={`${t("costCalc", "setupRate") || "Setup Maliyeti"} (${setupTime} dk × €${laborRate})`} value={`€${calculations.setupCost}`} />
+            <ResultRow label={`${t("costCalc", "materialCost")} (${calculations.weightKg} kg × €${materialPricePerKg} × 1)`} value={`€${calculations.totalMaterialCost}`} />
+            <ResultRow label={`${t("costCalc", "setupRate") || "Setup Maliyeti"} (${setupTime} dk × €${laborRate} ÷ ${orderQuantity} adet)`} value={`€${calculations.setupCostPerPart}/parça`} />
             <ResultRow label={t("costCalc", "machineCostLabel")} value={`€${calculations.machineCost}`} />
             <ResultRow label={t("costCalc", "totalAdditional")} value={`€${calculations.additionalCosts}`} />
             <ResultRow label={`${t("costCalc", "scrapCost")} (%${scrapRate})`} value={`€${calculations.scrapCost}`} />
