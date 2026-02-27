@@ -208,7 +208,7 @@ export default function VideoTrainingModule() {
 
   const handleDelete = async (id: string) => {
     await (supabase as any).from("training_videos").delete().eq("id", id);
-    toast.success("Video silindi.");
+    toast.success(t("video", "deleteSuccess"));
     load();
   };
 
