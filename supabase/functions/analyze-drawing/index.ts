@@ -438,7 +438,9 @@ Sadece JSON dondur, baska metin ekleme. JSON icerisindeki string degerlerde cift
 
     // Parse JSON from response - with robust error recovery
     let jsonStr = "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    // Strip markdown code blocks (```json ... ``` or ``` ... ```)
+    const stripped = content.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error("Could not parse response:", content.substring(0, 500));
       throw new Error("AI yanıtı işlenemedi");
