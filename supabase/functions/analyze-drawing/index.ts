@@ -296,13 +296,15 @@ KRITIK KURALLAR:
 - Resimdeki HER detayi isle, hicbir sey atlama
 - Gercek atolye kosullarini yansit: takim degisimi, olcum, yaklasma DAHİL
 - Sadece kesme suresi degil TOPLAM islem suresi ver
-- Cok kisa sureler VERME - her islem en az 0.3 dk
+- Cok kisa sureler VERME - her islem en az 0.4 dk
 - SADECE yukardaki makine parkindan sec
 - Frezelemede fz (dis basina ilerleme) kullan, f (devir basina ilerleme) KULLANMA
 - Tornada spindle n ASLA 4500 uzerine cikma
 - Toleransli olculerde olcum suresi EKLEmeyi unutma
 - Ham malzeme olcusunu belirt (parca olcusu + isleme payi)
 - Toplam islem suresi GERCEKCI olsun - ne cok kisa ne cok uzun
+- TAKIM OMRU: Vc degerini ASLA maksimum aralik uzerine cikartma. Hedef her zaman aralik ortasi olmali. Yuksek Vc = kisa takim omru = daha sik takim degisimi = DAHA YUKSEK MALIYET
+- Her islem notuna takim omru tahmini ekle (T≈ X dk formatinda)
 
 JSON formatinda dondur:
 
