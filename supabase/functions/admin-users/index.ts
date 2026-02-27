@@ -62,20 +62,23 @@ Deno.serve(async (req) => {
         if (error) throw error;
 
         const userIds = data.users.map((u) => u.id);
-        const [profiles, roles, permissions, adminPerms] = await Promise.all([
+        const [profiles, roles, permissions, adminPerms, prefs] = await Promise.all([
           supabaseAdmin.from("profiles").select("*").in("user_id", userIds),
           supabaseAdmin.from("user_roles").select("*").in("user_id", userIds),
           supabaseAdmin.from("user_module_permissions").select("*").in("user_id", userIds),
           supabaseAdmin.from("admin_panel_permissions").select("*").in("user_id", userIds),
+          supabaseAdmin.from("user_preferences").select("user_id, language").in("user_id", userIds),
         ]);
 
         const users = data.users.map((u) => {
           const profile = profiles.data?.find((p) => p.user_id === u.id) || null;
+          const pref = prefs.data?.find((p) => p.user_id === u.id) || null;
           return {
             id: u.id,
             email: u.email,
             created_at: u.created_at,
             profile,
+            language: pref?.language || "tr",
             roles: roles.data?.filter((r) => r.user_id === u.id).map((r) => r.role) || [],
             permissions: permissions.data?.filter((p) => p.user_id === u.id) || [],
             admin_permissions: adminPerms.data?.filter((p) => p.user_id === u.id) || [],
