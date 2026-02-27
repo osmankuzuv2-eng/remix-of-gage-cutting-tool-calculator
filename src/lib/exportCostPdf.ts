@@ -30,7 +30,8 @@ export interface CostPdfData {
   scrapRate: number;
   profitMargin: number;
   calculations: {
-    totalMachiningHours: string;
+    totalMachiningMinutes?: string;
+    totalMachiningHours?: string;
     setupCost: string;
     machineCost: string;
     totalMaterialCost: string;
