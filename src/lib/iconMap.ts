@@ -35,4 +35,5 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "time-improvements": TrendingDown,
   "video-training": Video,
   "toolroom-report": BarChart3,
+  "rfq": FileText,
 };
