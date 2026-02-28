@@ -26,6 +26,7 @@ import QuizModule from "@/components/QuizModule";
 import TimeImprovements from "@/components/TimeImprovements";
 import VideoTrainingModule from "@/components/VideoTrainingModule";
 import ToolroomReport from "@/components/ToolroomReport";
+import RFQModule from "@/components/RFQModule";
 
 import AdminPanel from "@/components/AdminPanel";
 import { Material, materials as defaultMaterials } from "@/data/materials";
