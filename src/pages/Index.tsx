@@ -26,6 +26,7 @@ import QuizModule from "@/components/QuizModule";
 import TimeImprovements from "@/components/TimeImprovements";
 import VideoTrainingModule from "@/components/VideoTrainingModule";
 import ToolroomReport from "@/components/ToolroomReport";
+import RFQModule from "@/components/RFQModule";
 
 import AdminPanel from "@/components/AdminPanel";
 import { Material, materials as defaultMaterials } from "@/data/materials";
@@ -36,7 +37,7 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "admin";
+type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "admin";
 
 const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
@@ -325,6 +326,7 @@ const Index = () => {
             {visibleTab === "time-improvements" && hasAccess("time-improvements") && <TimeImprovements isAdmin={isAdmin} />}
             {visibleTab === "video-training" && hasAccess("video-training") && <VideoTrainingModule />}
             {visibleTab === "toolroom-report" && hasAccess("toolroom-report") && <ToolroomReport />}
+            {visibleTab === "rfq" && hasAccess("rfq") && <RFQModule />}
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             

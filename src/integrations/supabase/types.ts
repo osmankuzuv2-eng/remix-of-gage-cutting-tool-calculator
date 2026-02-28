@@ -782,6 +782,116 @@ export type Database = {
         }
         Relationships: []
       }
+      rfq_quotes: {
+        Row: {
+          approved_at: string | null
+          coating_cost: number | null
+          created_at: string
+          currency: string
+          customer_id: string | null
+          customer_name: string
+          delivery_days: number | null
+          due_date: string | null
+          factory: string
+          id: string
+          machining_cost: number | null
+          manual_adjustment: number | null
+          material: string | null
+          material_cost: number | null
+          notes: string | null
+          operations: Json | null
+          overhead_percent: number | null
+          part_name: string
+          profit_margin: number | null
+          quantity: number
+          quote_number: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          sent_at: string | null
+          setup_cost: number | null
+          status: string
+          total_cost: number | null
+          unit_price: number | null
+          updated_at: string
+          user_id: string
+          validity_days: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          coating_cost?: number | null
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          customer_name: string
+          delivery_days?: number | null
+          due_date?: string | null
+          factory?: string
+          id?: string
+          machining_cost?: number | null
+          manual_adjustment?: number | null
+          material?: string | null
+          material_cost?: number | null
+          notes?: string | null
+          operations?: Json | null
+          overhead_percent?: number | null
+          part_name: string
+          profit_margin?: number | null
+          quantity?: number
+          quote_number: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          sent_at?: string | null
+          setup_cost?: number | null
+          status?: string
+          total_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string
+          user_id: string
+          validity_days?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          coating_cost?: number | null
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          customer_name?: string
+          delivery_days?: number | null
+          due_date?: string | null
+          factory?: string
+          id?: string
+          machining_cost?: number | null
+          manual_adjustment?: number | null
+          material?: string | null
+          material_cost?: number | null
+          notes?: string | null
+          operations?: Json | null
+          overhead_percent?: number | null
+          part_name?: string
+          profit_margin?: number | null
+          quantity?: number
+          quote_number?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          sent_at?: string | null
+          setup_cost?: number | null
+          status?: string
+          total_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string
+          user_id?: string
+          validity_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_calculations: {
         Row: {
           calculation_type: string
