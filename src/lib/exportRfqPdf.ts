@@ -5,6 +5,7 @@ import {
   drawHeader,
   drawFooter,
   sectionTitle,
+  drawInfoBox,
   drawTableHeader,
   drawTableRow,
   BRAND,
@@ -54,74 +55,38 @@ export const exportRfqPdf = async (q: RFQQuote): Promise<void> => {
   const doc = new jsPDF();
   const font = await registerFonts(doc);
   const ff = getFontFamily();
+  const margin = 14;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const contentWidth = pageWidth - margin * 2;
 
-  let y = await drawHeader(doc, `RFQ – Teklif No: ${q.quote_number}`, font);
+  let y = await drawHeader(doc, `RFQ – Teklif No: ${q.quote_number}`);
 
   // Info boxes
-  const boxData = [
-    ["Müşteri", q.customer_name],
-    ["Parça Adı", q.part_name],
-    ["Malzeme", q.material || "—"],
-    ["Miktar", `${q.quantity} adet`],
-    ["Fabrika", q.factory],
-    ["Durum", STATUS_TR[q.status] || q.status],
-    ["Tarih", new Date(q.created_at).toLocaleDateString("tr-TR")],
-    ["Geçerlilik", `${q.validity_days} gün`],
-    ...(q.delivery_days ? [["Teslimat", `${q.delivery_days} iş günü`]] : []),
-  ];
+  y = drawInfoBox(doc, y, margin, contentWidth, [
+    { label: "Müşteri", value: q.customer_name },
+    { label: "Parça Adı", value: q.part_name },
+    { label: "Miktar", value: `${q.quantity} adet` },
+    { label: "Durum", value: STATUS_TR[q.status] || q.status },
+  ]);
 
-  // Draw info table
-  y = sectionTitle(doc, "Teklif Bilgileri", y, ff);
-  const midX = 105;
-  const leftPad = 14;
-  const boxH = 8;
-  doc.setFontSize(9);
+  y = drawInfoBox(doc, y, margin, contentWidth, [
+    { label: "Malzeme", value: q.material || "—" },
+    { label: "Fabrika", value: q.factory },
+    { label: "Geçerlilik", value: `${q.validity_days} gün` },
+    { label: "Teslimat", value: q.delivery_days ? `${q.delivery_days} gün` : "—" },
+  ]);
 
-  for (let i = 0; i < boxData.length; i += 2) {
-    const row1 = boxData[i];
-    const row2 = boxData[i + 1];
-
-    // left cell
-    doc.setFillColor(245, 247, 250);
-    doc.rect(leftPad, y, midX - leftPad - 2, boxH, "F");
-    doc.setFont(ff, "bold");
-    doc.setTextColor(...BRAND.navy as [number, number, number]);
-    doc.text(row1[0] + ":", leftPad + 2, y + 5.5);
-    doc.setFont(ff, "normal");
-    doc.setTextColor(50, 50, 50);
-    doc.text(row1[1], leftPad + 35, y + 5.5);
-
-    // right cell
-    if (row2) {
-      doc.setFillColor(245, 247, 250);
-      doc.rect(midX + 1, y, midX - leftPad - 2, boxH, "F");
-      doc.setFont(ff, "bold");
-      doc.setTextColor(...BRAND.navy as [number, number, number]);
-      doc.text(row2[0] + ":", midX + 3, y + 5.5);
-      doc.setFont(ff, "normal");
-      doc.setTextColor(50, 50, 50);
-      doc.text(row2[1], midX + 38, y + 5.5);
-    }
-
-    y += boxH + 1;
-  }
-
-  y += 6;
+  y += 2;
 
   // Operations table
   const ops: Operation[] = Array.isArray(q.operations) ? q.operations : [];
   if (ops.length > 0) {
-    y = sectionTitle(doc, "Operasyon Detayları", y, ff);
-    const opCols = [
-      { header: "Operasyon", x: 14, w: 50 },
-      { header: "Tezgah", x: 64, w: 55 },
-      { header: "Süre (dk)", x: 119, w: 25 },
-      { header: `Birim Oran`, x: 144, w: 25 },
-      { header: `Maliyet (${q.currency})`, x: 169, w: 27 },
-    ];
-    y = drawTableHeader(doc, opCols, y, ff);
+    y = sectionTitle(doc, "Operasyon Detayları", y, margin);
+    const opHeaders = ["Operasyon", "Tezgah", "Süre (dk)", "Oran", `Maliyet (${q.currency})`];
+    const opCols = [40, 55, 22, 22, 43];
+    y = drawTableHeader(doc, y, margin, contentWidth, opHeaders, opCols);
     let totalOpCost = 0;
-    ops.forEach((op) => {
+    ops.forEach((op, idx) => {
       const row = [
         op.operation_type,
         op.machine_label || "—",
@@ -129,75 +94,77 @@ export const exportRfqPdf = async (q: RFQQuote): Promise<void> => {
         op.minute_rate.toFixed(2),
         op.cost.toFixed(2),
       ];
-      y = drawTableRow(doc, opCols, row, y, ff);
+      y = drawTableRow(doc, y, margin, contentWidth, row, opCols, idx % 2 === 0);
       totalOpCost += op.cost;
     });
 
     // Total row
-    doc.setFillColor(...BRAND.navy as [number, number, number]);
-    doc.rect(14, y, 182, 7, "F");
+    doc.setFillColor(...BRAND.dark);
+    doc.rect(margin, y, contentWidth, 7, "F");
     doc.setFont(ff, "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text("İşleme Toplamı", 16, y + 5);
-    doc.text(totalOpCost.toFixed(2) + " " + q.currency, 171, y + 5);
-    y += 12;
+    doc.setFontSize(8);
+    doc.setTextColor(...BRAND.white);
+    doc.text("İşleme Toplamı", margin + 2, y + 5);
+    doc.text(totalOpCost.toFixed(2) + " " + q.currency, margin + contentWidth - 2, y + 5, { align: "right" });
+    y += 11;
   }
 
   // Cost breakdown
-  y = sectionTitle(doc, "Maliyet Dökümü", y, ff);
+  y = sectionTitle(doc, "Maliyet Dökümü", y, margin);
+  const subtotal = q.material_cost + q.machining_cost + q.setup_cost + q.coating_cost;
+  const overhead = subtotal * q.overhead_percent / 100;
+  const profit = (subtotal + overhead) * q.profit_margin / 100;
+
+  const costHeaders = ["Maliyet Kalemi", `Tutar (${q.currency})`];
+  const costCols = [130, 52];
+  y = drawTableHeader(doc, y, margin, contentWidth, costHeaders, costCols);
+
   const costRows = [
     ["Malzeme Maliyeti", q.material_cost.toFixed(2)],
     ["İşleme Maliyeti", q.machining_cost.toFixed(2)],
     ["Setup Maliyeti", q.setup_cost.toFixed(2)],
     ["Kaplama Maliyeti", q.coating_cost.toFixed(2)],
-    ["Ara Toplam", (q.material_cost + q.machining_cost + q.setup_cost + q.coating_cost).toFixed(2)],
-    [`Genel Gider (%${q.overhead_percent})`, ((q.material_cost + q.machining_cost + q.setup_cost + q.coating_cost) * q.overhead_percent / 100).toFixed(2)],
-    [`Kâr Marjı (%${q.profit_margin})`, ((q.material_cost + q.machining_cost + q.setup_cost + q.coating_cost) * (1 + q.overhead_percent / 100) * q.profit_margin / 100).toFixed(2)],
+    ["Ara Toplam", subtotal.toFixed(2)],
+    [`Genel Gider (%${q.overhead_percent})`, overhead.toFixed(2)],
+    [`Kâr Marjı (%${q.profit_margin})`, profit.toFixed(2)],
     ...(q.manual_adjustment !== 0 ? [["Manuel Düzeltme", q.manual_adjustment.toFixed(2)]] : []),
   ];
-
-  const costCols = [
-    { header: "Kalem", x: 14, w: 120 },
-    { header: `Tutar (${q.currency})`, x: 134, w: 62 },
-  ];
-  y = drawTableHeader(doc, costCols, y, ff);
-  for (const row of costRows) {
-    y = drawTableRow(doc, costCols, row, y, ff);
-  }
+  costRows.forEach((row, idx) => {
+    y = drawTableRow(doc, y, margin, contentWidth, row, costCols, idx % 2 === 0);
+  });
 
   // Grand total
-  doc.setFillColor(...BRAND.orange as [number, number, number]);
-  doc.rect(14, y, 182, 10, "F");
+  doc.setFillColor(...BRAND.primary);
+  doc.rect(margin, y, contentWidth, 10, "F");
   doc.setFont(ff, "bold");
   doc.setFontSize(11);
-  doc.setTextColor(255, 255, 255);
-  doc.text("GENEL TOPLAM", 16, y + 7);
-  doc.text(q.total_cost.toFixed(2) + " " + q.currency, 136, y + 7);
-  y += 14;
+  doc.setTextColor(...BRAND.white);
+  doc.text("GENEL TOPLAM", margin + 2, y + 7);
+  doc.text(q.total_cost.toFixed(2) + " " + q.currency, margin + contentWidth - 2, y + 7, { align: "right" });
+  y += 13;
 
   // Unit price
-  doc.setFillColor(230, 255, 240);
-  doc.rect(14, y, 182, 10, "F");
+  doc.setFillColor(...BRAND.success);
+  doc.rect(margin, y, contentWidth, 10, "F");
   doc.setFont(ff, "bold");
   doc.setFontSize(11);
-  doc.setTextColor(20, 120, 60);
-  doc.text(`BİRİM FİYAT (${q.quantity} adet)`, 16, y + 7);
-  doc.text(q.unit_price.toFixed(2) + " " + q.currency, 136, y + 7);
-  y += 16;
+  doc.setTextColor(...BRAND.white);
+  doc.text(`BİRİM FİYAT (${q.quantity} adet için)`, margin + 2, y + 7);
+  doc.text(q.unit_price.toFixed(2) + " " + q.currency, margin + contentWidth - 2, y + 7, { align: "right" });
+  y += 15;
 
   // Notes
   if (q.notes) {
-    y = sectionTitle(doc, "Notlar & Koşullar", y, ff);
+    y = sectionTitle(doc, "Notlar & Koşullar", y, margin);
     doc.setFont(ff, "normal");
     doc.setFontSize(9);
     doc.setTextColor(80, 80, 80);
-    const lines = doc.splitTextToSize(q.notes, 180);
-    doc.text(lines, 14, y);
-    y += lines.length * 5 + 4;
+    const lines = doc.splitTextToSize(q.notes, contentWidth);
+    doc.text(lines, margin, y);
+    y += (lines.length as number) * 5 + 4;
   }
 
-  drawFooter(doc, font);
+  drawFooter(doc, `Teklif No: ${q.quote_number}  |  Müşteri: ${q.customer_name}  |  ${new Date(q.created_at).toLocaleDateString("tr-TR")}`);
 
   doc.save(`${q.quote_number}_teklif.pdf`);
 };
