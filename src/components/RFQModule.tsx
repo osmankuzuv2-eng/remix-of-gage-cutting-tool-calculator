@@ -566,10 +566,10 @@ function RFQForm({ form, setForm, operations, customers, machines, coatings,
               </div>
               <div className="space-y-1.5">
                 <Label>Kaplama</Label>
-                <Select value={form.coating_id} onValueChange={v => setForm((f: any) => ({ ...f, coating_id: v }))}>
+                <Select value={form.coating_id || "none"} onValueChange={v => setForm((f: any) => ({ ...f, coating_id: v === "none" ? "" : v }))}>
                   <SelectTrigger><SelectValue placeholder="Yok" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Yok</SelectItem>
+                    <SelectItem value="none">Yok</SelectItem>
                     {coatings.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name} ({c.price} {form.currency})</SelectItem>)}
                   </SelectContent>
                 </Select>
