@@ -636,7 +636,7 @@ export default function ProductionComparisonModule() {
           </Button>
         )}
         {compared && (
-          <Badge variant="secondary" className="ml-auto">{mergedRows.length} satır eşleştirildi</Badge>
+          <Badge variant="secondary" className="ml-auto">{visibleRows.length} satır eşleştirildi</Badge>
         )}
       </div>
 
@@ -653,7 +653,7 @@ export default function ProductionComparisonModule() {
             <CardContent className="p-4 flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Toplam Satır</span>
               <span className="text-2xl font-bold text-foreground">{stats.total}</span>
-              <span className="text-xs text-muted-foreground">{stats.withDeviation} satırda sapma var</span>
+              <span className="text-xs text-muted-foreground">{stats.positiveDeviation} pozitif · {stats.negativeDeviation} negatif sapma</span>
             </CardContent>
           </Card>
           <Card className={`border-border ${stats.avgSapmaYuzde > 0 ? "bg-destructive/5 border-destructive/20" : stats.avgSapmaYuzde < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
@@ -667,21 +667,17 @@ export default function ProductionComparisonModule() {
               </span>
             </CardContent>
           </Card>
-          <Card className={`border-border col-span-2 md:col-span-1 ${stats.totalLostMin > 0 ? "bg-destructive/5 border-destructive/20" : stats.totalLostMin < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
+          <Card className={`border-border col-span-2 md:col-span-1 ${stats.avgKayipDk > 0 ? "bg-destructive/5 border-destructive/20" : stats.avgKayipDk < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
             <CardContent className="p-4 flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Toplam Kayıp / Kazanç</span>
-              <span className={`text-2xl font-bold ${stats.totalLostMin > 0 ? "text-destructive" : stats.totalLostMin < 0 ? "text-emerald-600" : "text-foreground"}`}>
-                {stats.totalLostMin > 0 ? "+" : ""}{stats.totalLostMin} dk
+              <span className="text-xs text-muted-foreground">Ortalama Kayıp Süre</span>
+              <span className={`text-2xl font-bold ${stats.avgKayipDk > 0 ? "text-destructive" : stats.avgKayipDk < 0 ? "text-emerald-600" : "text-foreground"}`}>
+                {stats.avgKayipDk > 0 ? "+" : ""}{stats.avgKayipDk} dk
               </span>
-              <span className="text-xs text-muted-foreground">
-                {stats.totalLostMin > 0 ? "Gerçek süre plandan uzun" : stats.totalLostMin < 0 ? "Gerçek süre plandan kısa" : "Plan ile uyumlu"}
-              </span>
+              <span className="text-xs text-muted-foreground">iş emri başına ortalama</span>
             </CardContent>
           </Card>
         </div>
       )}
-
-      {/* Preview Table */}
       {compared && mergedRows.length > 0 && (
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
