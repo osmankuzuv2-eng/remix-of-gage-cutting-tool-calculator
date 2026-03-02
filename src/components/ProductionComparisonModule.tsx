@@ -388,8 +388,8 @@ export default function ProductionComparisonModule() {
     });
     headerRow.height = 22;
 
-    // Data rows starting at row 3
-    mergedRows.forEach((row, i) => {
+    // Data rows starting at row 3 — only rows with deviation data
+    visibleRows.forEach((row, i) => {
       const exRow = ws.getRow(i + 3);
       const rowFill = i % 2 === 0 ? ROW_EVEN : ROW_ODD;
       const bc = { style: "thin" as const, color: { argb: BORDER_CLR } };
