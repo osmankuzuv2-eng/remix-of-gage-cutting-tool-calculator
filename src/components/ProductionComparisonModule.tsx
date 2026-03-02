@@ -620,6 +620,41 @@ export default function ProductionComparisonModule() {
         </div>
       )}
 
+      {/* Dashboard Stats */}
+      {compared && stats && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Card className="border-border">
+            <CardContent className="p-4 flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Toplam Satır</span>
+              <span className="text-2xl font-bold text-foreground">{stats.total}</span>
+              <span className="text-xs text-muted-foreground">{stats.withDeviation} satırda sapma var</span>
+            </CardContent>
+          </Card>
+          <Card className={`border-border ${stats.avgSapmaYuzde > 0 ? "bg-destructive/5 border-destructive/20" : stats.avgSapmaYuzde < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
+            <CardContent className="p-4 flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Ortalama Sapma</span>
+              <span className={`text-2xl font-bold ${stats.avgSapmaYuzde > 0 ? "text-destructive" : stats.avgSapmaYuzde < 0 ? "text-emerald-600" : "text-foreground"}`}>
+                {stats.avgSapmaYuzde > 0 ? "+" : ""}{stats.avgSapmaYuzde}%
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {stats.positiveDeviation} pozitif · {stats.negativeDeviation} negatif
+              </span>
+            </CardContent>
+          </Card>
+          <Card className={`border-border col-span-2 md:col-span-1 ${stats.totalLostMin > 0 ? "bg-destructive/5 border-destructive/20" : stats.totalLostMin < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
+            <CardContent className="p-4 flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Toplam Kayıp / Kazanç</span>
+              <span className={`text-2xl font-bold ${stats.totalLostMin > 0 ? "text-destructive" : stats.totalLostMin < 0 ? "text-emerald-600" : "text-foreground"}`}>
+                {stats.totalLostMin > 0 ? "+" : ""}{stats.totalLostMin} dk
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {stats.totalLostMin > 0 ? "Gerçek süre plandan uzun" : stats.totalLostMin < 0 ? "Gerçek süre plandan kısa" : "Plan ile uyumlu"}
+              </span>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Preview Table */}
       {compared && mergedRows.length > 0 && (
         <Card>
