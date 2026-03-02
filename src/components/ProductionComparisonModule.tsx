@@ -17,6 +17,8 @@ interface MergedRow {
   operasyonKodu: string;
   dorukSureDk: number | null;
   uaSureDk: number | null;
+  sapmaDk: number | null;
+  sapmaYuzde: number | null;
 }
 
 interface ColumnMapping {
@@ -268,6 +270,8 @@ export default function ProductionComparisonModule() {
             operasyonKodu: mapping.mes_operasyonKodu !== NONE ? String(r[mapping.mes_operasyonKodu] ?? "").trim() : "",
             dorukSureDk,
             uaSureDk,
+            sapmaDk: dorukSureDk !== null && uaSureDk !== null ? parseFloat((dorukSureDk - uaSureDk).toFixed(1)) : null,
+            sapmaYuzde: dorukSureDk !== null && uaSureDk !== null && uaSureDk !== 0 ? parseFloat((((dorukSureDk - uaSureDk) / uaSureDk) * 100).toFixed(1)) : null,
           };
         });
 
@@ -292,6 +296,8 @@ export default function ProductionComparisonModule() {
       { header: "Operasyon Kodu", key: "operasyonKodu", width: 18 },
       { header: "Doruk Süre (dk)", key: "dorukSureDk", width: 18 },
       { header: "ÜA Süre (dk)", key: "uaSureDk", width: 18 },
+      { header: "Sapma (dk)", key: "sapmaDk", width: 16 },
+      { header: "Sapma (%)", key: "sapmaYuzde", width: 14 },
     ];
     const headerRow = ws.getRow(1);
     const HEADER_BG = "FF1E40AF";
@@ -487,7 +493,7 @@ export default function ProductionComparisonModule() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-primary/10 border-b border-border">
-                    {["Parça Kodu", "Operatör", "İş Emri No", "İş Emri Op No", "Makine", "Operasyon Kodu", "Doruk Süre (dk)", "ÜA Süre (dk)"].map(h => (
+                    {["Parça Kodu", "Operatör", "İş Emri No", "İş Emri Op No", "Makine", "Operasyon Kodu", "Doruk Süre (dk)", "ÜA Süre (dk)", "Sapma (dk)", "Sapma (%)"].map(h => (
                       <th key={h} className="px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -503,6 +509,12 @@ export default function ProductionComparisonModule() {
                       <td className="px-3 py-1.5">{row.operasyonKodu || "-"}</td>
                       <td className="px-3 py-1.5 text-primary font-semibold">{row.dorukSureDk ?? "-"}</td>
                       <td className="px-3 py-1.5">{row.uaSureDk ?? "-"}</td>
+                      <td className={`px-3 py-1.5 font-semibold ${row.sapmaDk === null ? "" : row.sapmaDk > 0 ? "text-destructive" : "text-emerald-600"}`}>
+                        {row.sapmaDk !== null ? (row.sapmaDk > 0 ? `+${row.sapmaDk}` : row.sapmaDk) : "-"}
+                      </td>
+                      <td className={`px-3 py-1.5 font-semibold ${row.sapmaYuzde === null ? "" : row.sapmaYuzde > 0 ? "text-destructive" : "text-emerald-600"}`}>
+                        {row.sapmaYuzde !== null ? (row.sapmaYuzde > 0 ? `+${row.sapmaYuzde}%` : `${row.sapmaYuzde}%`) : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
