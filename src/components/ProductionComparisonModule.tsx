@@ -400,6 +400,66 @@ export default function ProductionComparisonModule() {
       });
     });
 
+    // ---- Özet bölümü (Excel'de veri satırlarından sonra) ----
+    if (stats) {
+      const summaryStartRow = mergedRows.length + 5;
+      const SUMMARY_BG  = "FFE8EDF7";
+      const SUMMARY_FG  = "FF1E40AF";
+      const WARN_BG     = "FFFEF3C7";
+      const WARN_FG     = "FFB45309";
+
+      ws.getRow(summaryStartRow - 1); // boş satır
+      const titleCell = ws.getCell(`A${summaryStartRow}`);
+      ws.mergeCells(`A${summaryStartRow}:J${summaryStartRow}`);
+      titleCell.value = "── ÖZET / SONUÇLAR ──";
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SUMMARY_BG } };
+      titleCell.font = { bold: true, color: { argb: SUMMARY_FG }, size: 11 };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+      ws.getRow(summaryStartRow).height = 20;
+
+      const summaryData = [
+        ["Toplam Satır",               stats.total,                                    "adet"],
+        ["Sapma Olan Satır",            stats.withDeviation,                            "adet"],
+        ["Pozitif Sapma (Doruk > ÜA)", stats.positiveDeviation,                        "adet"],
+        ["Negatif Sapma (Doruk < ÜA)", stats.negativeDeviation,                        "adet"],
+        ["Ortalama Sapma Oranı",        `${stats.avgSapmaYuzde > 0 ? "+" : ""}${stats.avgSapmaYuzde}%`, ""],
+        ["Toplam Kayıp/Kazanç (dk)",    `${stats.totalLostMin > 0 ? "+" : ""}${stats.totalLostMin}`, "dk"],
+      ];
+
+      summaryData.forEach(([label, value, unit], idx) => {
+        const r = summaryStartRow + 1 + idx;
+        const isWarn = (idx === 4 && stats.avgSapmaYuzde > 0) || (idx === 5 && stats.totalLostMin > 0);
+        const bg   = isWarn ? WARN_BG  : SUMMARY_BG;
+        const fg   = isWarn ? WARN_FG  : SUMMARY_FG;
+        const bc   = { style: "thin" as const, color: { argb: "FFD1D5DB" } };
+
+        const lCell = ws.getCell(`A${r}`);
+        ws.mergeCells(`A${r}:G${r}`);
+        lCell.value = String(label);
+        lCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        lCell.font = { bold: true, color: { argb: fg } };
+        lCell.alignment = { horizontal: "left", vertical: "middle", indent: 2 };
+        lCell.border = { top: bc, left: bc, bottom: bc, right: bc };
+
+        const vCell = ws.getCell(`H${r}`);
+        ws.mergeCells(`H${r}:I${r}`);
+        vCell.value = value;
+        vCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        vCell.font = { bold: true, color: { argb: fg } };
+        vCell.alignment = { horizontal: "center", vertical: "middle" };
+        vCell.border = { top: bc, left: bc, bottom: bc, right: bc };
+
+        const uCell = ws.getCell(`J${r}`);
+        uCell.value = String(unit);
+        uCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        uCell.font = { color: { argb: fg } };
+        uCell.alignment = { horizontal: "center", vertical: "middle" };
+        uCell.border = { top: bc, left: bc, bottom: bc, right: bc };
+
+        ws.getRow(r).height = 18;
+      });
+    }
+
     const buf = await wb.xlsx.writeBuffer();
     saveAs(new Blob([buf]), fileName);
   };
