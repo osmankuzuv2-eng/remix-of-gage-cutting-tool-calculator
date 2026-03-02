@@ -1,28 +1,12 @@
 import { useState, useCallback } from "react";
-import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, X, ArrowLeftRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, X, ArrowLeftRight, Settings2 } from "lucide-react";
 import * as ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-
-interface PlanRow {
-  isEmriNo: string;
-  parcaKodu: string;
-  uaSureDk: number | null;
-  [key: string]: any;
-}
-
-interface MesRow {
-  isEmriNo: string;
-  operator: string;
-  isEmriOpNo: string;
-  makine: string;
-  operasyonKodu: string;
-  hizCevrimSaniye: number | null;
-  [key: string]: any;
-}
 
 interface MergedRow {
   parcaKodu: string;
@@ -35,15 +19,21 @@ interface MergedRow {
   uaSureDk: number | null;
 }
 
-// Fuzzy column name matcher
-const findColumn = (headers: string[], candidates: string[]): string | null => {
-  const normalized = headers.map(h => h?.toString().toLowerCase().trim().replace(/\s+/g, " "));
-  for (const c of candidates) {
-    const idx = normalized.findIndex(h => h && h.includes(c.toLowerCase()));
-    if (idx !== -1) return headers[idx];
-  }
-  return null;
-};
+interface ColumnMapping {
+  // Plan (Excel 1)
+  plan_isEmriNo: string;
+  plan_parcaKodu: string;
+  plan_uaSure: string;
+  // MES (Excel 2)
+  mes_isEmriNo: string;
+  mes_operator: string;
+  mes_isEmriOpNo: string;
+  mes_makine: string;
+  mes_operasyonKodu: string;
+  mes_hizCevrim: string;
+}
+
+const NONE = "__none__";
 
 const parseNum = (val: any): number | null => {
   if (val === null || val === undefined || val === "") return null;
@@ -61,8 +51,8 @@ const readExcel = async (file: File): Promise<{ headers: string[]; rows: Record<
 
   ws.eachRow((row, rowNum) => {
     if (rowNum === 1) {
-      row.eachCell((cell) => {
-        headers.push(cell.value?.toString() ?? "");
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        headers.push(cell.value?.toString().trim() ?? "");
       });
     } else {
       const obj: Record<string, any> = {};
@@ -74,116 +64,154 @@ const readExcel = async (file: File): Promise<{ headers: string[]; rows: Record<
     }
   });
 
-  return { headers, rows };
+  return { headers: headers.filter(h => h !== ""), rows };
 };
 
-const parsePlanFile = (headers: string[], rows: Record<string, any>[]): PlanRow[] => {
-  const isEmriCol = findColumn(headers, ["iş emri no", "is emri no", "iş emri", "workorder", "wo no", "order no"]);
-  const parcaCol = findColumn(headers, ["parça kodu", "parca kodu", "part no", "part code", "parça no"]);
-  const suреCol = findColumn(headers, ["üa süre", "ua sure", "üa süre (dk)", "ua süre", "süre (dk)", "sure (dk)", "üretim süresi"]);
-
-  return rows
-    .filter(r => isEmriCol && r[isEmriCol])
-    .map(r => ({
-      isEmriNo: String(r[isEmriCol!] ?? "").trim(),
-      parcaKodu: String(r[parcaCol ?? ""] ?? "").trim(),
-      uaSureDk: suреCol ? parseNum(r[suреCol]) : null,
-      ...r,
-    }));
-};
-
-const parseMesFile = (headers: string[], rows: Record<string, any>[]): MesRow[] => {
-  const isEmriCol = findColumn(headers, ["iş emri no", "is emri no", "iş emri", "workorder", "wo no", "order no"]);
-  const operatorCol = findColumn(headers, ["operatör", "operator", "operat"]);
-  const isEmriOpCol = findColumn(headers, ["iş emri op no", "is emri op no", "op no", "operasyon no"]);
-  const makineCol = findColumn(headers, ["makine", "machine", "ekipman"]);
-  const opsKodCol = findColumn(headers, ["operasyon kodu", "ops kodu", "op kodu", "operation code", "operasyon"]);
-  const hizCol = findColumn(headers, ["hız çevrim", "hiz cevrim", "çevrim süresi", "cevrim suresi", "cycle time", "hız", "hiz"]);
-
-  return rows
-    .filter(r => isEmriCol && r[isEmriCol])
-    .map(r => ({
-      isEmriNo: String(r[isEmriCol!] ?? "").trim(),
-      operator: String(r[operatorCol ?? ""] ?? "").trim(),
-      isEmriOpNo: String(r[isEmriOpCol ?? ""] ?? "").trim(),
-      makine: String(r[makineCol ?? ""] ?? "").trim(),
-      operasyonKodu: String(r[opsKodCol ?? ""] ?? "").trim(),
-      hizCevrimSaniye: hizCol ? parseNum(r[hizCol]) : null,
-      ...r,
-    }));
-};
+const ColSelect = ({
+  label,
+  value,
+  headers,
+  onChange,
+  required = false,
+}: {
+  label: string;
+  value: string;
+  headers: string[];
+  onChange: (v: string) => void;
+  required?: boolean;
+}) => (
+  <div className="space-y-1">
+    <Label className="text-xs text-muted-foreground">
+      {label}{required && <span className="text-destructive ml-0.5">*</span>}
+    </Label>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-8 text-xs">
+        <SelectValue placeholder="Sütun seçin..." />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NONE}>— Seçme —</SelectItem>
+        {headers.map(h => (
+          <SelectItem key={h} value={h}>{h}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
 
 export default function ProductionComparisonModule() {
-  const { t } = useLanguage();
   const [planFile, setPlanFile] = useState<File | null>(null);
   const [mesFile, setMesFile] = useState<File | null>(null);
   const [planHeaders, setPlanHeaders] = useState<string[]>([]);
   const [mesHeaders, setMesHeaders] = useState<string[]>([]);
+  const [planRows, setPlanRows] = useState<Record<string, any>[]>([]);
+  const [mesRows, setMesRows] = useState<Record<string, any>[]>([]);
+  const [mapping, setMapping] = useState<ColumnMapping>({
+    plan_isEmriNo: NONE, plan_parcaKodu: NONE, plan_uaSure: NONE,
+    mes_isEmriNo: NONE, mes_operator: NONE, mes_isEmriOpNo: NONE,
+    mes_makine: NONE, mes_operasyonKodu: NONE, mes_hizCevrim: NONE,
+  });
   const [mergedRows, setMergedRows] = useState<MergedRow[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [loadingFile, setLoadingFile] = useState<"plan" | "mes" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [compared, setCompared] = useState(false);
 
-  const handleDrop = useCallback((e: React.DragEvent, type: "plan" | "mes") => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      if (type === "plan") setPlanFile(file);
-      else setMesFile(file);
-      setCompared(false);
-      setMergedRows([]);
-    }
-  }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "plan" | "mes") => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (type === "plan") setPlanFile(file);
-      else setMesFile(file);
-      setCompared(false);
-      setMergedRows([]);
+  const loadFile = async (file: File, type: "plan" | "mes") => {
+    setLoadingFile(type);
+    setError(null);
+    setCompared(false);
+    setMergedRows([]);
+    try {
+      const { headers, rows } = await readExcel(file);
+      if (type === "plan") {
+        setPlanHeaders(headers);
+        setPlanRows(rows);
+        // Auto-detect common names
+        const autoIsEmri = headers.find(h => /iş emri no|is emri no|workorder|wo no/i.test(h)) ?? NONE;
+        const autoParca = headers.find(h => /parça kodu|parca kodu|part no|part code/i.test(h)) ?? NONE;
+        const autoUa = headers.find(h => /üa süre|ua sure|üretim süresi|süre.*dk/i.test(h)) ?? NONE;
+        setMapping(prev => ({ ...prev, plan_isEmriNo: autoIsEmri, plan_parcaKodu: autoParca, plan_uaSure: autoUa }));
+      } else {
+        setMesHeaders(headers);
+        setMesRows(rows);
+        const autoIsEmri = headers.find(h => /iş emri no|is emri no|workorder|wo no/i.test(h)) ?? NONE;
+        const autoOp = headers.find(h => /operatör|operator/i.test(h)) ?? NONE;
+        const autoOpNo = headers.find(h => /iş emri op no|is emri op no|op no/i.test(h)) ?? NONE;
+        const autoMak = headers.find(h => /makine|machine|ekipman/i.test(h)) ?? NONE;
+        const autoOpsKod = headers.find(h => /operasyon kodu|ops kodu|op kodu|operation code/i.test(h)) ?? NONE;
+        const autoHiz = headers.find(h => /hız çevrim|hiz cevrim|çevrim süresi|cycle time|hız|hiz/i.test(h)) ?? NONE;
+        setMapping(prev => ({
+          ...prev,
+          mes_isEmriNo: autoIsEmri, mes_operator: autoOp, mes_isEmriOpNo: autoOpNo,
+          mes_makine: autoMak, mes_operasyonKodu: autoOpsKod, mes_hizCevrim: autoHiz,
+        }));
+      }
+    } catch (err: any) {
+      setError(`Dosya okunamadı: ${err.message}`);
+    } finally {
+      setLoadingFile(null);
     }
   };
 
-  const handleCompare = async () => {
-    if (!planFile || !mesFile) return;
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "plan" | "mes") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (type === "plan") setPlanFile(file);
+    else setMesFile(file);
+    await loadFile(file, type);
+  };
+
+  const handleDrop = useCallback(async (e: React.DragEvent, type: "plan" | "mes") => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (type === "plan") setPlanFile(file);
+    else setMesFile(file);
+    await loadFile(file, type);
+  }, []);
+
+  const setMap = (key: keyof ColumnMapping, val: string) =>
+    setMapping(prev => ({ ...prev, [key]: val }));
+
+  const canCompare =
+    planFile && mesFile &&
+    mapping.plan_isEmriNo !== NONE &&
+    mapping.mes_isEmriNo !== NONE;
+
+  const handleCompare = () => {
     setProcessing(true);
     setError(null);
     try {
-      const [planData, mesData] = await Promise.all([
-        readExcel(planFile),
-        readExcel(mesFile),
-      ]);
-
-      setPlanHeaders(planData.headers);
-      setMesHeaders(mesData.headers);
-
-      const planRows = parsePlanFile(planData.headers, planData.rows);
-      const mesRows = parseMesFile(mesData.headers, mesData.rows);
-
-      // Map plan by iş emri no
-      const planMap = new Map<string, PlanRow>();
-      planRows.forEach(r => planMap.set(r.isEmriNo, r));
-
-      const merged: MergedRow[] = mesRows.map(mes => {
-        const plan = planMap.get(mes.isEmriNo);
-        const dorukSureDk = mes.hizCevrimSaniye !== null ? parseFloat((mes.hizCevrimSaniye / 60).toFixed(4)) : null;
-        return {
-          parcaKodu: plan?.parcaKodu || "",
-          operator: mes.operator,
-          isEmriNo: mes.isEmriNo,
-          isEmriOpNo: mes.isEmriOpNo,
-          makine: mes.makine,
-          operasyonKodu: mes.operasyonKodu,
-          dorukSureDk,
-          uaSureDk: plan?.uaSureDk ?? null,
-        };
+      const planMap = new Map<string, Record<string, any>>();
+      planRows.forEach(r => {
+        const key = String(r[mapping.plan_isEmriNo] ?? "").trim();
+        if (key) planMap.set(key, r);
       });
+
+      const merged: MergedRow[] = mesRows
+        .filter(r => String(r[mapping.mes_isEmriNo] ?? "").trim() !== "")
+        .map(r => {
+          const isEmriNo = String(r[mapping.mes_isEmriNo] ?? "").trim();
+          const plan = planMap.get(isEmriNo);
+          const hizSaniye = mapping.mes_hizCevrim !== NONE ? parseNum(r[mapping.mes_hizCevrim]) : null;
+          const dorukSureDk = hizSaniye !== null ? parseFloat((hizSaniye / 60).toFixed(4)) : null;
+          const uaSureDk = plan && mapping.plan_uaSure !== NONE ? parseNum(plan[mapping.plan_uaSure]) : null;
+          return {
+            parcaKodu: plan && mapping.plan_parcaKodu !== NONE ? String(plan[mapping.plan_parcaKodu] ?? "").trim() : "",
+            operator: mapping.mes_operator !== NONE ? String(r[mapping.mes_operator] ?? "").trim() : "",
+            isEmriNo,
+            isEmriOpNo: mapping.mes_isEmriOpNo !== NONE ? String(r[mapping.mes_isEmriOpNo] ?? "").trim() : "",
+            makine: mapping.mes_makine !== NONE ? String(r[mapping.mes_makine] ?? "").trim() : "",
+            operasyonKodu: mapping.mes_operasyonKodu !== NONE ? String(r[mapping.mes_operasyonKodu] ?? "").trim() : "",
+            dorukSureDk,
+            uaSureDk,
+          };
+        });
 
       setMergedRows(merged);
       setCompared(true);
     } catch (err: any) {
-      setError(`Dosya okuma hatası: ${err.message}`);
+      setError(`Karşılaştırma hatası: ${err.message}`);
     } finally {
       setProcessing(false);
     }
@@ -192,7 +220,6 @@ export default function ProductionComparisonModule() {
   const handleExport = async () => {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Karşılaştırma");
-
     ws.columns = [
       { header: "Parça Kodu", key: "parcaKodu", width: 18 },
       { header: "Operatör", key: "operator", width: 18 },
@@ -203,154 +230,146 @@ export default function ProductionComparisonModule() {
       { header: "Doruk Süre (dk)", key: "dorukSureDk", width: 18 },
       { header: "ÜA Süre (dk)", key: "uaSureDk", width: 18 },
     ];
-
-    // Header style
     const headerRow = ws.getRow(1);
     headerRow.eachCell(cell => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
       cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = {
-        top: { style: "thin" }, left: { style: "thin" },
-        bottom: { style: "thin" }, right: { style: "thin" }
-      };
+      cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
     });
     headerRow.height = 22;
-
     mergedRows.forEach((row, i) => {
-      const exRow = ws.addRow({
-        parcaKodu: row.parcaKodu,
-        operator: row.operator,
-        isEmriNo: row.isEmriNo,
-        isEmriOpNo: row.isEmriOpNo,
-        makine: row.makine,
-        operasyonKodu: row.operasyonKodu,
-        dorukSureDk: row.dorukSureDk,
-        uaSureDk: row.uaSureDk,
-      });
-
-      const fillColor = i % 2 === 0 ? "FFF8FAFF" : "FFEEF2FF";
+      const exRow = ws.addRow(row);
+      const fill = i % 2 === 0 ? "FFF8FAFF" : "FFEEF2FF";
       exRow.eachCell(cell => {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fillColor } };
-        cell.border = {
-          top: { style: "thin", color: { argb: "FFD1D5DB" } },
-          left: { style: "thin", color: { argb: "FFD1D5DB" } },
-          bottom: { style: "thin", color: { argb: "FFD1D5DB" } },
-          right: { style: "thin", color: { argb: "FFD1D5DB" } },
-        };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
+        cell.border = { top: { style: "thin", color: { argb: "FFD1D5DB" } }, left: { style: "thin", color: { argb: "FFD1D5DB" } }, bottom: { style: "thin", color: { argb: "FFD1D5DB" } }, right: { style: "thin", color: { argb: "FFD1D5DB" } } };
         cell.alignment = { horizontal: "center", vertical: "middle" };
       });
     });
-
     const buf = await wb.xlsx.writeBuffer();
     saveAs(new Blob([buf]), "uretim_karsilastirma.xlsx");
   };
 
-  const FileDropZone = ({ type, file, label }: { type: "plan" | "mes"; file: File | null; label: string }) => (
+  const FileDropZone = ({ type, file, label, badge, badgeClass }: {
+    type: "plan" | "mes"; file: File | null; label: string; badge: string; badgeClass: string;
+  }) => (
     <div
       onDrop={e => handleDrop(e, type)}
       onDragOver={e => e.preventDefault()}
-      className={`relative border-2 border-dashed rounded-xl p-6 transition-all duration-200 text-center cursor-pointer hover:border-primary/60 hover:bg-primary/5 ${
-        file ? "border-primary/50 bg-primary/5" : "border-border"
-      }`}
+      className={`relative border-2 border-dashed rounded-xl p-5 transition-all duration-200 text-center cursor-pointer hover:border-primary/60 hover:bg-primary/5 ${file ? "border-primary/40 bg-primary/5" : "border-border"}`}
       onClick={() => document.getElementById(`file-${type}`)?.click()}
     >
-      <input
-        id={`file-${type}`}
-        type="file"
-        accept=".xlsx,.xls"
-        className="hidden"
-        onChange={e => handleFileChange(e, type)}
-      />
-      {file ? (
-        <div className="flex flex-col items-center gap-2">
-          <CheckCircle2 className="w-10 h-10 text-primary" />
+      <input id={`file-${type}`} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => handleFileChange(e, type)} />
+      {loadingFile === type ? (
+        <div className="flex flex-col items-center gap-2 py-2">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-muted-foreground">Okunuyor...</span>
+        </div>
+      ) : file ? (
+        <div className="flex flex-col items-center gap-1.5">
+          <CheckCircle2 className="w-9 h-9 text-primary" />
           <span className="text-sm font-semibold text-foreground">{file.name}</span>
           <Badge variant="secondary">{(file.size / 1024).toFixed(1)} KB</Badge>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="absolute top-2 right-2 h-7 w-7 p-0"
+          <Button size="sm" variant="ghost" className="absolute top-2 right-2 h-7 w-7 p-0"
             onClick={e => {
               e.stopPropagation();
-              if (type === "plan") setPlanFile(null);
-              else setMesFile(null);
-              setCompared(false);
-              setMergedRows([]);
-            }}
-          >
+              if (type === "plan") { setPlanFile(null); setPlanHeaders([]); setPlanRows([]); }
+              else { setMesFile(null); setMesHeaders([]); setMesRows([]); }
+              setCompared(false); setMergedRows([]);
+            }}>
             <X className="w-3 h-3" />
           </Button>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2">
-          <FileSpreadsheet className="w-10 h-10 text-muted-foreground/50" />
+          <FileSpreadsheet className="w-9 h-9 text-muted-foreground/40" />
           <span className="text-sm font-semibold text-foreground">{label}</span>
-          <span className="text-xs text-muted-foreground">.xlsx veya .xls yükleyin</span>
-          <Button size="sm" variant="outline" className="mt-1 gap-2 pointer-events-none">
-            <Upload className="w-3.5 h-3.5" /> Dosya Seç
-          </Button>
+          <span className="text-xs text-muted-foreground">Sürükle & bırak veya tıkla</span>
         </div>
       )}
     </div>
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
           <ArrowLeftRight className="w-5 h-5 text-primary" />
         </div>
         <div>
           <h2 className="text-xl font-bold text-foreground">Üretim Veri Karşılaştırma</h2>
-          <p className="text-sm text-muted-foreground">Üretim planı ve MES raporunu karşılaştırın</p>
+          <p className="text-sm text-muted-foreground">Üretim planı ve MES raporunu iş emri no ile eşleştirin</p>
         </div>
       </div>
 
-      {/* Upload Zone */}
+      {/* Upload */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Badge className="bg-blue-500/10 text-blue-600 border-blue-200">1. Excel</Badge>
+              <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/10">1. Excel</Badge>
               Üretim Planı
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <FileDropZone type="plan" file={planFile} label="Üretim Planı Excel" />
-            {planFile && planHeaders.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {planHeaders.map(h => <Badge key={h} variant="outline" className="text-xs">{h}</Badge>)}
-              </div>
-            )}
+          <CardContent className="px-4 pb-4">
+            <FileDropZone type="plan" file={planFile} label="Üretim Planı" badge="1. Excel" badgeClass="bg-blue-500/10 text-blue-600" />
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200">2. Excel</Badge>
+              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 hover:bg-emerald-500/10">2. Excel</Badge>
               MES Raporu
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <FileDropZone type="mes" file={mesFile} label="MES Raporu Excel" />
-            {mesFile && mesHeaders.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {mesHeaders.map(h => <Badge key={h} variant="outline" className="text-xs">{h}</Badge>)}
-              </div>
-            )}
+          <CardContent className="px-4 pb-4">
+            <FileDropZone type="mes" file={mesFile} label="MES Raporu" badge="2. Excel" badgeClass="bg-emerald-500/10 text-emerald-600" />
           </CardContent>
         </Card>
       </div>
 
-      {/* Action Row */}
-      <div className="flex items-center gap-3">
-        <Button
-          onClick={handleCompare}
-          disabled={!planFile || !mesFile || processing}
-          className="gap-2"
-        >
+      {/* Column Mapping */}
+      {(planHeaders.length > 0 || mesHeaders.length > 0) && (
+        <Card>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Settings2 className="w-4 h-4 text-primary" />
+              Sütun Eşleştirme
+              <span className="text-xs text-muted-foreground font-normal ml-1">— hangi sütunun ne anlama geldiğini seçin</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-4">
+            {planHeaders.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-blue-600 mb-2">📋 1. Excel — Üretim Planı Sütunları</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <ColSelect label="İş Emri No" value={mapping.plan_isEmriNo} headers={planHeaders} onChange={v => setMap("plan_isEmriNo", v)} required />
+                  <ColSelect label="Parça Kodu" value={mapping.plan_parcaKodu} headers={planHeaders} onChange={v => setMap("plan_parcaKodu", v)} />
+                  <ColSelect label="ÜA Süre (dk)" value={mapping.plan_uaSure} headers={planHeaders} onChange={v => setMap("plan_uaSure", v)} />
+                </div>
+              </div>
+            )}
+            {mesHeaders.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-emerald-600 mb-2">🏭 2. Excel — MES Raporu Sütunları</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <ColSelect label="İş Emri No" value={mapping.mes_isEmriNo} headers={mesHeaders} onChange={v => setMap("mes_isEmriNo", v)} required />
+                  <ColSelect label="Operatör" value={mapping.mes_operator} headers={mesHeaders} onChange={v => setMap("mes_operator", v)} />
+                  <ColSelect label="İş Emri Op No" value={mapping.mes_isEmriOpNo} headers={mesHeaders} onChange={v => setMap("mes_isEmriOpNo", v)} />
+                  <ColSelect label="Makine" value={mapping.mes_makine} headers={mesHeaders} onChange={v => setMap("mes_makine", v)} />
+                  <ColSelect label="Operasyon Kodu" value={mapping.mes_operasyonKodu} headers={mesHeaders} onChange={v => setMap("mes_operasyonKodu", v)} />
+                  <ColSelect label="Hız Çevrim (saniye)" value={mapping.mes_hizCevrim} headers={mesHeaders} onChange={v => setMap("mes_hizCevrim", v)} />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Button onClick={handleCompare} disabled={!canCompare || processing} className="gap-2">
           <ArrowLeftRight className="w-4 h-4" />
           {processing ? "İşleniyor..." : "Karşılaştır"}
         </Button>
@@ -360,24 +379,20 @@ export default function ProductionComparisonModule() {
           </Button>
         )}
         {compared && (
-          <Badge variant="secondary" className="ml-auto">
-            {mergedRows.length} satır eşleştirildi
-          </Badge>
+          <Badge variant="secondary" className="ml-auto">{mergedRows.length} satır eşleştirildi</Badge>
         )}
       </div>
 
-      {/* Error */}
       {error && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          {error}
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
         </div>
       )}
 
       {/* Preview Table */}
       {compared && mergedRows.length > 0 && (
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm">Önizleme (ilk 50 satır)</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -393,18 +408,14 @@ export default function ProductionComparisonModule() {
                 <tbody>
                   {mergedRows.slice(0, 50).map((row, i) => (
                     <tr key={i} className={`border-b border-border/50 ${i % 2 === 0 ? "bg-background" : "bg-muted/30"}`}>
-                      <td className="px-3 py-1.5 text-foreground">{row.parcaKodu || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{row.operator || "-"}</td>
-                      <td className="px-3 py-1.5 font-mono text-foreground">{row.isEmriNo || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{row.isEmriOpNo || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{row.makine || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{row.operasyonKodu || "-"}</td>
-                      <td className="px-3 py-1.5 text-primary font-semibold">
-                        {row.dorukSureDk !== null ? row.dorukSureDk : "-"}
-                      </td>
-                      <td className="px-3 py-1.5 text-foreground">
-                        {row.uaSureDk !== null ? row.uaSureDk : "-"}
-                      </td>
+                      <td className="px-3 py-1.5">{row.parcaKodu || "-"}</td>
+                      <td className="px-3 py-1.5">{row.operator || "-"}</td>
+                      <td className="px-3 py-1.5 font-mono">{row.isEmriNo || "-"}</td>
+                      <td className="px-3 py-1.5">{row.isEmriOpNo || "-"}</td>
+                      <td className="px-3 py-1.5">{row.makine || "-"}</td>
+                      <td className="px-3 py-1.5">{row.operasyonKodu || "-"}</td>
+                      <td className="px-3 py-1.5 text-primary font-semibold">{row.dorukSureDk ?? "-"}</td>
+                      <td className="px-3 py-1.5">{row.uaSureDk ?? "-"}</td>
                     </tr>
                   ))}
                 </tbody>
