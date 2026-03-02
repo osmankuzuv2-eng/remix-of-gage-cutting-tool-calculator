@@ -205,9 +205,9 @@ export default function ProductionComparisonModule() {
         setMesRows(rows);
         setMapping(prev => ({
           ...prev,
-          mes_isEmriNo: autoDetect(headers, [/iş emri no/i, /is emri no/i, /workorder/i, /wo no/i]),
+          mes_isEmriNo: autoDetect(headers, [/^iş emri no$/i, /^is emri no$/i, /workorder/i, /wo no/i]),
           mes_operator: autoDetect(headers, [/operatör/i, /operator/i]),
-          mes_isEmriOpNo: autoDetect(headers, [/iş emri op no/i, /op no/i, /operasyon no/i]),
+          mes_isEmriOpNo: autoDetect(headers, [/iş emri op no/i, /is emri op no/i, /^op no$/i, /operasyon no/i]),
           mes_makine: autoDetect(headers, [/makine/i, /machine/i, /ekipman/i]),
           mes_operasyonKodu: autoDetect(headers, [/operasyon kodu/i, /ops kodu/i, /op kodu/i, /operation code/i]),
           mes_hizCevrim: autoDetect(headers, [/hız çevrim/i, /hiz cevrim/i, /çevrim süresi/i, /cycle time/i, /hız/i, /hiz/i, /çevrim/i]),
