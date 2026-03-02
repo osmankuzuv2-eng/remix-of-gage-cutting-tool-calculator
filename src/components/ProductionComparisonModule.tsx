@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, X, ArrowLeftRight, Settings2, FileCode2 } from "lucide-react";
 import * as ExcelJS from "exceljs";
+type ExcelJSCell = ExcelJS.Cell;
 import { saveAs } from "file-saver";
 
 interface MergedRow {
