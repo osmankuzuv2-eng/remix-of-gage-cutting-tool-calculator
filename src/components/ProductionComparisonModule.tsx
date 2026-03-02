@@ -694,7 +694,7 @@ export default function ProductionComparisonModule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mergedRows.slice(0, 50).map((row, i) => (
+                  {visibleRows.slice(0, 50).map((row, i) => (
                     <tr key={i} className={`border-b border-border/50 ${i % 2 === 0 ? "bg-background" : "bg-muted/30"}`}>
                       <td className="px-3 py-1.5">{row.parcaKodu || "-"}</td>
                       <td className="px-3 py-1.5">{row.operator || "-"}</td>
