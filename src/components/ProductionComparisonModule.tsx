@@ -493,7 +493,7 @@ export default function ProductionComparisonModule() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-primary/10 border-b border-border">
-                    {["Parça Kodu", "Operatör", "İş Emri No", "İş Emri Op No", "Makine", "Operasyon Kodu", "Doruk Süre (dk)", "ÜA Süre (dk)"].map(h => (
+                    {["Parça Kodu", "Operatör", "İş Emri No", "İş Emri Op No", "Makine", "Operasyon Kodu", "Doruk Süre (dk)", "ÜA Süre (dk)", "Sapma (dk)", "Sapma (%)"].map(h => (
                       <th key={h} className="px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
