@@ -285,19 +285,25 @@ export default function ProductionComparisonModule() {
       { header: "ÜA Süre (dk)", key: "uaSureDk", width: 18 },
     ];
     const headerRow = ws.getRow(1);
+    const HEADER_BG = "FF1E40AF";
+    const HEADER_FG = "FFFFFFFF";
+    const BORDER_COLOR = "FFD1D5DB";
+    const ROW_EVEN = "FFF8FAFF";
+    const ROW_ODD = "FFEEF2FF";
     headerRow.eachCell(cell => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
+      cell.font = { bold: true, color: { argb: HEADER_FG } };
       cell.alignment = { horizontal: "center", vertical: "middle" };
       cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
     });
     headerRow.height = 22;
     mergedRows.forEach((row, i) => {
       const exRow = ws.addRow(row);
-      const fill = i % 2 === 0 ? "FFF8FAFF" : "FFEEF2FF";
+      const fill = i % 2 === 0 ? ROW_EVEN : ROW_ODD;
+      const bc = { style: "thin" as const, color: { argb: BORDER_COLOR } };
       exRow.eachCell(cell => {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
-        cell.border = { top: { style: "thin", color: { argb: "FFD1D5DB" } }, left: { style: "thin", color: { argb: "FFD1D5DB" } }, bottom: { style: "thin", color: { argb: "FFD1D5DB" } }, right: { style: "thin", color: { argb: "FFD1D5DB" } } };
+        cell.border = { top: bc, left: bc, bottom: bc, right: bc };
         cell.alignment = { horizontal: "center", vertical: "middle" };
       });
     });
