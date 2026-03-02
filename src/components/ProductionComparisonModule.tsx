@@ -243,6 +243,26 @@ export default function ProductionComparisonModule() {
 
   const canCompare = planFile && mesFile && mapping.plan_isEmriNo !== NONE && mapping.mes_isEmriNo !== NONE;
 
+  // ---- Dashboard stats ----
+  const stats = useMemo(() => {
+    if (!mergedRows.length) return null;
+    const withDeviation = mergedRows.filter(r => r.sapmaDk !== null && r.uaSureDk !== null);
+    const positiveDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) > 0);
+    const negativeDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) < 0);
+    const totalLostMin = withDeviation.reduce((sum, r) => sum + (r.sapmaDk ?? 0), 0);
+    const avgSapmaYuzde = withDeviation.length > 0
+      ? withDeviation.reduce((sum, r) => sum + (r.sapmaYuzde ?? 0), 0) / withDeviation.length
+      : 0;
+    return {
+      total: mergedRows.length,
+      withDeviation: withDeviation.length,
+      positiveDeviation: positiveDeviation.length,
+      negativeDeviation: negativeDeviation.length,
+      totalLostMin: parseFloat(totalLostMin.toFixed(1)),
+      avgSapmaYuzde: parseFloat(avgSapmaYuzde.toFixed(1)),
+    };
+  }, [mergedRows]);
+
   const handleCompare = () => {
     setProcessing(true);
     setError(null);
