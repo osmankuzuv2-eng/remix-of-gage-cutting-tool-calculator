@@ -261,25 +261,26 @@ export default function ProductionComparisonModule() {
 
   const canCompare = planFile && mesFile && mapping.plan_isEmriNo !== NONE && mapping.mes_isEmriNo !== NONE;
 
+  // ---- Sadece sapma hesaplanabilen (boş olmayan) satırlar ----
+  const visibleRows = useMemo(() => mergedRows.filter(r => r.sapmaDk !== null && r.uaSureDk !== null), [mergedRows]);
+
   // ---- Dashboard stats ----
   const stats = useMemo(() => {
-    if (!mergedRows.length) return null;
-    const withDeviation = mergedRows.filter(r => r.sapmaDk !== null && r.uaSureDk !== null);
-    const positiveDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) > 0);
-    const negativeDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) < 0);
-    const totalLostMin = withDeviation.reduce((sum, r) => sum + (r.sapmaDk ?? 0), 0);
-    const avgSapmaYuzde = withDeviation.length > 0
-      ? withDeviation.reduce((sum, r) => sum + (r.sapmaYuzde ?? 0), 0) / withDeviation.length
-      : 0;
+    if (!visibleRows.length) return null;
+    const positiveDeviation = visibleRows.filter(r => (r.sapmaDk ?? 0) > 0);
+    const negativeDeviation = visibleRows.filter(r => (r.sapmaDk ?? 0) < 0);
+    const avgSapmaYuzde = visibleRows.reduce((sum, r) => sum + (r.sapmaYuzde ?? 0), 0) / visibleRows.length;
+    // Ortalama kayıp süre: her satır için sapmaDk × qty(1 iş emri = 1 adet varsayımı) / toplam
+    // Formül: Σ(sapmaDk) / toplam_satır  (ileride qty sütunu eklenirse buradan genişletilebilir)
+    const avgKayipDk = visibleRows.reduce((sum, r) => sum + (r.sapmaDk ?? 0), 0) / visibleRows.length;
     return {
-      total: mergedRows.length,
-      withDeviation: withDeviation.length,
+      total: visibleRows.length,
       positiveDeviation: positiveDeviation.length,
       negativeDeviation: negativeDeviation.length,
-      totalLostMin: parseFloat(totalLostMin.toFixed(1)),
       avgSapmaYuzde: parseFloat(avgSapmaYuzde.toFixed(1)),
+      avgKayipDk: parseFloat(avgKayipDk.toFixed(1)),
     };
-  }, [mergedRows]);
+  }, [visibleRows]);
 
   const handleCompare = () => {
     setProcessing(true);
@@ -387,8 +388,8 @@ export default function ProductionComparisonModule() {
     });
     headerRow.height = 22;
 
-    // Data rows starting at row 3
-    mergedRows.forEach((row, i) => {
+    // Data rows starting at row 3 — only rows with deviation data
+    visibleRows.forEach((row, i) => {
       const exRow = ws.getRow(i + 3);
       const rowFill = i % 2 === 0 ? ROW_EVEN : ROW_ODD;
       const bc = { style: "thin" as const, color: { argb: BORDER_CLR } };
@@ -445,16 +446,15 @@ export default function ProductionComparisonModule() {
 
       const summaryData = [
         ["Toplam Satır",               stats.total,                                    "adet"],
-        ["Sapma Olan Satır",            stats.withDeviation,                            "adet"],
         ["Pozitif Sapma (Doruk > ÜA)", stats.positiveDeviation,                        "adet"],
         ["Negatif Sapma (Doruk < ÜA)", stats.negativeDeviation,                        "adet"],
         ["Ortalama Sapma Oranı",        `${stats.avgSapmaYuzde > 0 ? "+" : ""}${stats.avgSapmaYuzde}%`, ""],
-        ["Toplam Kayıp/Kazanç (dk)",    `${stats.totalLostMin > 0 ? "+" : ""}${stats.totalLostMin}`, "dk"],
+        ["Ortalama Kayıp Süre",         `${stats.avgKayipDk > 0 ? "+" : ""}${stats.avgKayipDk}`, "dk/iş emri"],
       ];
 
       summaryData.forEach(([label, value, unit], idx) => {
         const r = summaryStartRow + 1 + idx;
-        const isWarn = (idx === 4 && stats.avgSapmaYuzde > 0) || (idx === 5 && stats.totalLostMin > 0);
+        const isWarn = (idx === 3 && stats.avgSapmaYuzde > 0) || (idx === 4 && stats.avgKayipDk > 0);
         const bg   = isWarn ? WARN_BG  : SUMMARY_BG;
         const fg   = isWarn ? WARN_FG  : SUMMARY_FG;
         const bc   = { style: "thin" as const, color: { argb: "FFD1D5DB" } };
@@ -636,7 +636,7 @@ export default function ProductionComparisonModule() {
           </Button>
         )}
         {compared && (
-          <Badge variant="secondary" className="ml-auto">{mergedRows.length} satır eşleştirildi</Badge>
+          <Badge variant="secondary" className="ml-auto">{visibleRows.length} satır eşleştirildi</Badge>
         )}
       </div>
 
@@ -653,7 +653,7 @@ export default function ProductionComparisonModule() {
             <CardContent className="p-4 flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Toplam Satır</span>
               <span className="text-2xl font-bold text-foreground">{stats.total}</span>
-              <span className="text-xs text-muted-foreground">{stats.withDeviation} satırda sapma var</span>
+              <span className="text-xs text-muted-foreground">{stats.positiveDeviation} pozitif · {stats.negativeDeviation} negatif sapma</span>
             </CardContent>
           </Card>
           <Card className={`border-border ${stats.avgSapmaYuzde > 0 ? "bg-destructive/5 border-destructive/20" : stats.avgSapmaYuzde < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
@@ -667,21 +667,17 @@ export default function ProductionComparisonModule() {
               </span>
             </CardContent>
           </Card>
-          <Card className={`border-border col-span-2 md:col-span-1 ${stats.totalLostMin > 0 ? "bg-destructive/5 border-destructive/20" : stats.totalLostMin < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
+          <Card className={`border-border col-span-2 md:col-span-1 ${stats.avgKayipDk > 0 ? "bg-destructive/5 border-destructive/20" : stats.avgKayipDk < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
             <CardContent className="p-4 flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Toplam Kayıp / Kazanç</span>
-              <span className={`text-2xl font-bold ${stats.totalLostMin > 0 ? "text-destructive" : stats.totalLostMin < 0 ? "text-emerald-600" : "text-foreground"}`}>
-                {stats.totalLostMin > 0 ? "+" : ""}{stats.totalLostMin} dk
+              <span className="text-xs text-muted-foreground">Ortalama Kayıp Süre</span>
+              <span className={`text-2xl font-bold ${stats.avgKayipDk > 0 ? "text-destructive" : stats.avgKayipDk < 0 ? "text-emerald-600" : "text-foreground"}`}>
+                {stats.avgKayipDk > 0 ? "+" : ""}{stats.avgKayipDk} dk
               </span>
-              <span className="text-xs text-muted-foreground">
-                {stats.totalLostMin > 0 ? "Gerçek süre plandan uzun" : stats.totalLostMin < 0 ? "Gerçek süre plandan kısa" : "Plan ile uyumlu"}
-              </span>
+              <span className="text-xs text-muted-foreground">iş emri başına ortalama</span>
             </CardContent>
           </Card>
         </div>
       )}
-
-      {/* Preview Table */}
       {compared && mergedRows.length > 0 && (
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
@@ -698,7 +694,7 @@ export default function ProductionComparisonModule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mergedRows.slice(0, 50).map((row, i) => (
+                  {visibleRows.slice(0, 50).map((row, i) => (
                     <tr key={i} className={`border-b border-border/50 ${i % 2 === 0 ? "bg-background" : "bg-muted/30"}`}>
                       <td className="px-3 py-1.5">{row.parcaKodu || "-"}</td>
                       <td className="px-3 py-1.5">{row.operator || "-"}</td>
