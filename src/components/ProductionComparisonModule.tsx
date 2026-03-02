@@ -261,25 +261,26 @@ export default function ProductionComparisonModule() {
 
   const canCompare = planFile && mesFile && mapping.plan_isEmriNo !== NONE && mapping.mes_isEmriNo !== NONE;
 
+  // ---- Sadece sapma hesaplanabilen (boş olmayan) satırlar ----
+  const visibleRows = useMemo(() => mergedRows.filter(r => r.sapmaDk !== null && r.uaSureDk !== null), [mergedRows]);
+
   // ---- Dashboard stats ----
   const stats = useMemo(() => {
-    if (!mergedRows.length) return null;
-    const withDeviation = mergedRows.filter(r => r.sapmaDk !== null && r.uaSureDk !== null);
-    const positiveDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) > 0);
-    const negativeDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) < 0);
-    const totalLostMin = withDeviation.reduce((sum, r) => sum + (r.sapmaDk ?? 0), 0);
-    const avgSapmaYuzde = withDeviation.length > 0
-      ? withDeviation.reduce((sum, r) => sum + (r.sapmaYuzde ?? 0), 0) / withDeviation.length
-      : 0;
+    if (!visibleRows.length) return null;
+    const positiveDeviation = visibleRows.filter(r => (r.sapmaDk ?? 0) > 0);
+    const negativeDeviation = visibleRows.filter(r => (r.sapmaDk ?? 0) < 0);
+    const avgSapmaYuzde = visibleRows.reduce((sum, r) => sum + (r.sapmaYuzde ?? 0), 0) / visibleRows.length;
+    // Ortalama kayıp süre: her satır için sapmaDk × qty(1 iş emri = 1 adet varsayımı) / toplam
+    // Formül: Σ(sapmaDk) / toplam_satır  (ileride qty sütunu eklenirse buradan genişletilebilir)
+    const avgKayipDk = visibleRows.reduce((sum, r) => sum + (r.sapmaDk ?? 0), 0) / visibleRows.length;
     return {
-      total: mergedRows.length,
-      withDeviation: withDeviation.length,
+      total: visibleRows.length,
       positiveDeviation: positiveDeviation.length,
       negativeDeviation: negativeDeviation.length,
-      totalLostMin: parseFloat(totalLostMin.toFixed(1)),
       avgSapmaYuzde: parseFloat(avgSapmaYuzde.toFixed(1)),
+      avgKayipDk: parseFloat(avgKayipDk.toFixed(1)),
     };
-  }, [mergedRows]);
+  }, [visibleRows]);
 
   const handleCompare = () => {
     setProcessing(true);
