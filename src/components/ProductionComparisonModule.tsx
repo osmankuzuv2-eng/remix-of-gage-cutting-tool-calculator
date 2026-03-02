@@ -296,6 +296,8 @@ export default function ProductionComparisonModule() {
       { header: "Operasyon Kodu", key: "operasyonKodu", width: 18 },
       { header: "Doruk Süre (dk)", key: "dorukSureDk", width: 18 },
       { header: "ÜA Süre (dk)", key: "uaSureDk", width: 18 },
+      { header: "Sapma (dk)", key: "sapmaDk", width: 16 },
+      { header: "Sapma (%)", key: "sapmaYuzde", width: 14 },
     ];
     const headerRow = ws.getRow(1);
     const HEADER_BG = "FF1E40AF";
