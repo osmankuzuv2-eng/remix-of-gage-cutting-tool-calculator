@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -243,6 +243,26 @@ export default function ProductionComparisonModule() {
 
   const canCompare = planFile && mesFile && mapping.plan_isEmriNo !== NONE && mapping.mes_isEmriNo !== NONE;
 
+  // ---- Dashboard stats ----
+  const stats = useMemo(() => {
+    if (!mergedRows.length) return null;
+    const withDeviation = mergedRows.filter(r => r.sapmaDk !== null && r.uaSureDk !== null);
+    const positiveDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) > 0);
+    const negativeDeviation = withDeviation.filter(r => (r.sapmaDk ?? 0) < 0);
+    const totalLostMin = withDeviation.reduce((sum, r) => sum + (r.sapmaDk ?? 0), 0);
+    const avgSapmaYuzde = withDeviation.length > 0
+      ? withDeviation.reduce((sum, r) => sum + (r.sapmaYuzde ?? 0), 0) / withDeviation.length
+      : 0;
+    return {
+      total: mergedRows.length,
+      withDeviation: withDeviation.length,
+      positiveDeviation: positiveDeviation.length,
+      negativeDeviation: negativeDeviation.length,
+      totalLostMin: parseFloat(totalLostMin.toFixed(1)),
+      avgSapmaYuzde: parseFloat(avgSapmaYuzde.toFixed(1)),
+    };
+  }, [mergedRows]);
+
   const handleCompare = () => {
     setProcessing(true);
     setError(null);
@@ -379,6 +399,66 @@ export default function ProductionComparisonModule() {
         }
       });
     });
+
+    // ---- Özet bölümü (Excel'de veri satırlarından sonra) ----
+    if (stats) {
+      const summaryStartRow = mergedRows.length + 5;
+      const SUMMARY_BG  = "FFE8EDF7";
+      const SUMMARY_FG  = "FF1E40AF";
+      const WARN_BG     = "FFFEF3C7";
+      const WARN_FG     = "FFB45309";
+
+      ws.getRow(summaryStartRow - 1); // boş satır
+      const titleCell = ws.getCell(`A${summaryStartRow}`);
+      ws.mergeCells(`A${summaryStartRow}:J${summaryStartRow}`);
+      titleCell.value = "── ÖZET / SONUÇLAR ──";
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SUMMARY_BG } };
+      titleCell.font = { bold: true, color: { argb: SUMMARY_FG }, size: 11 };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+      ws.getRow(summaryStartRow).height = 20;
+
+      const summaryData = [
+        ["Toplam Satır",               stats.total,                                    "adet"],
+        ["Sapma Olan Satır",            stats.withDeviation,                            "adet"],
+        ["Pozitif Sapma (Doruk > ÜA)", stats.positiveDeviation,                        "adet"],
+        ["Negatif Sapma (Doruk < ÜA)", stats.negativeDeviation,                        "adet"],
+        ["Ortalama Sapma Oranı",        `${stats.avgSapmaYuzde > 0 ? "+" : ""}${stats.avgSapmaYuzde}%`, ""],
+        ["Toplam Kayıp/Kazanç (dk)",    `${stats.totalLostMin > 0 ? "+" : ""}${stats.totalLostMin}`, "dk"],
+      ];
+
+      summaryData.forEach(([label, value, unit], idx) => {
+        const r = summaryStartRow + 1 + idx;
+        const isWarn = (idx === 4 && stats.avgSapmaYuzde > 0) || (idx === 5 && stats.totalLostMin > 0);
+        const bg   = isWarn ? WARN_BG  : SUMMARY_BG;
+        const fg   = isWarn ? WARN_FG  : SUMMARY_FG;
+        const bc   = { style: "thin" as const, color: { argb: "FFD1D5DB" } };
+
+        const lCell = ws.getCell(`A${r}`);
+        ws.mergeCells(`A${r}:G${r}`);
+        lCell.value = String(label);
+        lCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        lCell.font = { bold: true, color: { argb: fg } };
+        lCell.alignment = { horizontal: "left", vertical: "middle", indent: 2 };
+        lCell.border = { top: bc, left: bc, bottom: bc, right: bc };
+
+        const vCell = ws.getCell(`H${r}`);
+        ws.mergeCells(`H${r}:I${r}`);
+        vCell.value = value;
+        vCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        vCell.font = { bold: true, color: { argb: fg } };
+        vCell.alignment = { horizontal: "center", vertical: "middle" };
+        vCell.border = { top: bc, left: bc, bottom: bc, right: bc };
+
+        const uCell = ws.getCell(`J${r}`);
+        uCell.value = String(unit);
+        uCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        uCell.font = { color: { argb: fg } };
+        uCell.alignment = { horizontal: "center", vertical: "middle" };
+        uCell.border = { top: bc, left: bc, bottom: bc, right: bc };
+
+        ws.getRow(r).height = 18;
+      });
+    }
 
     const buf = await wb.xlsx.writeBuffer();
     saveAs(new Blob([buf]), fileName);
@@ -537,6 +617,41 @@ export default function ProductionComparisonModule() {
       {error && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+        </div>
+      )}
+
+      {/* Dashboard Stats */}
+      {compared && stats && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Card className="border-border">
+            <CardContent className="p-4 flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Toplam Satır</span>
+              <span className="text-2xl font-bold text-foreground">{stats.total}</span>
+              <span className="text-xs text-muted-foreground">{stats.withDeviation} satırda sapma var</span>
+            </CardContent>
+          </Card>
+          <Card className={`border-border ${stats.avgSapmaYuzde > 0 ? "bg-destructive/5 border-destructive/20" : stats.avgSapmaYuzde < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
+            <CardContent className="p-4 flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Ortalama Sapma</span>
+              <span className={`text-2xl font-bold ${stats.avgSapmaYuzde > 0 ? "text-destructive" : stats.avgSapmaYuzde < 0 ? "text-emerald-600" : "text-foreground"}`}>
+                {stats.avgSapmaYuzde > 0 ? "+" : ""}{stats.avgSapmaYuzde}%
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {stats.positiveDeviation} pozitif · {stats.negativeDeviation} negatif
+              </span>
+            </CardContent>
+          </Card>
+          <Card className={`border-border col-span-2 md:col-span-1 ${stats.totalLostMin > 0 ? "bg-destructive/5 border-destructive/20" : stats.totalLostMin < 0 ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
+            <CardContent className="p-4 flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Toplam Kayıp / Kazanç</span>
+              <span className={`text-2xl font-bold ${stats.totalLostMin > 0 ? "text-destructive" : stats.totalLostMin < 0 ? "text-emerald-600" : "text-foreground"}`}>
+                {stats.totalLostMin > 0 ? "+" : ""}{stats.totalLostMin} dk
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {stats.totalLostMin > 0 ? "Gerçek süre plandan uzun" : stats.totalLostMin < 0 ? "Gerçek süre plandan kısa" : "Plan ile uyumlu"}
+              </span>
+            </CardContent>
+          </Card>
         </div>
       )}
 
