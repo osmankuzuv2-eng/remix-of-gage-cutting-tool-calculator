@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, X, ArrowLeftRight, Settings2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, X, ArrowLeftRight, Settings2, FileCode2 } from "lucide-react";
 import * as ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
@@ -20,11 +20,9 @@ interface MergedRow {
 }
 
 interface ColumnMapping {
-  // Plan (Excel 1)
   plan_isEmriNo: string;
   plan_parcaKodu: string;
   plan_uaSure: string;
-  // MES (Excel 2)
   mes_isEmriNo: string;
   mes_operator: string;
   mes_isEmriOpNo: string;
@@ -37,10 +35,12 @@ const NONE = "__none__";
 
 const parseNum = (val: any): number | null => {
   if (val === null || val === undefined || val === "") return null;
-  const n = parseFloat(String(val).replace(",", "."));
+  const s = String(val).replace(",", ".").trim();
+  const n = parseFloat(s);
   return isNaN(n) ? null : n;
 };
 
+// ---- Excel reader ----
 const readExcel = async (file: File): Promise<{ headers: string[]; rows: Record<string, any>[] }> => {
   const buf = await file.arrayBuffer();
   const wb = new ExcelJS.Workbook();
@@ -48,7 +48,6 @@ const readExcel = async (file: File): Promise<{ headers: string[]; rows: Record<
   const ws = wb.worksheets[0];
   const headers: string[] = [];
   const rows: Record<string, any>[] = [];
-
   ws.eachRow((row, rowNum) => {
     if (rowNum === 1) {
       row.eachCell({ includeEmpty: true }, (cell) => {
@@ -63,22 +62,78 @@ const readExcel = async (file: File): Promise<{ headers: string[]; rows: Record<
       rows.push(obj);
     }
   });
+  return { headers: headers.filter(h => h !== ""), rows };
+};
+
+// ---- HTML table reader ----
+const readHtmlTable = async (file: File): Promise<{ headers: string[]; rows: Record<string, any>[] }> => {
+  const text = await file.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, "text/html");
+
+  // Find the table that has the most rows (data table)
+  const tables = Array.from(doc.querySelectorAll("table"));
+  if (tables.length === 0) throw new Error("HTML dosyasında tablo bulunamadı.");
+
+  // Pick table with most rows
+  const dataTable = tables.reduce((best, t) => t.rows.length > best.rows.length ? t : best, tables[0]);
+
+  // Find header row: first row whose cells all have non-empty text
+  let headerRowIndex = -1;
+  let headers: string[] = [];
+
+  for (let i = 0; i < dataTable.rows.length; i++) {
+    const row = dataTable.rows[i];
+    const cells = Array.from(row.cells);
+    const texts = cells.map(c => c.textContent?.replace(/\u00a0/g, " ").trim() ?? "");
+    const nonEmpty = texts.filter(t => t !== "");
+    // Header row: multiple non-empty distinct cells, no numbers-only cells
+    if (nonEmpty.length >= 3) {
+      const allNonNumeric = nonEmpty.every(t => isNaN(parseFloat(t.replace(",", "."))));
+      if (allNonNumeric) {
+        headerRowIndex = i;
+        headers = texts;
+        break;
+      }
+    }
+  }
+
+  if (headerRowIndex === -1 || headers.length === 0) {
+    throw new Error("Başlık satırı bulunamadı. Lütfen sütunları manuel eşleştirin.");
+  }
+
+  const rows: Record<string, any>[] = [];
+  for (let i = headerRowIndex + 1; i < dataTable.rows.length; i++) {
+    const row = dataTable.rows[i];
+    const cells = Array.from(row.cells);
+    const obj: Record<string, any> = {};
+    let hasData = false;
+    cells.forEach((cell, ci) => {
+      const key = headers[ci];
+      if (key) {
+        const val = cell.textContent?.replace(/\u00a0/g, " ").trim() ?? "";
+        obj[key] = val;
+        if (val !== "") hasData = true;
+      }
+    });
+    if (hasData) rows.push(obj);
+  }
 
   return { headers: headers.filter(h => h !== ""), rows };
 };
 
-const ColSelect = ({
-  label,
-  value,
-  headers,
-  onChange,
-  required = false,
-}: {
-  label: string;
-  value: string;
-  headers: string[];
-  onChange: (v: string) => void;
-  required?: boolean;
+// ---- Auto-detect column ----
+const autoDetect = (headers: string[], patterns: RegExp[]): string => {
+  for (const pat of patterns) {
+    const found = headers.find(h => pat.test(h));
+    if (found) return found;
+  }
+  return NONE;
+};
+
+// ---- ColSelect ----
+const ColSelect = ({ label, value, headers, onChange, required = false }: {
+  label: string; value: string; headers: string[]; onChange: (v: string) => void; required?: boolean;
 }) => (
   <div className="space-y-1">
     <Label className="text-xs text-muted-foreground">
@@ -122,28 +177,29 @@ export default function ProductionComparisonModule() {
     setCompared(false);
     setMergedRows([]);
     try {
-      const { headers, rows } = await readExcel(file);
+      const isHtml = file.name.toLowerCase().endsWith(".html") || file.name.toLowerCase().endsWith(".htm");
+      const { headers, rows } = isHtml ? await readHtmlTable(file) : await readExcel(file);
+
       if (type === "plan") {
         setPlanHeaders(headers);
         setPlanRows(rows);
-        // Auto-detect common names
-        const autoIsEmri = headers.find(h => /iş emri no|is emri no|workorder|wo no/i.test(h)) ?? NONE;
-        const autoParca = headers.find(h => /parça kodu|parca kodu|part no|part code/i.test(h)) ?? NONE;
-        const autoUa = headers.find(h => /üa süre|ua sure|üretim süresi|süre.*dk/i.test(h)) ?? NONE;
-        setMapping(prev => ({ ...prev, plan_isEmriNo: autoIsEmri, plan_parcaKodu: autoParca, plan_uaSure: autoUa }));
+        setMapping(prev => ({
+          ...prev,
+          plan_isEmriNo: autoDetect(headers, [/iş emri no/i, /is emri no/i, /workorder/i, /wo no/i]),
+          plan_parcaKodu: autoDetect(headers, [/parça kodu/i, /parca kodu/i, /part no/i, /part code/i]),
+          plan_uaSure: autoDetect(headers, [/üa süre/i, /ua sure/i, /üretim süresi/i, /süre.*dk/i]),
+        }));
       } else {
         setMesHeaders(headers);
         setMesRows(rows);
-        const autoIsEmri = headers.find(h => /iş emri no|is emri no|workorder|wo no/i.test(h)) ?? NONE;
-        const autoOp = headers.find(h => /operatör|operator/i.test(h)) ?? NONE;
-        const autoOpNo = headers.find(h => /iş emri op no|is emri op no|op no/i.test(h)) ?? NONE;
-        const autoMak = headers.find(h => /makine|machine|ekipman/i.test(h)) ?? NONE;
-        const autoOpsKod = headers.find(h => /operasyon kodu|ops kodu|op kodu|operation code/i.test(h)) ?? NONE;
-        const autoHiz = headers.find(h => /hız çevrim|hiz cevrim|çevrim süresi|cycle time|hız|hiz/i.test(h)) ?? NONE;
         setMapping(prev => ({
           ...prev,
-          mes_isEmriNo: autoIsEmri, mes_operator: autoOp, mes_isEmriOpNo: autoOpNo,
-          mes_makine: autoMak, mes_operasyonKodu: autoOpsKod, mes_hizCevrim: autoHiz,
+          mes_isEmriNo: autoDetect(headers, [/iş emri no/i, /is emri no/i, /workorder/i, /wo no/i]),
+          mes_operator: autoDetect(headers, [/operatör/i, /operator/i]),
+          mes_isEmriOpNo: autoDetect(headers, [/iş emri op no/i, /op no/i, /operasyon no/i]),
+          mes_makine: autoDetect(headers, [/makine/i, /machine/i, /ekipman/i]),
+          mes_operasyonKodu: autoDetect(headers, [/operasyon kodu/i, /ops kodu/i, /op kodu/i, /operation code/i]),
+          mes_hizCevrim: autoDetect(headers, [/hız çevrim/i, /hiz cevrim/i, /çevrim süresi/i, /cycle time/i, /hız/i, /hiz/i, /çevrim/i]),
         }));
       }
     } catch (err: any) {
@@ -168,15 +224,13 @@ export default function ProductionComparisonModule() {
     if (type === "plan") setPlanFile(file);
     else setMesFile(file);
     await loadFile(file, type);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setMap = (key: keyof ColumnMapping, val: string) =>
     setMapping(prev => ({ ...prev, [key]: val }));
 
-  const canCompare =
-    planFile && mesFile &&
-    mapping.plan_isEmriNo !== NONE &&
-    mapping.mes_isEmriNo !== NONE;
+  const canCompare = planFile && mesFile && mapping.plan_isEmriNo !== NONE && mapping.mes_isEmriNo !== NONE;
 
   const handleCompare = () => {
     setProcessing(true);
@@ -231,19 +285,25 @@ export default function ProductionComparisonModule() {
       { header: "ÜA Süre (dk)", key: "uaSureDk", width: 18 },
     ];
     const headerRow = ws.getRow(1);
+    const HEADER_BG = "FF1E40AF";
+    const HEADER_FG = "FFFFFFFF";
+    const BORDER_COLOR = "FFD1D5DB";
+    const ROW_EVEN = "FFF8FAFF";
+    const ROW_ODD = "FFEEF2FF";
     headerRow.eachCell(cell => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
+      cell.font = { bold: true, color: { argb: HEADER_FG } };
       cell.alignment = { horizontal: "center", vertical: "middle" };
       cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
     });
     headerRow.height = 22;
     mergedRows.forEach((row, i) => {
       const exRow = ws.addRow(row);
-      const fill = i % 2 === 0 ? "FFF8FAFF" : "FFEEF2FF";
+      const fill = i % 2 === 0 ? ROW_EVEN : ROW_ODD;
+      const bc = { style: "thin" as const, color: { argb: BORDER_COLOR } };
       exRow.eachCell(cell => {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
-        cell.border = { top: { style: "thin", color: { argb: "FFD1D5DB" } }, left: { style: "thin", color: { argb: "FFD1D5DB" } }, bottom: { style: "thin", color: { argb: "FFD1D5DB" } }, right: { style: "thin", color: { argb: "FFD1D5DB" } } };
+        cell.border = { top: bc, left: bc, bottom: bc, right: bc };
         cell.alignment = { horizontal: "center", vertical: "middle" };
       });
     });
@@ -251,45 +311,63 @@ export default function ProductionComparisonModule() {
     saveAs(new Blob([buf]), "uretim_karsilastirma.xlsx");
   };
 
-  const FileDropZone = ({ type, file, label, badge, badgeClass }: {
-    type: "plan" | "mes"; file: File | null; label: string; badge: string; badgeClass: string;
-  }) => (
-    <div
-      onDrop={e => handleDrop(e, type)}
-      onDragOver={e => e.preventDefault()}
-      className={`relative border-2 border-dashed rounded-xl p-5 transition-all duration-200 text-center cursor-pointer hover:border-primary/60 hover:bg-primary/5 ${file ? "border-primary/40 bg-primary/5" : "border-border"}`}
-      onClick={() => document.getElementById(`file-${type}`)?.click()}
-    >
-      <input id={`file-${type}`} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => handleFileChange(e, type)} />
-      {loadingFile === type ? (
-        <div className="flex flex-col items-center gap-2 py-2">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-muted-foreground">Okunuyor...</span>
-        </div>
-      ) : file ? (
-        <div className="flex flex-col items-center gap-1.5">
-          <CheckCircle2 className="w-9 h-9 text-primary" />
-          <span className="text-sm font-semibold text-foreground">{file.name}</span>
-          <Badge variant="secondary">{(file.size / 1024).toFixed(1)} KB</Badge>
-          <Button size="sm" variant="ghost" className="absolute top-2 right-2 h-7 w-7 p-0"
-            onClick={e => {
-              e.stopPropagation();
-              if (type === "plan") { setPlanFile(null); setPlanHeaders([]); setPlanRows([]); }
-              else { setMesFile(null); setMesHeaders([]); setMesRows([]); }
-              setCompared(false); setMergedRows([]);
-            }}>
-            <X className="w-3 h-3" />
-          </Button>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-2">
-          <FileSpreadsheet className="w-9 h-9 text-muted-foreground/40" />
-          <span className="text-sm font-semibold text-foreground">{label}</span>
-          <span className="text-xs text-muted-foreground">Sürükle & bırak veya tıkla</span>
-        </div>
-      )}
-    </div>
-  );
+  const FileDropZone = ({ type, file, label, acceptHtml }: {
+    type: "plan" | "mes"; file: File | null; label: string; acceptHtml?: boolean;
+  }) => {
+    const isHtml = file?.name.toLowerCase().endsWith(".html") || file?.name.toLowerCase().endsWith(".htm");
+    return (
+      <div
+        onDrop={e => handleDrop(e, type)}
+        onDragOver={e => e.preventDefault()}
+        className={`relative border-2 border-dashed rounded-xl p-5 transition-all duration-200 text-center cursor-pointer hover:border-primary/60 hover:bg-primary/5 ${file ? "border-primary/40 bg-primary/5" : "border-border"}`}
+        onClick={() => document.getElementById(`file-${type}`)?.click()}
+      >
+        <input
+          id={`file-${type}`}
+          type="file"
+          accept={acceptHtml ? ".xlsx,.xls,.html,.htm" : ".xlsx,.xls"}
+          className="hidden"
+          onChange={e => handleFileChange(e, type)}
+        />
+        {loadingFile === type ? (
+          <div className="flex flex-col items-center gap-2 py-2">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-muted-foreground">Okunuyor...</span>
+          </div>
+        ) : file ? (
+          <div className="flex flex-col items-center gap-1.5">
+            {isHtml
+              ? <FileCode2 className="w-9 h-9 text-emerald-500" />
+              : <CheckCircle2 className="w-9 h-9 text-primary" />
+            }
+            <span className="text-sm font-semibold text-foreground">{file.name}</span>
+            <Badge variant="secondary">{(file.size / 1024).toFixed(1)} KB</Badge>
+            {isHtml && <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 text-xs">HTML Raporu</Badge>}
+            <Button size="sm" variant="ghost" className="absolute top-2 right-2 h-7 w-7 p-0"
+              onClick={e => {
+                e.stopPropagation();
+                if (type === "plan") { setPlanFile(null); setPlanHeaders([]); setPlanRows([]); }
+                else { setMesFile(null); setMesHeaders([]); setMesRows([]); }
+                setCompared(false); setMergedRows([]);
+              }}>
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            {acceptHtml
+              ? <FileCode2 className="w-9 h-9 text-muted-foreground/40" />
+              : <FileSpreadsheet className="w-9 h-9 text-muted-foreground/40" />
+            }
+            <span className="text-sm font-semibold text-foreground">{label}</span>
+            <span className="text-xs text-muted-foreground">
+              {acceptHtml ? ".xlsx, .xls veya .html" : ".xlsx veya .xls"} yükleyin
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-5">
@@ -299,7 +377,7 @@ export default function ProductionComparisonModule() {
         </div>
         <div>
           <h2 className="text-xl font-bold text-foreground">Üretim Veri Karşılaştırma</h2>
-          <p className="text-sm text-muted-foreground">Üretim planı ve MES raporunu iş emri no ile eşleştirin</p>
+          <p className="text-sm text-muted-foreground">Üretim planı (Excel) ve MES raporu (Excel veya HTML) eşleştirin</p>
         </div>
       </div>
 
@@ -308,23 +386,23 @@ export default function ProductionComparisonModule() {
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/10">1. Excel</Badge>
-              Üretim Planı
+              <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/10">1. Dosya</Badge>
+              Üretim Planı <span className="text-xs font-normal text-muted-foreground">(Excel)</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <FileDropZone type="plan" file={planFile} label="Üretim Planı" badge="1. Excel" badgeClass="bg-blue-500/10 text-blue-600" />
+            <FileDropZone type="plan" file={planFile} label="Üretim Planı (Excel)" />
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 hover:bg-emerald-500/10">2. Excel</Badge>
-              MES Raporu
+              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 hover:bg-emerald-500/10">2. Dosya</Badge>
+              MES Raporu <span className="text-xs font-normal text-muted-foreground">(Excel veya HTML)</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <FileDropZone type="mes" file={mesFile} label="MES Raporu" badge="2. Excel" badgeClass="bg-emerald-500/10 text-emerald-600" />
+            <FileDropZone type="mes" file={mesFile} label="MES Raporu (Excel / HTML)" acceptHtml />
           </CardContent>
         </Card>
       </div>
@@ -342,7 +420,7 @@ export default function ProductionComparisonModule() {
           <CardContent className="px-4 pb-4 space-y-4">
             {planHeaders.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-blue-600 mb-2">📋 1. Excel — Üretim Planı Sütunları</p>
+                <p className="text-xs font-semibold text-blue-600 mb-2">📋 1. Dosya — Üretim Planı Sütunları ({planRows.length} satır okundu)</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <ColSelect label="İş Emri No" value={mapping.plan_isEmriNo} headers={planHeaders} onChange={v => setMap("plan_isEmriNo", v)} required />
                   <ColSelect label="Parça Kodu" value={mapping.plan_parcaKodu} headers={planHeaders} onChange={v => setMap("plan_parcaKodu", v)} />
@@ -352,14 +430,14 @@ export default function ProductionComparisonModule() {
             )}
             {mesHeaders.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-emerald-600 mb-2">🏭 2. Excel — MES Raporu Sütunları</p>
+                <p className="text-xs font-semibold text-emerald-600 mb-2">🏭 2. Dosya — MES Raporu Sütunları ({mesRows.length} satır okundu)</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <ColSelect label="İş Emri No" value={mapping.mes_isEmriNo} headers={mesHeaders} onChange={v => setMap("mes_isEmriNo", v)} required />
                   <ColSelect label="Operatör" value={mapping.mes_operator} headers={mesHeaders} onChange={v => setMap("mes_operator", v)} />
                   <ColSelect label="İş Emri Op No" value={mapping.mes_isEmriOpNo} headers={mesHeaders} onChange={v => setMap("mes_isEmriOpNo", v)} />
                   <ColSelect label="Makine" value={mapping.mes_makine} headers={mesHeaders} onChange={v => setMap("mes_makine", v)} />
                   <ColSelect label="Operasyon Kodu" value={mapping.mes_operasyonKodu} headers={mesHeaders} onChange={v => setMap("mes_operasyonKodu", v)} />
-                  <ColSelect label="Hız Çevrim (saniye)" value={mapping.mes_hizCevrim} headers={mesHeaders} onChange={v => setMap("mes_hizCevrim", v)} />
+                  <ColSelect label="Hız Çevrim (saniye → dk)" value={mapping.mes_hizCevrim} headers={mesHeaders} onChange={v => setMap("mes_hizCevrim", v)} />
                 </div>
               </div>
             )}
