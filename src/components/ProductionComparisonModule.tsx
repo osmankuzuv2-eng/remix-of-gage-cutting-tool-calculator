@@ -509,6 +509,12 @@ export default function ProductionComparisonModule() {
                       <td className="px-3 py-1.5">{row.operasyonKodu || "-"}</td>
                       <td className="px-3 py-1.5 text-primary font-semibold">{row.dorukSureDk ?? "-"}</td>
                       <td className="px-3 py-1.5">{row.uaSureDk ?? "-"}</td>
+                      <td className={`px-3 py-1.5 font-semibold ${row.sapmaDk === null ? "" : row.sapmaDk > 0 ? "text-destructive" : "text-emerald-600"}`}>
+                        {row.sapmaDk !== null ? (row.sapmaDk > 0 ? `+${row.sapmaDk}` : row.sapmaDk) : "-"}
+                      </td>
+                      <td className={`px-3 py-1.5 font-semibold ${row.sapmaYuzde === null ? "" : row.sapmaYuzde > 0 ? "text-destructive" : "text-emerald-600"}`}>
+                        {row.sapmaYuzde !== null ? (row.sapmaYuzde > 0 ? `+${row.sapmaYuzde}%` : `${row.sapmaYuzde}%`) : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
