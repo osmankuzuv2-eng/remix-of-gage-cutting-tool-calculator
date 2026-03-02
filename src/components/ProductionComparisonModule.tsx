@@ -446,16 +446,15 @@ export default function ProductionComparisonModule() {
 
       const summaryData = [
         ["Toplam Satır",               stats.total,                                    "adet"],
-        ["Sapma Olan Satır",            stats.withDeviation,                            "adet"],
         ["Pozitif Sapma (Doruk > ÜA)", stats.positiveDeviation,                        "adet"],
         ["Negatif Sapma (Doruk < ÜA)", stats.negativeDeviation,                        "adet"],
         ["Ortalama Sapma Oranı",        `${stats.avgSapmaYuzde > 0 ? "+" : ""}${stats.avgSapmaYuzde}%`, ""],
-        ["Toplam Kayıp/Kazanç (dk)",    `${stats.totalLostMin > 0 ? "+" : ""}${stats.totalLostMin}`, "dk"],
+        ["Ortalama Kayıp Süre",         `${stats.avgKayipDk > 0 ? "+" : ""}${stats.avgKayipDk}`, "dk/iş emri"],
       ];
 
       summaryData.forEach(([label, value, unit], idx) => {
         const r = summaryStartRow + 1 + idx;
-        const isWarn = (idx === 4 && stats.avgSapmaYuzde > 0) || (idx === 5 && stats.totalLostMin > 0);
+        const isWarn = (idx === 3 && stats.avgSapmaYuzde > 0) || (idx === 4 && stats.avgKayipDk > 0);
         const bg   = isWarn ? WARN_BG  : SUMMARY_BG;
         const fg   = isWarn ? WARN_FG  : SUMMARY_FG;
         const bc   = { style: "thin" as const, color: { argb: "FFD1D5DB" } };
