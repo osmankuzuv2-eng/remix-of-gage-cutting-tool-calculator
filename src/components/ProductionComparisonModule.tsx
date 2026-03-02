@@ -136,7 +136,7 @@ const readHtmlTable = async (file: File): Promise<{ headers: string[]; rows: Rec
 // ---- Auto-detect column ----
 const autoDetect = (headers: string[], patterns: RegExp[]): string => {
   for (const pat of patterns) {
-    const found = headers.find(h => pat.test(h));
+    const found = headers.find(h => pat.test(h.trim()));
     if (found) return found;
   }
   return NONE;
