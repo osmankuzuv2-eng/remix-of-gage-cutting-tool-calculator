@@ -196,7 +196,7 @@ export default function ProductionComparisonModule() {
         setPlanRows(rows);
         setMapping(prev => ({
           ...prev,
-          plan_isEmriNo: autoDetect(headers, [/iş emri no/i, /is emri no/i, /workorder/i, /wo no/i]),
+          plan_isEmriNo: autoDetect(headers, [/^iş emri no$/i, /^is emri no$/i, /workorder/i, /wo no/i]),
           plan_parcaKodu: autoDetect(headers, [/parça kodu/i, /parca kodu/i, /part no/i, /part code/i]),
           plan_uaSure: autoDetect(headers, [/üa süre/i, /ua sure/i, /üretim süresi/i, /süre.*dk/i]),
         }));
