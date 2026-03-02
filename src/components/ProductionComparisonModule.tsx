@@ -257,7 +257,7 @@ export default function ProductionComparisonModule() {
           const isEmriNo = String(r[mapping.mes_isEmriNo] ?? "").trim();
           const plan = planMap.get(isEmriNo);
           const hizSaniye = mapping.mes_hizCevrim !== NONE ? parseNum(r[mapping.mes_hizCevrim]) : null;
-          const dorukSureDk = hizSaniye !== null ? parseFloat((hizSaniye / 60).toFixed(4)) : null;
+          const dorukSureDk = hizSaniye !== null ? parseFloat((hizSaniye / 60).toFixed(1)) : null;
           const uaSureDk = plan && mapping.plan_uaSure !== NONE ? parseNum(plan[mapping.plan_uaSure]) : null;
           return {
             parcaKodu: plan && mapping.plan_parcaKodu !== NONE ? String(plan[mapping.plan_parcaKodu] ?? "").trim() : "",
