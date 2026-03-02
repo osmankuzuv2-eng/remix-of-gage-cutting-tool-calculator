@@ -17,6 +17,8 @@ interface MergedRow {
   operasyonKodu: string;
   dorukSureDk: number | null;
   uaSureDk: number | null;
+  sapmaDk: number | null;
+  sapmaYuzde: number | null;
 }
 
 interface ColumnMapping {
