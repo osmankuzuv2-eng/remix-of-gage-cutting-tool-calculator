@@ -285,10 +285,18 @@ export default function ProductionComparisonModule() {
     setProcessing(true);
     setError(null);
     try {
+      // Duplicate iş emri no olan satırları tespit et → pas geç
+      const planKeyCount = new Map<string, number>();
+      planRows.forEach(r => {
+        const key = String(r[mapping.plan_isEmriNo] ?? "").trim();
+        if (key) planKeyCount.set(key, (planKeyCount.get(key) ?? 0) + 1);
+      });
+
       const planMap = new Map<string, Record<string, any>>();
       planRows.forEach(r => {
         const key = String(r[mapping.plan_isEmriNo] ?? "").trim();
-        if (key) planMap.set(key, r);
+        // Birden fazla kez geçen iş emrini planMap'e ekleme (pas geç)
+        if (key && planKeyCount.get(key) === 1) planMap.set(key, r);
       });
 
       const merged: MergedRow[] = mesRows
