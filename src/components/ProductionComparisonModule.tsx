@@ -52,6 +52,24 @@ const parseNum = (val: any): number | null => {
 };
 
 // ---- Excel reader ----
+const getCellText = (cell: ExcelJS.Cell): string => {
+  const v = cell.value;
+  if (v === null || v === undefined) return "";
+  // Rich text
+  if (typeof v === "object" && "richText" in (v as any)) {
+    return (v as any).richText.map((rt: any) => rt.text ?? "").join("").trim();
+  }
+  // Formula: prefer result
+  if (typeof v === "object" && "result" in (v as any)) {
+    const res = (v as any).result;
+    if (res === null || res === undefined) return "";
+    return String(res).trim();
+  }
+  // Date object → skip (not numeric data we need)
+  if (v instanceof Date) return v.toISOString();
+  return String(v).trim();
+};
+
 const readExcel = async (file: File): Promise<{ headers: string[]; rows: Record<string, any>[] }> => {
   const buf = await file.arrayBuffer();
   const wb = new ExcelJS.Workbook();
@@ -62,13 +80,13 @@ const readExcel = async (file: File): Promise<{ headers: string[]; rows: Record<
   ws.eachRow((row, rowNum) => {
     if (rowNum === 1) {
       row.eachCell({ includeEmpty: true }, (cell) => {
-        headers.push(cell.value?.toString().trim() ?? "");
+        headers.push(getCellText(cell));
       });
     } else {
       const obj: Record<string, any> = {};
       row.eachCell({ includeEmpty: true }, (cell, colNum) => {
         const key = headers[colNum - 1];
-        if (key) obj[key] = cell.value;
+        if (key) obj[key] = getCellText(cell);
       });
       rows.push(obj);
     }
@@ -267,10 +285,18 @@ export default function ProductionComparisonModule() {
     setProcessing(true);
     setError(null);
     try {
+      // Duplicate iş emri no olan satırları tespit et → pas geç
+      const planKeyCount = new Map<string, number>();
+      planRows.forEach(r => {
+        const key = String(r[mapping.plan_isEmriNo] ?? "").trim();
+        if (key) planKeyCount.set(key, (planKeyCount.get(key) ?? 0) + 1);
+      });
+
       const planMap = new Map<string, Record<string, any>>();
       planRows.forEach(r => {
         const key = String(r[mapping.plan_isEmriNo] ?? "").trim();
-        if (key) planMap.set(key, r);
+        // Birden fazla kez geçen iş emrini planMap'e ekleme (pas geç)
+        if (key && planKeyCount.get(key) === 1) planMap.set(key, r);
       });
 
       const merged: MergedRow[] = mesRows
