@@ -285,45 +285,103 @@ export default function ProductionComparisonModule() {
   };
 
   const handleExport = async () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const timeStr = now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+    const fileName = `uretim_karsilastirma_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}_${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}.xlsx`;
+
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Karşılaştırma");
+
+    // Colors
+    const HEADER_BG   = "FF1E40AF";
+    const HEADER_FG   = "FFFFFFFF";
+    const INFO_BG     = "FFE8EDF7";
+    const INFO_FG     = "FF374151";
+    const ROW_EVEN    = "FFF8FAFF";
+    const ROW_ODD     = "FFEEF2FF";
+    const BORDER_CLR  = "FFD1D5DB";
+    const RED_BG      = "FFFEE2E2";
+    const RED_FG      = "FFB91C1C";
+    const GREEN_BG    = "FFDCFCE7";
+    const GREEN_FG    = "FF15803D";
+    const NEUTRAL_FG  = "FF374151";
+
+    // Row 1: report info
+    ws.mergeCells("A1:J1");
+    const infoCell = ws.getCell("A1");
+    infoCell.value = `Üretim Veri Karşılaştırma Raporu  |  Oluşturulma: ${dateStr} ${timeStr}  |  Toplam: ${mergedRows.length} satır`;
+    infoCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: INFO_BG } };
+    infoCell.font = { bold: true, color: { argb: INFO_FG }, size: 11 };
+    infoCell.alignment = { horizontal: "center", vertical: "middle" };
+    ws.getRow(1).height = 24;
+
+    // Row 2: headers
     ws.columns = [
-      { header: "Parça Kodu", key: "parcaKodu", width: 18 },
-      { header: "Operatör", key: "operator", width: 18 },
-      { header: "İş Emri No", key: "isEmriNo", width: 18 },
-      { header: "İş Emri Op No", key: "isEmriOpNo", width: 18 },
-      { header: "Makine", key: "makine", width: 18 },
-      { header: "Operasyon Kodu", key: "operasyonKodu", width: 18 },
-      { header: "Doruk Süre (dk)", key: "dorukSureDk", width: 18 },
-      { header: "ÜA Süre (dk)", key: "uaSureDk", width: 18 },
-      { header: "Sapma (dk)", key: "sapmaDk", width: 16 },
-      { header: "Sapma (%)", key: "sapmaYuzde", width: 14 },
+      { key: "parcaKodu",     width: 18 },
+      { key: "operator",      width: 18 },
+      { key: "isEmriNo",      width: 18 },
+      { key: "isEmriOpNo",    width: 18 },
+      { key: "makine",        width: 18 },
+      { key: "operasyonKodu", width: 18 },
+      { key: "dorukSureDk",   width: 18 },
+      { key: "uaSureDk",      width: 18 },
+      { key: "sapmaDk",       width: 16 },
+      { key: "sapmaYuzde",    width: 14 },
     ];
-    const headerRow = ws.getRow(1);
-    const HEADER_BG = "FF1E40AF";
-    const HEADER_FG = "FFFFFFFF";
-    const BORDER_COLOR = "FFD1D5DB";
-    const ROW_EVEN = "FFF8FAFF";
-    const ROW_ODD = "FFEEF2FF";
-    headerRow.eachCell(cell => {
+    const colHeaders = ["Parça Kodu", "Operatör", "İş Emri No", "İş Emri Op No", "Makine", "Operasyon Kodu", "Doruk Süre (dk)", "ÜA Süre (dk)", "Sapma (dk)", "Sapma (%)"];
+    const headerRow = ws.getRow(2);
+    colHeaders.forEach((h, ci) => {
+      const cell = headerRow.getCell(ci + 1);
+      cell.value = h;
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
       cell.font = { bold: true, color: { argb: HEADER_FG } };
       cell.alignment = { horizontal: "center", vertical: "middle" };
       cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
     });
     headerRow.height = 22;
+
+    // Data rows starting at row 3
     mergedRows.forEach((row, i) => {
-      const exRow = ws.addRow(row);
-      const fill = i % 2 === 0 ? ROW_EVEN : ROW_ODD;
-      const bc = { style: "thin" as const, color: { argb: BORDER_COLOR } };
-      exRow.eachCell(cell => {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
+      const exRow = ws.getRow(i + 3);
+      const rowFill = i % 2 === 0 ? ROW_EVEN : ROW_ODD;
+      const bc = { style: "thin" as const, color: { argb: BORDER_CLR } };
+      const values = [
+        row.parcaKodu, row.operator, row.isEmriNo, row.isEmriOpNo,
+        row.makine, row.operasyonKodu, row.dorukSureDk, row.uaSureDk,
+        row.sapmaDk, row.sapmaYuzde != null ? `${row.sapmaYuzde > 0 ? "+" : ""}${row.sapmaYuzde}%` : null,
+      ];
+      values.forEach((val, ci) => {
+        const cell = exRow.getCell(ci + 1);
+        cell.value = val as any;
         cell.border = { top: bc, left: bc, bottom: bc, right: bc };
         cell.alignment = { horizontal: "center", vertical: "middle" };
+
+        // Sapma renklendirmesi: sütun 9 (sapmaDk) ve 10 (sapmaYuzde)
+        if (ci === 8 || ci === 9) {
+          const sapma = row.sapmaDk;
+          if (sapma !== null) {
+            if (sapma > 0) {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: RED_BG } };
+              cell.font = { bold: true, color: { argb: RED_FG } };
+            } else if (sapma < 0) {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: GREEN_BG } };
+              cell.font = { bold: true, color: { argb: GREEN_FG } };
+            } else {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } };
+              cell.font = { color: { argb: NEUTRAL_FG } };
+            }
+          } else {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } };
+          }
+        } else {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } };
+        }
       });
     });
+
     const buf = await wb.xlsx.writeBuffer();
-    saveAs(new Blob([buf]), "uretim_karsilastirma.xlsx");
+    saveAs(new Blob([buf]), fileName);
   };
 
   const FileDropZone = ({ type, file, label, acceptHtml }: {
