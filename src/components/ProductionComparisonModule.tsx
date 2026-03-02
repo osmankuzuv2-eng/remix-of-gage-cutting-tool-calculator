@@ -35,7 +35,16 @@ const NONE = "__none__";
 
 const parseNum = (val: any): number | null => {
   if (val === null || val === undefined || val === "") return null;
-  const s = String(val).replace(",", ".").trim();
+  let s = String(val).trim();
+  // Türkçe format: "3.135,60" → binlik nokta kaldır, virgülü noktaya çevir
+  // Eğer hem nokta hem virgül varsa: nokta binlik, virgül ondalık
+  if (s.includes(".") && s.includes(",")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (s.includes(",")) {
+    // Sadece virgül var: ondalık ayraç
+    s = s.replace(",", ".");
+  }
+  // Sadece nokta varsa zaten geçerli float
   const n = parseFloat(s);
   return isNaN(n) ? null : n;
 };
