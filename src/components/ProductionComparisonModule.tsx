@@ -270,6 +270,8 @@ export default function ProductionComparisonModule() {
             operasyonKodu: mapping.mes_operasyonKodu !== NONE ? String(r[mapping.mes_operasyonKodu] ?? "").trim() : "",
             dorukSureDk,
             uaSureDk,
+            sapmaDk: dorukSureDk !== null && uaSureDk !== null ? parseFloat((dorukSureDk - uaSureDk).toFixed(1)) : null,
+            sapmaYuzde: dorukSureDk !== null && uaSureDk !== null && uaSureDk !== 0 ? parseFloat((((dorukSureDk - uaSureDk) / uaSureDk) * 100).toFixed(1)) : null,
           };
         });
 
