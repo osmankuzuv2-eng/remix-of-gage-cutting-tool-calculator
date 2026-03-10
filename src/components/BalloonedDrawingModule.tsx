@@ -340,7 +340,7 @@ const BalloonedDrawingModule = () => {
           <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-foreground font-medium mb-1">{t("uploadBtn")}</p>
           <p className="text-xs text-muted-foreground">{t("uploadHint")}</p>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+          <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} />
         </div>
       ) : (
         <div className="space-y-4">
