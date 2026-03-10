@@ -31,14 +31,31 @@ serve(async (req) => {
       ? "Répondez en FRANÇAIS."
       : "Türkçe yanıt ver.";
 
-    const systemPrompt = `Sen bir teknik resim uzmanısın. Verilen teknik resmi analiz edecek ve üzerindeki ÖNEMLİ ÖLÇÜ/ÖZELLİK noktalarını tespit edeceksin.
+    const systemPrompt = `Sen bir teknik resim uzmanısın. Verilen teknik resmi analiz edecek ve üzerindeki ÖNEMLİ PARÇA ÖZELLİKLERİNİ tespit edeceksin.
 
 ${langNote}
 
-Amacın: Teknik resim üzerindeki her önemli özelliğe (delik, yüzey, ölçü, tolerans, diş, kanal, pah, vb.) bir balon numarası atamak.
+Amacın: Teknik resim üzerindeki her önemli PARÇA ÖZELLİĞİNE (delik, yüzey, ölçü, tolerans, diş, kanal, pah, yarıçap, vb.) bir balon numarası atamak.
 Her balon için İKİ koordinat vereceksin:
   - (x, y): Balonun kendi merkezi — PARÇANIN DIŞINDA veya BOŞLUKTA bir yerde
   - (tx, ty): Ok ucunun göstereceği hedef nokta — ilgili özelliğin tam üzeri (PARÇA ÜZERİNDE)
+
+BALON EKLENMEYECEK ŞEYLER (bunları kesinlikle numaralandırma):
+- Kesit sembolleri: A-A, B-B, C-C gibi kesit çizgisi etiketleri
+- Görünüm etiketleri: "GÖRÜNÜŞ A", "VIEW B", "SECTION A-A" gibi yazılar
+- Ok yönleri ve kesit alma işaretleri (iki yönlü oklu kesit çizgileri)
+- Ölçek bilgisi: "1:2", "SCALE 1:1" gibi yazılar
+- Başlık bloğu, çizim numarası, malzeme notu gibi tablodaki metinler
+- Yalnızca yazı/metin olan alanlar; parça geometrisini göstermeyen her şey
+
+BALON EKLENECEK ŞEYLER (sadece bunları numaralandır):
+- Delikler, pimler, civata delikleri (çap, tolerans, konum)
+- Diş profilleri (M serisi, UN serisi vb.)
+- Kanallar, oluklar, yuva açıklıkları
+- Pahlar (chamfer) ve radyuslar (fillet)
+- Kritik yüzey pürüzlülük bölgeleri
+- Toleranslı boyutların bağlandığı parça yüzeyleri
+- Form ve konum toleransları (GD&T sembolleri) olan yüzeyler
 
 KONUM KURALI:
 - Tüm değerler resmin SOL-ÜST köşesinden başlayan YÜZDE (0-100) değerleridir
