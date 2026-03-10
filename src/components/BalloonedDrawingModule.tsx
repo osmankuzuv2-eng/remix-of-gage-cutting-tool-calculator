@@ -123,12 +123,27 @@ const BalloonedDrawingModule = () => {
 
   const t = tr;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    const url = URL.createObjectURL(file);
-    setImageUrl(url);
+    e.target.value = ""; // reset so same file can be re-selected
+
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      toast.info(t("convertingPdf"));
+      try {
+        const converted = await convertPdfToJpg(file);
+        toast.success(t("pdfConverted"));
+        setImageFile(converted);
+        setImageUrl(URL.createObjectURL(converted));
+      } catch (err) {
+        console.error(err);
+        toast.error(t("pdfConvertError"));
+        return;
+      }
+    } else {
+      setImageFile(file);
+      setImageUrl(URL.createObjectURL(file));
+    }
     setBalloons([]);
     setScale(1);
   };
