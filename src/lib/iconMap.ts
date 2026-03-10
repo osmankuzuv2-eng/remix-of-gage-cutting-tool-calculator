@@ -38,4 +38,5 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "rfq": FileText,
   "production-comparison": ArrowLeftRight,
   "balloon-drawing": Crosshair,
+  "catpart-quote": Layers,
 };
