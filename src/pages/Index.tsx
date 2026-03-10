@@ -29,6 +29,7 @@ import ToolroomReport from "@/components/ToolroomReport";
 import RFQModule from "@/components/RFQModule";
 import ProductionComparisonModule from "@/components/ProductionComparisonModule";
 import BalloonedDrawingModule from "@/components/BalloonedDrawingModule";
+import CatpartQuoteModule from "@/components/CatpartQuoteModule";
 
 import AdminPanel from "@/components/AdminPanel";
 import { Material, materials as defaultMaterials } from "@/data/materials";
@@ -39,7 +40,7 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "admin";
+type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "admin";
 
 const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
@@ -331,6 +332,7 @@ const Index = () => {
             {visibleTab === "rfq" && hasAccess("rfq") && <RFQModule />}
             {visibleTab === "production-comparison" && hasAccess("production-comparison") && <ProductionComparisonModule />}
             {visibleTab === "balloon-drawing" && hasAccess("balloon-drawing") && <BalloonedDrawingModule />}
+            {visibleTab === "catpart-quote" && hasAccess("catpart-quote") && <CatpartQuoteModule />}
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             
