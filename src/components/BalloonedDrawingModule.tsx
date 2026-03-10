@@ -265,10 +265,10 @@ const BalloonedDrawingModule = () => {
         prev.map((b) => {
           if (b.id !== dragState.id) return b;
           if (dragState.kind === "balloon") {
-            const dx = clamped.x - b.x;
-            const dy = clamped.y - b.y;
-            return { ...b, x: clamped.x, y: clamped.y, tx: Math.max(1, Math.min(99, b.tx + dx)), ty: Math.max(1, Math.min(99, b.ty + dy)) };
+            // Only balloon moves — tip stays fixed (independent drag)
+            return { ...b, x: clamped.x, y: clamped.y };
           } else {
+            // Only tip moves — balloon stays fixed
             return { ...b, tx: clamped.x, ty: clamped.y };
           }
         })
