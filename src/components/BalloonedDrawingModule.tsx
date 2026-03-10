@@ -53,7 +53,7 @@ interface Balloon {
   label: string;
 }
 
-const BALLOON_R = 18; // display radius px
+const BALLOON_R = 13; // display radius px
 
 const BalloonedDrawingModule = () => {
   const { language } = useLanguage();
