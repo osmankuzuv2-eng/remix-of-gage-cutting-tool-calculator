@@ -189,16 +189,25 @@ const BalloonedDrawingModule = () => {
       if (error) throw error;
       if (data?.balloons && Array.isArray(data.balloons)) {
         const mapped: Balloon[] = data.balloons.map((b: any) => {
-          const bx = Math.max(3, Math.min(97, Number(b.x)));
-          const by = Math.max(3, Math.min(97, Number(b.y)));
-          // Place tip 6% closer to center of feature
-          const angle = Math.atan2(50 - by, 50 - bx);
+          const bx = Math.max(4, Math.min(96, Number(b.x)));
+          const by = Math.max(4, Math.min(96, Number(b.y)));
+          // If AI provided tx/ty use them, otherwise derive from balloon pos
+          let tx: number, ty: number;
+          if (b.tx != null && b.ty != null) {
+            tx = Math.max(2, Math.min(98, Number(b.tx)));
+            ty = Math.max(2, Math.min(98, Number(b.ty)));
+          } else {
+            // fallback: point toward center of image
+            const angle = Math.atan2(50 - by, 50 - bx);
+            tx = Math.max(2, Math.min(98, bx + Math.cos(angle) * 8));
+            ty = Math.max(2, Math.min(98, by + Math.sin(angle) * 8));
+          }
           return {
             id: crypto.randomUUID(),
             x: bx,
             y: by,
-            tx: Math.max(2, Math.min(98, bx + Math.cos(angle) * 6)),
-            ty: Math.max(2, Math.min(98, by + Math.sin(angle) * 6)),
+            tx,
+            ty,
             number: b.number,
             label: b.label || "",
           };
