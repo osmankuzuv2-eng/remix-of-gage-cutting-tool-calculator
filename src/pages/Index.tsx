@@ -28,6 +28,7 @@ import VideoTrainingModule from "@/components/VideoTrainingModule";
 import ToolroomReport from "@/components/ToolroomReport";
 import RFQModule from "@/components/RFQModule";
 import ProductionComparisonModule from "@/components/ProductionComparisonModule";
+import BalloonedDrawingModule from "@/components/BalloonedDrawingModule";
 
 import AdminPanel from "@/components/AdminPanel";
 import { Material, materials as defaultMaterials } from "@/data/materials";
