@@ -389,7 +389,7 @@ const BalloonedDrawingModule = () => {
               <Download className="w-4 h-4 mr-1" />{t("export")}
             </Button>
 
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} />
           </div>
 
           {balloons.length > 0 && (
