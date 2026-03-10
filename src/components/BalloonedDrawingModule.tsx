@@ -188,20 +188,33 @@ const BalloonedDrawingModule = () => {
       });
       if (error) throw error;
       if (data?.balloons && Array.isArray(data.balloons)) {
+        const MAX_LEADER_DIST = 10; // max allowed % distance between balloon and tip
         const mapped: Balloon[] = data.balloons.map((b: any) => {
-          const bx = Math.max(4, Math.min(96, Number(b.x)));
-          const by = Math.max(4, Math.min(96, Number(b.y)));
-          // If AI provided tx/ty use them, otherwise derive from balloon pos
+          let bx = Math.max(4, Math.min(96, Number(b.x)));
+          let by = Math.max(4, Math.min(96, Number(b.y)));
           let tx: number, ty: number;
+
           if (b.tx != null && b.ty != null) {
             tx = Math.max(2, Math.min(98, Number(b.tx)));
             ty = Math.max(2, Math.min(98, Number(b.ty)));
           } else {
-            // fallback: point toward center of image
-            const angle = Math.atan2(50 - by, 50 - bx);
-            tx = Math.max(2, Math.min(98, bx + Math.cos(angle) * 8));
-            ty = Math.max(2, Math.min(98, by + Math.sin(angle) * 8));
+            // fallback: offset balloon from tip slightly
+            tx = bx;
+            ty = by;
+            bx = Math.max(4, Math.min(96, tx));
+            by = Math.max(4, Math.min(96, ty - 5));
           }
+
+          // Clamp leader line length: if too long, move balloon closer to tip
+          const dist = Math.sqrt((bx - tx) ** 2 + (by - ty) ** 2);
+          if (dist > MAX_LEADER_DIST) {
+            const ratio = MAX_LEADER_DIST / dist;
+            bx = tx + (bx - tx) * ratio;
+            by = ty + (by - ty) * ratio;
+            bx = Math.max(4, Math.min(96, bx));
+            by = Math.max(4, Math.min(96, by));
+          }
+
           return {
             id: crypto.randomUUID(),
             x: bx,

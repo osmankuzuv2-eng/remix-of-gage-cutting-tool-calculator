@@ -35,52 +35,61 @@ serve(async (req) => {
 
 ${langNote}
 
-Amacın: Teknik resim üzerindeki her önemli PARÇA ÖZELLİĞİNE (delik, yüzey, ölçü, tolerans, diş, kanal, pah, yarıçap, vb.) bir balon numarası atamak.
-Her balon için İKİ koordinat vereceksin:
-  - (x, y): Balonun kendi merkezi — PARÇANIN DIŞINDA veya BOŞLUKTA bir yerde
-  - (tx, ty): Ok ucunun göstereceği hedef nokta — ilgili özelliğin tam üzeri (PARÇA ÜZERİNDE)
+## GÖREV
+Teknik resim üzerindeki her önemli PARÇA ÖZELLİĞİNE kısa bir ok çizgisiyle bağlı bir balon numarası ata.
 
-BALON EKLENMEYECEK ŞEYLER (bunları kesinlikle numaralandırma):
-- Kesit sembolleri: A-A, B-B, C-C gibi kesit çizgisi etiketleri
-- Görünüm etiketleri: "GÖRÜNÜŞ A", "VIEW B", "SECTION A-A" gibi yazılar
-- Ok yönleri ve kesit alma işaretleri (iki yönlü oklu kesit çizgileri)
-- Ölçek bilgisi: "1:2", "SCALE 1:1" gibi yazılar
-- Başlık bloğu, çizim numarası, malzeme notu gibi tablodaki metinler
-- Yalnızca yazı/metin olan alanlar; parça geometrisini göstermeyen her şey
+Her balon için iki koordinat ver:
+- (x, y) = Balonun DAİRE MERKEZİ
+- (tx, ty) = Ok ucunun değdiği HEDEF nokta (özelliğin üzeri)
 
-BALON EKLENECEK ŞEYLER (sadece bunları numaralandır):
-- Delikler, pimler, civata delikleri (çap, tolerans, konum)
-- Diş profilleri (M serisi, UN serisi vb.)
-- Kanallar, oluklar, yuva açıklıkları
-- Pahlar (chamfer) ve radyuslar (fillet)
-- Kritik yüzey pürüzlülük bölgeleri
-- Toleranslı boyutların bağlandığı parça yüzeyleri
-- Form ve konum toleransları (GD&T sembolleri) olan yüzeyler
+## KRİTİK MESAFE KURALI
+Balon ile ok ucu ARASINDAKİ MESAFE EN FAZLA 8% OLMALI.
+Yani: sqrt((x-tx)² + (y-ty)²) ≤ 8
 
-KONUM KURALI:
-- Tüm değerler resmin SOL-ÜST köşesinden başlayan YÜZDE (0-100) değerleridir
-- x=0 sol kenar, x=100 sağ kenar; y=0 üst kenar, y=100 alt kenar
-- BALON (x,y): Parça dışında, boş bir alana yerleştir. Ölçü yazılarının, diğer balonların üzerine gelmesin.
-- OK UCU (tx,ty): İlgili özelliğin tam üzeri veya en yakın noktası
-- Balon ile ok ucu arası mesafe en az 5% olsun (bağlantı çizgisi görünür olsun)
-- Balonlar birbirine en az 8% mesafe uzakta olsun
-- Resmin kenarlarına 4%'ten yakın yerleştirme
+Uzun ok çizgisi YASAKTIR. Balon, özelliğin hemen yanına yerleştirilir, karşı köşeye değil.
 
-BALON SAYISI:
-- Minimum 5, maksimum 20 balon
-- Her önemli özellik için bir balon
-- Tekrarlayan benzer özellikler için bir balon yeterli (örneğin 4 aynı delik → 1 balon)
+Doğru örnek: özellik %45,%30'da → balon %42,%26'ya (hemen üstüne/yanına)
+Yanlış örnek: özellik %45,%30'da → balon %10,%5'e (çok uzak, YASAK)
+
+## BALON KONUMU
+Balonu (x,y), ok ucunun (tx,ty) hemen yanına yerleştir:
+- Özellik parça üzerindeyse: balonu parça kenarının hemen dışına koy, ok ucu parça üzerinde
+- Özelliğin üstünde boşluk varsa: balonu özelliğin 3-6% üstüne koy
+- Özelliğin yanında boşluk varsa: balonu özelliğin 3-6% yanına koy
+- Ölçü yazısının üzerine GELME, ancak özelliğe uzak da olma
+
+## YASAK — BUNLARA BALON EKLEME
+- A-A, B-B, C-C, SECTION gibi kesit sembolleri ve görünüm etiketleri
+- "GÖRÜNÜŞ A", "VIEW B", "SCALE 1:2" gibi çizim notları
+- Başlık bloğu, malzeme tablosu, revizyon tablosu
+- Tamamen boş alan (parça geometrisi olmayan yer)
+- Ölçü çizgisi rakamları (boyut yazıları)
+
+## BALON EKLENECEK ŞEYLER
+- Delikler, civata delikleri, pimler
+- Diş profilleri (M6, M8 vb.)
+- Kanallar, oluklar, cep işlemleri
+- Pahlar ve radyuslar
+- Toleranslı yüzeyler, GD&T sembolleri olan yüzeyler
+- Kritik yüzey pürüzlülükleri
+
+## DİĞER KURALLAR
+- Tüm değerler 0-100 arasında yüzde olarak ifade edilir
+- Balonlar birbirine en az 7% uzakta olsun
+- Resmin kenarına en az 4% mesafe bırak
+- Minimum 5, maksimum 15 balon
+- Tekrar eden aynı özellik için tek balon yeter
 
 JSON formatında döndür:
 {
   "balloons": [
     {
       "number": 1,
-      "x": 12.5,
-      "y": 8.0,
-      "tx": 35.4,
-      "ty": 42.1,
-      "label": "Özellik adı ve kısa açıklama (ölçü, tolerans varsa belirt)"
+      "x": 44.0,
+      "y": 24.5,
+      "tx": 45.2,
+      "ty": 30.1,
+      "label": "Özellik adı (ölçü/tolerans varsa ekle)"
     }
   ]
 }
