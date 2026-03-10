@@ -188,7 +188,7 @@ const BalloonedDrawingModule = () => {
       });
       if (error) throw error;
       if (data?.balloons && Array.isArray(data.balloons)) {
-        const MAX_LEADER_DIST = 10; // max allowed % distance between balloon and tip
+        const MAX_LEADER_DIST = 7; // max allowed % distance between balloon and tip
         const mapped: Balloon[] = data.balloons.map((b: any) => {
           let bx = Math.max(4, Math.min(96, Number(b.x)));
           let by = Math.max(4, Math.min(96, Number(b.y)));
