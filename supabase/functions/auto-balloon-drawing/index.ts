@@ -66,7 +66,7 @@ JSON formatında döndür:
 Sadece JSON döndür, başka metin yok.`;
 
     const response = await fetch(
-      "https://lovable-cloud-ai.deno.dev/v1/chat/completions",
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
         headers: {
