@@ -330,6 +330,7 @@ const Index = () => {
             {visibleTab === "toolroom-report" && hasAccess("toolroom-report") && <ToolroomReport />}
             {visibleTab === "rfq" && hasAccess("rfq") && <RFQModule />}
             {visibleTab === "production-comparison" && hasAccess("production-comparison") && <ProductionComparisonModule />}
+            {visibleTab === "balloon-drawing" && hasAccess("balloon-drawing") && <BalloonedDrawingModule />}
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             
