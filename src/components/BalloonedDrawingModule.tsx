@@ -9,6 +9,38 @@ import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
 
+// ─── PDF → JPG converter (reuses same logic as DrawingAnalyzer) ───
+const convertPdfToJpg = async (file: File): Promise<File> => {
+  const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
+  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+  const buf = await file.arrayBuffer();
+  const pdf = await getDocument({ data: new Uint8Array(buf) }).promise;
+  const numPages = pdf.numPages;
+  const scale = 2;
+  const GAP = 20;
+  const pageCanvases: HTMLCanvasElement[] = [];
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale });
+    const c = document.createElement("canvas");
+    c.width = viewport.width; c.height = viewport.height;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    pageCanvases.push(c);
+  }
+  const totalWidth = Math.max(...pageCanvases.map((c) => c.width));
+  const totalHeight = pageCanvases.reduce((sum, c) => sum + c.height, 0) + GAP * (numPages - 1);
+  const final = document.createElement("canvas");
+  final.width = totalWidth; final.height = totalHeight;
+  const fCtx = final.getContext("2d")!;
+  fCtx.fillStyle = "#ffffff"; fCtx.fillRect(0, 0, totalWidth, totalHeight);
+  let y = 0;
+  for (const c of pageCanvases) { fCtx.drawImage(c, 0, y); y += c.height + GAP; }
+  const blob = await new Promise<Blob>((res) => final.toBlob((b) => res(b!), "image/jpeg", 0.92));
+  return new File([blob], file.name.replace(/\.pdf$/i, ".jpg"), { type: "image/jpeg" });
+};
+
 interface Balloon {
   id: string;
   x: number; // percentage of image width
