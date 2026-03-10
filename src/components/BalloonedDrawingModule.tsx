@@ -9,6 +9,38 @@ import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
 
+// ─── PDF → JPG converter (reuses same logic as DrawingAnalyzer) ───
+const convertPdfToJpg = async (file: File): Promise<File> => {
+  const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
+  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+  const buf = await file.arrayBuffer();
+  const pdf = await getDocument({ data: new Uint8Array(buf) }).promise;
+  const numPages = pdf.numPages;
+  const scale = 2;
+  const GAP = 20;
+  const pageCanvases: HTMLCanvasElement[] = [];
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale });
+    const c = document.createElement("canvas");
+    c.width = viewport.width; c.height = viewport.height;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    pageCanvases.push(c);
+  }
+  const totalWidth = Math.max(...pageCanvases.map((c) => c.width));
+  const totalHeight = pageCanvases.reduce((sum, c) => sum + c.height, 0) + GAP * (numPages - 1);
+  const final = document.createElement("canvas");
+  final.width = totalWidth; final.height = totalHeight;
+  const fCtx = final.getContext("2d")!;
+  fCtx.fillStyle = "#ffffff"; fCtx.fillRect(0, 0, totalWidth, totalHeight);
+  let y = 0;
+  for (const c of pageCanvases) { fCtx.drawImage(c, 0, y); y += c.height + GAP; }
+  const blob = await new Promise<Blob>((res) => final.toBlob((b) => res(b!), "image/jpeg", 0.92));
+  return new File([blob], file.name.replace(/\.pdf$/i, ".jpg"), { type: "image/jpeg" });
+};
+
 interface Balloon {
   id: string;
   x: number; // percentage of image width
@@ -39,7 +71,7 @@ const BalloonedDrawingModule = () => {
         title: "Balonlu Teknik Resim",
         subtitle: "AI ile teknik resim üzerindeki işlem noktaları otomatik tespit edilir ve balonlanır",
         uploadBtn: "Teknik Resim Yükle",
-        uploadHint: "PNG veya JPG teknik resim dosyası yükleyin",
+        uploadHint: "PNG, JPG veya PDF teknik resim dosyası yükleyin",
         analyzeBtn: "AI ile Otomatik Balon Ekle",
         analyzing: "Analiz ediliyor...",
         reanalyze: "Yeniden Analiz Et",
@@ -59,12 +91,15 @@ const BalloonedDrawingModule = () => {
         noImage: "Başlamak için teknik resim yükleyin",
         analyzed: "balon otomatik eklendi",
         analyzeError: "Analiz sırasında hata oluştu",
+        convertingPdf: "PDF görüntüye dönüştürülüyor...",
+        pdfConverted: "PDF başarıyla JPG'ye dönüştürüldü",
+        pdfConvertError: "PDF dönüştürme başarısız oldu",
       },
       en: {
         title: "Ballooned Technical Drawing",
         subtitle: "AI automatically detects operation points on the technical drawing and adds balloons",
         uploadBtn: "Upload Drawing",
-        uploadHint: "Upload a PNG or JPG technical drawing",
+        uploadHint: "Upload a PNG, JPG or PDF technical drawing",
         analyzeBtn: "Auto-Balloon with AI",
         analyzing: "Analyzing...",
         reanalyze: "Re-analyze",
@@ -84,6 +119,9 @@ const BalloonedDrawingModule = () => {
         noImage: "Upload a technical drawing to start",
         analyzed: "balloons added automatically",
         analyzeError: "Error during analysis",
+        convertingPdf: "Converting PDF to image...",
+        pdfConverted: "PDF successfully converted to JPG",
+        pdfConvertError: "PDF conversion failed",
       },
     };
     return d[language]?.[key] ?? d["tr"][key] ?? key;
@@ -91,12 +129,27 @@ const BalloonedDrawingModule = () => {
 
   const t = tr;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    const url = URL.createObjectURL(file);
-    setImageUrl(url);
+    e.target.value = ""; // reset so same file can be re-selected
+
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      toast.info(t("convertingPdf"));
+      try {
+        const converted = await convertPdfToJpg(file);
+        toast.success(t("pdfConverted"));
+        setImageFile(converted);
+        setImageUrl(URL.createObjectURL(converted));
+      } catch (err) {
+        console.error(err);
+        toast.error(t("pdfConvertError"));
+        return;
+      }
+    } else {
+      setImageFile(file);
+      setImageUrl(URL.createObjectURL(file));
+    }
     setBalloons([]);
     setScale(1);
   };
@@ -287,7 +340,7 @@ const BalloonedDrawingModule = () => {
           <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-foreground font-medium mb-1">{t("uploadBtn")}</p>
           <p className="text-xs text-muted-foreground">{t("uploadHint")}</p>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+          <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} />
         </div>
       ) : (
         <div className="space-y-4">
@@ -336,7 +389,7 @@ const BalloonedDrawingModule = () => {
               <Download className="w-4 h-4 mr-1" />{t("export")}
             </Button>
 
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} />
           </div>
 
           {balloons.length > 0 && (
