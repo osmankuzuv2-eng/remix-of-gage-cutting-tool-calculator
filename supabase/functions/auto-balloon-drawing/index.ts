@@ -31,70 +31,46 @@ serve(async (req) => {
       ? "Répondez en FRANÇAIS."
       : "Türkçe yanıt ver.";
 
-    const systemPrompt = `Sen bir teknik resim uzmanısın. Verilen teknik resmi analiz edecek ve üzerindeki ÖNEMLİ PARÇA ÖZELLİKLERİNİ tespit edeceksin.
-
+    const systemPrompt = `Sen deneyimli bir kalite mühendisisin. Teknik resmi inceleyip parça özelliklerini balonlayacaksın.
 ${langNote}
 
-## GÖREV
-Teknik resim üzerindeki her önemli PARÇA ÖZELLİĞİNE kısa bir ok çizgisiyle bağlı bir balon numarası ata.
+## ADIM 1 — ÖZELLİKLERİ BUL
+Aşağıdaki parça geometrilerini tespit et:
+- Delikler (çap, konum toleransı olan)
+- Diş delikleri (M4, M6, M8 vb.)
+- Kanallar, oluklar, cepler
+- Pahlar (chamfer) ve radyuslar (fillet/köşe)
+- Toleranslı yüzeyler, GD&T frame'leri
+- Kritik yüzey pürüzlülük sembolleri
 
-Her balon için iki koordinat ver:
-- (x, y) = Balonun DAİRE MERKEZİ
-- (tx, ty) = Ok ucunun değdiği HEDEF nokta (özelliğin üzeri)
+## ADIM 2 — OK UCUNU (tx, ty) BELİRLE
+Her özellik için:
+- tx, ty = özelliğin KENDİ geometrik merkezi veya kenar noktası (parça çizgisi üzeri)
+- Boş alana, ölçü yazısına, kesit sembolüne (A-A, B-B) veya görünüm etiketine (VIEW, SECTION) DOKUNMA
 
-## KRİTİK MESAFE KURALI
-Balon ile ok ucu ARASINDAKİ MESAFE EN FAZLA 8% OLMALI.
-Yani: sqrt((x-tx)² + (y-ty)²) ≤ 8
+## ADIM 3 — BALONU (x, y) YERLEŞTİR
+Balon merkezi (x, y), ok ucunun (tx, ty) hemen yanına konur — maksimum 6% uzakta:
+- sqrt((x−tx)² + (y−ty)²) ≤ 6  ← BU KURALI MUTLAKA UY
+- Yön seçimi: ok ucunun en yakın BOŞ yönüne 4-6% kaydır
+- Öncelik sırası: üst boşluk > sağ boşluk > sol boşluk > alt boşluk
+- Başka bir balonun veya ölçü yazısının üzerine GELME
+- Balonlar arası min. 6% mesafe bırak
 
-Uzun ok çizgisi YASAKTIR. Balon, özelliğin hemen yanına yerleştirilir, karşı köşeye değil.
+## YASAK
+- A-A, B-B gibi kesit etiketlerine balon ekleme
+- VIEW, SECTION, SCALE gibi notlara balon ekleme  
+- Başlık bloğu, revizyon tablosu, boş alana balon ekleme
+- 6%'dan uzun ok çizgisi
 
-Doğru örnek: özellik %45,%30'da → balon %42,%26'ya (hemen üstüne/yanına)
-Yanlış örnek: özellik %45,%30'da → balon %10,%5'e (çok uzak, YASAK)
+## BALON SAYISI
+Minimum 4, maksimum 12. Aynı tip tekrar eden özellik için tek balon yeter.
 
-## BALON KONUMU
-Balonu (x,y), ok ucunun (tx,ty) hemen yanına yerleştir:
-- Özellik parça üzerindeyse: balonu parça kenarının hemen dışına koy, ok ucu parça üzerinde
-- Özelliğin üstünde boşluk varsa: balonu özelliğin 3-6% üstüne koy
-- Özelliğin yanında boşluk varsa: balonu özelliğin 3-6% yanına koy
-- Ölçü yazısının üzerine GELME, ancak özelliğe uzak da olma
-
-## YASAK — BUNLARA BALON EKLEME
-- A-A, B-B, C-C, SECTION gibi kesit sembolleri ve görünüm etiketleri
-- "GÖRÜNÜŞ A", "VIEW B", "SCALE 1:2" gibi çizim notları
-- Başlık bloğu, malzeme tablosu, revizyon tablosu
-- Tamamen boş alan (parça geometrisi olmayan yer)
-- Ölçü çizgisi rakamları (boyut yazıları)
-
-## BALON EKLENECEK ŞEYLER
-- Delikler, civata delikleri, pimler
-- Diş profilleri (M6, M8 vb.)
-- Kanallar, oluklar, cep işlemleri
-- Pahlar ve radyuslar
-- Toleranslı yüzeyler, GD&T sembolleri olan yüzeyler
-- Kritik yüzey pürüzlülükleri
-
-## DİĞER KURALLAR
-- Tüm değerler 0-100 arasında yüzde olarak ifade edilir
-- Balonlar birbirine en az 7% uzakta olsun
-- Resmin kenarına en az 4% mesafe bırak
-- Minimum 5, maksimum 15 balon
-- Tekrar eden aynı özellik için tek balon yeter
-
-JSON formatında döndür:
+## ÇIKTI FORMAT (sadece JSON, başka metin yok)
 {
   "balloons": [
-    {
-      "number": 1,
-      "x": 44.0,
-      "y": 24.5,
-      "tx": 45.2,
-      "ty": 30.1,
-      "label": "Özellik adı (ölçü/tolerans varsa ekle)"
-    }
+    { "number": 1, "tx": 38.5, "ty": 42.0, "x": 38.5, "y": 36.8, "label": "Özellik adı (ölçü/tolerans)" }
   ]
-}
-
-Sadece JSON döndür, başka metin yok.`;
+}`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -105,25 +81,20 @@ Sadece JSON döndür, başka metin yok.`;
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-pro",
           temperature: 0,
           messages: [
-            {
-              role: "system",
-              content: systemPrompt,
-            },
+            { role: "system", content: systemPrompt },
             {
               role: "user",
               content: [
                 {
                   type: "image_url",
-                  image_url: {
-                    url: `data:${mimeType};base64,${imageBase64}`,
-                  },
+                  image_url: { url: `data:${mimeType};base64,${imageBase64}` },
                 },
                 {
                   type: "text",
-                  text: "Bu teknik resmi analiz et ve önemli özellik noktalarını tespit et. JSON formatında yanıt ver.",
+                  text: "Teknik resmi analiz et. ADIM 1→2→3 sırasıyla ilerle. Sadece JSON döndür.",
                 },
               ],
             },
