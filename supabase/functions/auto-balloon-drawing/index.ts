@@ -35,16 +35,19 @@ serve(async (req) => {
 
 ${langNote}
 
-Amacın: Teknik resim üzerindeki her önemli özelliğe (delik, yüzey, ölçü, tolerans, diş, kanal, pah, vb.) bir balon numarası atamak ve bu balonun resimdeki KONUMUNU piksel yüzdesi olarak vermek.
+Amacın: Teknik resim üzerindeki her önemli özelliğe (delik, yüzey, ölçü, tolerans, diş, kanal, pah, vb.) bir balon numarası atamak.
+Her balon için İKİ koordinat vereceksin:
+  - (x, y): Balonun kendi merkezi — PARÇANIN DIŞINDA veya BOŞLUKTA bir yerde
+  - (tx, ty): Ok ucunun göstereceği hedef nokta — ilgili özelliğin tam üzeri (PARÇA ÜZERİNDE)
 
 KONUM KURALI:
-- x ve y değerleri resmin SOL-ÜST köşesinden başlayan YÜZDE değerleridir (0-100 arasında)
-- x=0 sol kenar, x=100 sağ kenar
-- y=0 üst kenar, y=100 alt kenar
-- Balonu ÖZELLİĞİN tam üzerine ya da çok yakınına yerleştir
-- Balonlar birbirine çok yakın olmamalı (aralarında en az 8% mesafe olsun)
-- Resmin kenarlarına çok yakın yerleştirme (x,y değerleri 5-95 arasında olsun)
-- Ölçü çizgilerinin, ok uçlarının tam üzerine değil, PARÇA ÜZERİNDEKİ ilgili yüzeye yakın koy
+- Tüm değerler resmin SOL-ÜST köşesinden başlayan YÜZDE (0-100) değerleridir
+- x=0 sol kenar, x=100 sağ kenar; y=0 üst kenar, y=100 alt kenar
+- BALON (x,y): Parça dışında, boş bir alana yerleştir. Ölçü yazılarının, diğer balonların üzerine gelmesin.
+- OK UCU (tx,ty): İlgili özelliğin tam üzeri veya en yakın noktası
+- Balon ile ok ucu arası mesafe en az 5% olsun (bağlantı çizgisi görünür olsun)
+- Balonlar birbirine en az 8% mesafe uzakta olsun
+- Resmin kenarlarına 4%'ten yakın yerleştirme
 
 BALON SAYISI:
 - Minimum 5, maksimum 20 balon
@@ -56,8 +59,10 @@ JSON formatında döndür:
   "balloons": [
     {
       "number": 1,
-      "x": 45.2,
-      "y": 23.8,
+      "x": 12.5,
+      "y": 8.0,
+      "tx": 35.4,
+      "ty": 42.1,
       "label": "Özellik adı ve kısa açıklama (ölçü, tolerans varsa belirt)"
     }
   ]
