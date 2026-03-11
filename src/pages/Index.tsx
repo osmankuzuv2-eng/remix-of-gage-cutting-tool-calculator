@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
-import { Lock, Plus, ChevronDown } from "lucide-react";
+import { Lock, Plus, ChevronDown, Home } from "lucide-react";
 import Header from "@/components/Header";
 import LiveTicker from "@/components/LiveTicker";
 import CuttingCalculator from "@/components/CuttingCalculator";
@@ -30,9 +30,8 @@ import RFQModule from "@/components/RFQModule";
 import ProductionComparisonModule from "@/components/ProductionComparisonModule";
 import BalloonedDrawingModule from "@/components/BalloonedDrawingModule";
 import CatpartQuoteModule from "@/components/CatpartQuoteModule";
-import OnlineUsersPanel from "@/components/OnlineUsersPanel";
-
 import AdminPanel from "@/components/AdminPanel";
+import HomePage from "@/components/HomePage";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,9 +40,9 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "admin";
+type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "admin";
 
-const ALWAYS_ACCESSIBLE = ["ai-learn", "admin"];
+const ALWAYS_ACCESSIBLE = ["home", "ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 // Prices and AFK multipliers are now stored in the database via useMaterialSettings
 
@@ -53,8 +52,8 @@ const Index = () => {
   const { categories, reload: reloadMenu } = useMenuConfig();
   const { getModuleName } = useModuleTranslations();
   const { materialPrices, afkMultipliers, updatePrice, updateAfkMultiplier } = useMaterialSettings();
-  const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
-  const [visibleTab, setVisibleTab] = useState<TabId>("ai-learn");
+  const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [visibleTab, setVisibleTab] = useState<TabId>("home");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
@@ -206,6 +205,19 @@ const Index = () => {
         <nav className="mb-6 space-y-2">
           {/* Category buttons row */}
           <div className="flex flex-wrap gap-2">
+            {/* Home button */}
+            <button
+              onClick={() => handleTabClick("home")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border group ${
+                activeTab === "home"
+                  ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-transparent shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.97]"
+                  : "bg-card border-border text-muted-foreground hover:text-primary hover:border-primary/30 hover:scale-[1.03] hover:shadow-md active:scale-[0.97]"
+              }`}
+            >
+              <Home className="w-4 h-4 transition-transform duration-300 group-hover:rotate-6" />
+              Anasayfa
+            </button>
+
             {categories.map((cat) => {
               const CatIcon = getIcon(cat.icon);
               const isOpen = openCategory === cat.id;
@@ -288,12 +300,8 @@ const Index = () => {
             </div>
           )}
           <div className={isTransitioning ? "hidden" : undefined}>
-            {visibleTab === "ai-learn" && (
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-start">
-                <AILearningModule />
-                <OnlineUsersPanel />
-              </div>
-            )}
+            {visibleTab === "home" && <HomePage />}
+            {visibleTab === "ai-learn" && <AILearningModule />}
             {visibleTab === "cutting" && hasAccess("cutting") && <CuttingCalculator customMaterials={customMaterials} />}
             {visibleTab === "toollife" && hasAccess("toollife") && <ToolLifeCalculator customMaterials={customMaterials} />}
             {visibleTab === "threading" && hasAccess("threading") && <ThreadingCalculator />}

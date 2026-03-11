@@ -95,6 +95,36 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          display_name: string | null
+          id: string
+          title: string | null
+          title_color: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          title?: string | null
+          title_color?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          title?: string | null
+          title_color?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       coatings: {
         Row: {
           created_at: string
