@@ -1411,6 +1411,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_all_login_logs: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          ip_address: string
+          user_agent: string
+          user_id: string
+        }[]
+      }
       get_user_login_logs: {
         Args: { p_user_id: string }
         Returns: {
