@@ -369,6 +369,7 @@ const Index = () => {
             {visibleTab === "production-comparison" && hasAccess("production-comparison") && <ProductionComparisonModule />}
             {visibleTab === "balloon-drawing" && hasAccess("balloon-drawing") && <BalloonedDrawingModule />}
             {visibleTab === "catpart-quote" && hasAccess("catpart-quote") && <CatpartQuoteModule />}
+            {visibleTab === "slot-machine" && hasAccess("slot-machine") && <SlotMachine />}
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             
