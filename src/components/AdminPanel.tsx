@@ -329,15 +329,22 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setShowPasswordDialog(true);
   };
 
+  const openLoginLogs = async (user: UserData) => {
+    setLoginLogsUser(user);
+    setLoginLogs([]);
+    setLoginLogsLoading(true);
+    setShowLoginLogsDialog(true);
+    try {
+      const data = await callAdmin({ action: "get_login_logs", user_id: user.id });
+      setLoginLogs(data.logs || []);
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    } finally {
+      setLoginLogsLoading(false);
+    }
+  };
+
   const resetCreateForm = () => {
-    setNewEmail("");
-    setNewPassword("");
-    setNewDisplayName("");
-    setNewIsAdmin(false);
-    setNewDefaultLanguage("tr");
-    setNewPermissions({});
-    const ap: Record<string, { can_view: boolean; can_edit: boolean }> = {};
-    ADMIN_PANEL_KEYS.forEach((k) => { ap[k] = { can_view: true, can_edit: false }; });
     setNewAdminPerms(ap);
   };
 
