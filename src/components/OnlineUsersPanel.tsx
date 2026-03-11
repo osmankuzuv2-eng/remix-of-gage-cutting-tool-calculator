@@ -27,7 +27,7 @@ const OnlineUsersPanel = () => {
       </CardHeader>
 
       <CardContent className="flex-1 min-h-0 p-0 px-4 pb-4">
-        <ScrollArea className="h-full max-h-[520px]">
+        <ScrollArea className="h-full max-h-[1040px]">
           {onlineUsers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
               <Users className="w-8 h-8 mb-2 opacity-30" />
