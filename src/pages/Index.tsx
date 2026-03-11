@@ -62,12 +62,7 @@ const Index = () => {
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
-  // Open first category by default
-  useEffect(() => {
-    if (categories.length > 0 && openCategory === null) {
-      setOpenCategory(categories[0].id);
-    }
-  }, [categories]);
+  // No category open by default — only on hover
 
   // Load custom materials from database
   useEffect(() => {
