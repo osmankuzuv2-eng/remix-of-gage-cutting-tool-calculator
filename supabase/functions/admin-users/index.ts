@@ -248,6 +248,44 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "get_login_logs": {
+        const { user_id } = params;
+        if (!user_id) {
+          return new Response(JSON.stringify({ error: "user_id required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Query auth audit log via pg
+        const dbUrl = Deno.env.get("SUPABASE_DB_URL")!;
+        const pgClient = await import("https://deno.land/x/postgres@v0.17.0/mod.ts");
+        const client = new pgClient.Client(dbUrl);
+        await client.connect();
+
+        const result = await client.queryArray(
+          `SELECT id, created_at, ip_address, user_agent
+           FROM auth.audit_log_entries
+           WHERE payload->>'actor_id' = $1
+             AND payload->>'action' IN ('login', 'token_refreshed')
+           ORDER BY created_at DESC
+           LIMIT 10`,
+          [user_id]
+        );
+        await client.end();
+
+        const logs = result.rows.map((row) => ({
+          id: row[0],
+          created_at: row[1],
+          ip_address: row[2],
+          user_agent: row[3],
+        }));
+
+        return new Response(JSON.stringify({ logs }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400,
