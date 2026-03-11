@@ -10,8 +10,9 @@ interface NewsItem {
 const NewsTicker = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [isPaused, setIsPaused] = useState(false);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [contentWidth, setContentWidth] = useState(0);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [setsNeeded, setSetsNeeded] = useState(4);
+  const [oneSetWidth, setOneSetWidth] = useState(0);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -25,22 +26,23 @@ const NewsTicker = () => {
     fetchNews();
   }, []);
 
-  // Measure one set of items
+  // Measure one set width, calculate how many copies needed to fill screen + extra
   useEffect(() => {
-    if (innerRef.current && news.length > 0) {
-      // Measure after render
-      requestAnimationFrame(() => {
-        if (innerRef.current) {
-          setContentWidth(innerRef.current.scrollWidth / 2);
-        }
-      });
-    }
+    if (!measureRef.current || !news.length) return;
+    requestAnimationFrame(() => {
+      if (!measureRef.current) return;
+      const w = measureRef.current.scrollWidth;
+      setOneSetWidth(w);
+      const screenW = window.innerWidth;
+      // Need enough copies so that when one set scrolls away, the rest still fill the viewport
+      const copies = Math.max(Math.ceil((screenW * 2) / w) + 1, 3);
+      setSetsNeeded(copies);
+    });
   }, [news]);
 
   if (!news.length) return null;
 
-  // Duplicate once for seamless loop
-  const items = [...news, ...news];
+  const speed = Math.max(oneSetWidth / 80, 6); // px per second based
 
   return (
     <div
@@ -48,7 +50,6 @@ const NewsTicker = () => {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Gradient fade edges */}
       <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-card to-transparent z-10 pointer-events-none" />
       <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card to-transparent z-10 pointer-events-none" />
 
@@ -61,25 +62,37 @@ const NewsTicker = () => {
         </div>
 
         <div className="overflow-hidden flex-1 py-2.5">
+          {/* Hidden measurement div */}
+          <div ref={measureRef} className="flex whitespace-nowrap absolute invisible pointer-events-none">
+            {news.map((item) => (
+              <span key={item.id} className="inline-flex items-center mx-6 text-sm font-medium">
+                <Sparkles className="w-3.5 h-3.5 mr-2.5 flex-shrink-0" />
+                {item.content}
+              </span>
+            ))}
+          </div>
+
+          {/* Visible scrolling content */}
           <div
-            ref={innerRef}
             className="flex whitespace-nowrap will-change-transform"
             style={{
-              animation: contentWidth
-                ? `ticker-scroll ${Math.max(contentWidth / 60, 8)}s linear infinite`
+              animation: oneSetWidth
+                ? `ticker-scroll ${speed}s linear infinite`
                 : undefined,
               animationPlayState: isPaused ? "paused" : "running",
             }}
           >
-            {items.map((item, i) => (
-              <span
-                key={`${item.id}-${i}`}
-                className="inline-flex items-center mx-10 text-sm font-medium text-foreground/90"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-primary/70 mr-2.5 flex-shrink-0" />
-                {item.content}
-              </span>
-            ))}
+            {Array.from({ length: setsNeeded }).map((_, setIndex) =>
+              news.map((item, i) => (
+                <span
+                  key={`${setIndex}-${item.id}-${i}`}
+                  className="inline-flex items-center mx-6 text-sm font-medium text-foreground/90"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-primary/70 mr-2.5 flex-shrink-0" />
+                  {item.content}
+                </span>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -87,7 +100,7 @@ const NewsTicker = () => {
       <style>{`
         @keyframes ticker-scroll {
           0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          100% { transform: translateX(-${100 / setsNeeded}%); }
         }
       `}</style>
     </div>
