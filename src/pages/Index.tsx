@@ -31,7 +31,6 @@ import RFQModule from "@/components/RFQModule";
 import ProductionComparisonModule from "@/components/ProductionComparisonModule";
 import BalloonedDrawingModule from "@/components/BalloonedDrawingModule";
 import CatpartQuoteModule from "@/components/CatpartQuoteModule";
-import SlotMachine from "@/components/SlotMachine";
 import AdminPanel from "@/components/AdminPanel";
 import HomePage from "@/components/HomePage";
 import { Material, materials as defaultMaterials } from "@/data/materials";
