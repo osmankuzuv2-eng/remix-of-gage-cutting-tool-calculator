@@ -5,6 +5,7 @@ import { useMaterialSettings } from "@/hooks/useMaterialSettings";
 import { Lock, Plus, ChevronDown, Home } from "lucide-react";
 import Header from "@/components/Header";
 import LiveTicker from "@/components/LiveTicker";
+import NewsTicker from "@/components/NewsTicker";
 import CuttingCalculator from "@/components/CuttingCalculator";
 import ToolLifeCalculator from "@/components/ToolLifeCalculator";
 import MaterialList from "@/components/MaterialList";
@@ -287,6 +288,11 @@ const Index = () => {
             );
           })()}
         </nav>
+
+        {/* News Ticker */}
+        <div className="mb-4">
+          <NewsTicker />
+        </div>
 
         {/* Module Content */}
         <div className="space-y-6">
