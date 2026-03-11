@@ -621,8 +621,8 @@ const CatpartQuoteModule = () => {
                     ))}
                   </div>
                   {quote.material_hint && (
-                    <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/30">
-                      <p className="text-[10px] text-amber-400">
+                    <div className="mt-2 p-2 rounded bg-warning/10 border border-warning/30">
+                      <p className="text-[10px] text-warning-foreground">
                         <span className="font-semibold">Malzeme ipucu (STEP):</span> {quote.material_hint}
                       </p>
                     </div>
