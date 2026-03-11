@@ -95,35 +95,82 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_channels: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
+          channel_id: string | null
           content: string
           created_at: string
+          deleted_by: string | null
           display_name: string | null
           id: string
+          is_deleted: boolean | null
           title: string | null
           title_color: string | null
           user_id: string
         }
         Insert: {
+          channel_id?: string | null
           content: string
           created_at?: string
+          deleted_by?: string | null
           display_name?: string | null
           id?: string
+          is_deleted?: boolean | null
           title?: string | null
           title_color?: string | null
           user_id: string
         }
         Update: {
+          channel_id?: string | null
           content?: string
           created_at?: string
+          deleted_by?: string | null
           display_name?: string | null
           id?: string
+          is_deleted?: boolean | null
           title?: string | null
           title_color?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       coatings: {
         Row: {
@@ -1465,6 +1512,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_chat_messages: { Args: never; Returns: undefined }
       get_all_login_logs: {
         Args: never
         Returns: {
