@@ -363,12 +363,27 @@ const GlobalChatBox = () => {
     return () => { supabase.removeChannel(ch); };
   }, [user, viewMode, dmPeerId, loadDmMessages, loadDmPeers]);
 
-  // ── Auto scroll ────────────────────────────────────────────────────────────
+  // ── Auto scroll (within chat container only) ────────────────────────────────
   const prevChannelRef = useRef(activeChannelId);
   const prevDmPeerRef = useRef(dmPeerId);
   const prevViewRef = useRef(viewMode);
   const prevMsgCount = useRef(0);
   const prevDmCount = useRef(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback((instant?: boolean) => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    // Find the actual scrollable viewport inside ScrollArea
+    const viewport = el.querySelector("[data-radix-scroll-area-viewport]") as HTMLElement | null;
+    if (viewport) {
+      if (instant) {
+        viewport.scrollTop = viewport.scrollHeight;
+      } else {
+        viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const viewChanged = prevViewRef.current !== viewMode;
@@ -378,7 +393,7 @@ const GlobalChatBox = () => {
     const newDmMsg = dmMessages.length > prevDmCount.current;
 
     if (viewChanged || channelChanged || dmChanged || newChannelMsg || newDmMsg || localLines.length > 0) {
-      bottomRef.current?.scrollIntoView({ behavior: (viewChanged || channelChanged || dmChanged) ? "instant" : "smooth" });
+      scrollToBottom(viewChanged || channelChanged || dmChanged);
     }
 
     prevViewRef.current = viewMode;
@@ -386,7 +401,7 @@ const GlobalChatBox = () => {
     prevDmPeerRef.current = dmPeerId;
     prevMsgCount.current = messages.length;
     prevDmCount.current = dmMessages.length;
-  }, [messages, dmMessages, localLines, viewMode, activeChannelId, dmPeerId]);
+  }, [messages, dmMessages, localLines, viewMode, activeChannelId, dmPeerId, scrollToBottom]);
 
   // ── Chat commands ──────────────────────────────────────────────────────────
   const handleCommand = async (cmd: string): Promise<boolean> => {
