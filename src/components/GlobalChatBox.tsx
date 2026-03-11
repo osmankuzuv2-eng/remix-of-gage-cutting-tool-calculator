@@ -107,7 +107,7 @@ const GlobalChatBox = () => {
 
       <CardContent className="flex-1 flex flex-col min-h-0 p-0 px-4 pb-4 gap-3">
         {/* Messages */}
-        <ScrollArea className="flex-1 max-h-[460px] min-h-[200px]">
+        <ScrollArea className="flex-1 max-h-[920px] min-h-[400px]">
           <div className="space-y-3 pr-2 py-1">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
