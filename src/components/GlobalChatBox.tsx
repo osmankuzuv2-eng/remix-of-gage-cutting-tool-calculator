@@ -251,14 +251,14 @@ const GlobalChatBox = () => {
   const loadAllUsers = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
-      .from("user_presence")
+      .from("profiles")
       .select("user_id, display_name");
     if (data) {
-      const filtered = data.filter((u) => u.user_id !== user.id);
+      const filtered = data.filter((u: any) => u.user_id !== user.id);
       setAllUsers(filtered);
       // Build name map
       const map: Record<string, string> = {};
-      data.forEach((u) => { map[u.user_id] = u.display_name ?? "Kullanıcı"; });
+      data.forEach((u: any) => { map[u.user_id] = u.display_name ?? "Kullanıcı"; });
       setUserNameMap(map);
     }
   }, [user]);
