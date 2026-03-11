@@ -101,11 +101,15 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [uploadingEditAvatar, setUploadingEditAvatar] = useState(false);
   const editAvatarRef = useRef<HTMLInputElement>(null);
 
-  // Login logs
+  // Login logs (per user dialog)
   const [showLoginLogsDialog, setShowLoginLogsDialog] = useState(false);
   const [loginLogs, setLoginLogs] = useState<{ id: string; created_at: string; ip_address: string | null; user_agent: string | null }[]>([]);
   const [loginLogsLoading, setLoginLogsLoading] = useState(false);
   const [loginLogsUser, setLoginLogsUser] = useState<UserData | null>(null);
+
+  // Global login logs (bottom of users tab)
+  const [globalLogs, setGlobalLogs] = useState<{ id: string; user_id: string; email: string; display_name: string | null; created_at: string; ip_address: string | null; user_agent: string | null }[]>([]);
+  const [globalLogsLoading, setGlobalLogsLoading] = useState(false);
 
   // Customers state
   const { customers: allCustomers, reload: reloadCustomers } = useCustomers();
