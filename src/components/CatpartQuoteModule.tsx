@@ -478,7 +478,7 @@ const CatpartQuoteModule = () => {
                 </Badge>
               </h2>
               <p className="text-xs text-muted-foreground">
-                PDF/Resim teknik çizimi yükle → AI analiz eder → Teklif oluşturur
+                STEP/STP yükle → Geometri parse edilir → AI operasyon tahmini → PDF teklif
               </p>
             </div>
           </div>
