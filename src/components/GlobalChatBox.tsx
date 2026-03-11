@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Hash, Send, Trash2, Shield, Info,
-  ChevronRight, Users, Megaphone, Wrench, Scissors, MessageSquare
+  ChevronRight, Users, Megaphone, Wrench, Scissors, MessageSquare,
+  UserPlus, X, Mail
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -30,6 +31,24 @@ interface ChatMessage {
   created_at: string;
   channel_id: string | null;
   is_deleted: boolean | null;
+}
+
+interface DirectMessage {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+  deleted_by_sender: boolean;
+  deleted_by_receiver: boolean;
+}
+
+interface DmPeer {
+  userId: string;
+  displayName: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  unread: number;
 }
 
 // ─── IRC Commands ─────────────────────────────────────────────────────────────
@@ -93,10 +112,7 @@ const GlobalChatBox = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  // unreadCounts: channelId → count of messages newer than last-read
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  // allChannelMessages: channelId → latest message timestamp (for unread calc)
-  const [latestMsgTime, setLatestMsgTime] = useState<Record<string, string>>({});
   const [localLines, setLocalLines] = useState<{ id: string; text: string; type: "system" | "help" }[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -108,13 +124,26 @@ const GlobalChatBox = () => {
   } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // ── Last-read helpers (localStorage) ──────────────────────────────────────
-  const getLastRead = (channelId: string): string =>
-    localStorage.getItem(`chat_last_read_${channelId}`) ?? "1970-01-01";
+  // ── DM state ──────────────────────────────────────────────────────────────
+  const [viewMode, setViewMode] = useState<"channel" | "dm">("channel");
+  const [dmPeerId, setDmPeerId] = useState<string | null>(null);
+  const [dmPeers, setDmPeers] = useState<DmPeer[]>([]);
+  const [dmMessages, setDmMessages] = useState<DirectMessage[]>([]);
+  const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
+  const [showUserPicker, setShowUserPicker] = useState(false);
+  const [allUsers, setAllUsers] = useState<{ user_id: string; display_name: string | null }[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  // Map userId → display_name for DM rendering
+  const [userNameMap, setUserNameMap] = useState<Record<string, string>>({});
 
-  const markAsRead = useCallback((channelId: string) => {
-    localStorage.setItem(`chat_last_read_${channelId}`, new Date().toISOString());
-    setUnreadCounts((prev) => ({ ...prev, [channelId]: 0 }));
+  // ── Last-read helpers (localStorage) ──────────────────────────────────────
+  const getLastRead = (key: string): string =>
+    localStorage.getItem(`chat_last_read_${key}`) ?? "1970-01-01";
+
+  const markAsRead = useCallback((key: string) => {
+    localStorage.setItem(`chat_last_read_${key}`, new Date().toISOString());
+    setUnreadCounts((prev) => ({ ...prev, [key]: 0 }));
+    setDmUnreadCounts((prev) => ({ ...prev, [key]: 0 }));
   }, []);
 
   // ── Load admin status ──────────────────────────────────────────────────────
@@ -174,12 +203,12 @@ const GlobalChatBox = () => {
 
   // ── Mark active channel as read when switching ────────────────────────────
   useEffect(() => {
-    if (activeChannelId) markAsRead(activeChannelId);
-  }, [activeChannelId, markAsRead]);
+    if (viewMode === "channel" && activeChannelId) markAsRead(activeChannelId);
+  }, [activeChannelId, markAsRead, viewMode]);
 
   // ── Load messages for active channel ──────────────────────────────────────
   const loadMessages = useCallback(async () => {
-    if (!activeChannelId) return;
+    if (!activeChannelId || viewMode !== "channel") return;
     const { data } = await supabase
       .from("chat_messages")
       .select("*")
@@ -189,23 +218,24 @@ const GlobalChatBox = () => {
       .limit(200);
     if (data) setMessages(data as ChatMessage[]);
     markAsRead(activeChannelId);
-  }, [activeChannelId, markAsRead]);
+  }, [activeChannelId, markAsRead, viewMode]);
 
   useEffect(() => {
-    loadMessages();
-    setLocalLines([]);
-  }, [loadMessages]);
+    if (viewMode === "channel") {
+      loadMessages();
+      setLocalLines([]);
+    }
+  }, [loadMessages, viewMode]);
 
-  // ── Realtime subscription — also updates unread on new messages ───────────
+  // ── Realtime subscription — channel messages ─────────────────────────────
   useEffect(() => {
     const channel = supabase
       .channel("chat_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, (payload) => {
-        loadMessages();
-        // Update unread for other channels
+        if (viewMode === "channel") loadMessages();
         if (channels.length > 0) {
           const changedChannelId = (payload.new as any)?.channel_id;
-          if (changedChannelId && changedChannelId !== activeChannelId) {
+          if (changedChannelId && (viewMode !== "channel" || changedChannelId !== activeChannelId)) {
             setUnreadCounts((prev) => ({
               ...prev,
               [changedChannelId]: (prev[changedChannelId] ?? 0) + 1,
@@ -215,12 +245,148 @@ const GlobalChatBox = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadMessages, channels, activeChannelId]);
+  }, [loadMessages, channels, activeChannelId, viewMode]);
+
+  // ── DM: Load all users for picker ─────────────────────────────────────────
+  const loadAllUsers = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("user_presence")
+      .select("user_id, display_name");
+    if (data) {
+      const filtered = data.filter((u) => u.user_id !== user.id);
+      setAllUsers(filtered);
+      // Build name map
+      const map: Record<string, string> = {};
+      data.forEach((u) => { map[u.user_id] = u.display_name ?? "Kullanıcı"; });
+      setUserNameMap(map);
+    }
+  }, [user]);
+
+  // ── DM: Load conversation peers ──────────────────────────────────────────
+  const loadDmPeers = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("direct_messages" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!data || data.length === 0) { setDmPeers([]); return; }
+
+    const msgs = data as unknown as DirectMessage[];
+    const peerMap = new Map<string, { lastMsg: DirectMessage; unread: number }>();
+
+    msgs.forEach((m) => {
+      const peerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+      if (!peerMap.has(peerId)) {
+        const lastReadKey = `dm_${peerId}`;
+        const lastRead = getLastRead(lastReadKey);
+        peerMap.set(peerId, { lastMsg: m, unread: 0 });
+      }
+      const entry = peerMap.get(peerId)!;
+      // Count unread (messages from them after last read)
+      if (m.sender_id !== user.id) {
+        const lastRead = getLastRead(`dm_${m.sender_id}`);
+        if (m.created_at > lastRead) {
+          entry.unread++;
+        }
+      }
+    });
+
+    const peers: DmPeer[] = [];
+    const unreadMap: Record<string, number> = {};
+    peerMap.forEach((val, peerId) => {
+      peers.push({
+        userId: peerId,
+        displayName: userNameMap[peerId] ?? "Kullanıcı",
+        lastMessage: val.lastMsg.content,
+        lastMessageTime: val.lastMsg.created_at,
+        unread: val.unread,
+      });
+      unreadMap[peerId] = val.unread;
+    });
+
+    peers.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+    setDmPeers(peers);
+    setDmUnreadCounts(unreadMap);
+  }, [user, userNameMap]);
+
+  useEffect(() => {
+    loadAllUsers();
+  }, [loadAllUsers]);
+
+  useEffect(() => {
+    if (Object.keys(userNameMap).length > 0) loadDmPeers();
+  }, [userNameMap, loadDmPeers]);
+
+  // ── DM: Load messages for active peer ─────────────────────────────────────
+  const loadDmMessages = useCallback(async () => {
+    if (!user || !dmPeerId || viewMode !== "dm") return;
+    const { data } = await supabase
+      .from("direct_messages" as any)
+      .select("*")
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${dmPeerId}),and(sender_id.eq.${dmPeerId},receiver_id.eq.${user.id})`)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (data) setDmMessages(data as unknown as DirectMessage[]);
+    markAsRead(`dm_${dmPeerId}`);
+  }, [user, dmPeerId, markAsRead, viewMode]);
+
+  useEffect(() => {
+    if (viewMode === "dm" && dmPeerId) {
+      loadDmMessages();
+      setLocalLines([]);
+    }
+  }, [loadDmMessages, viewMode, dmPeerId]);
+
+  // ── DM: Realtime subscription ─────────────────────────────────────────────
+  useEffect(() => {
+    const ch = supabase
+      .channel("dm_realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, (payload) => {
+        const newMsg = payload.new as any;
+        if (!user) return;
+        // If currently viewing this DM thread
+        if (viewMode === "dm" && dmPeerId &&
+          ((newMsg.sender_id === user.id && newMsg.receiver_id === dmPeerId) ||
+           (newMsg.sender_id === dmPeerId && newMsg.receiver_id === user.id))) {
+          loadDmMessages();
+        } else if (newMsg.receiver_id === user.id) {
+          // Increment unread for peer
+          setDmUnreadCounts((prev) => ({
+            ...prev,
+            [newMsg.sender_id]: (prev[newMsg.sender_id] ?? 0) + 1,
+          }));
+        }
+        loadDmPeers();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user, viewMode, dmPeerId, loadDmMessages, loadDmPeers]);
 
   // ── Auto scroll ────────────────────────────────────────────────────────────
+  const prevChannelRef = useRef(activeChannelId);
+  const prevDmPeerRef = useRef(dmPeerId);
+  const prevViewRef = useRef(viewMode);
+  const prevMsgCount = useRef(0);
+  const prevDmCount = useRef(0);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, localLines]);
+    const viewChanged = prevViewRef.current !== viewMode;
+    const channelChanged = prevChannelRef.current !== activeChannelId;
+    const dmChanged = prevDmPeerRef.current !== dmPeerId;
+    const newChannelMsg = messages.length > prevMsgCount.current;
+    const newDmMsg = dmMessages.length > prevDmCount.current;
+
+    if (viewChanged || channelChanged || dmChanged || newChannelMsg || newDmMsg || localLines.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: (viewChanged || channelChanged || dmChanged) ? "instant" : "smooth" });
+    }
+
+    prevViewRef.current = viewMode;
+    prevChannelRef.current = activeChannelId;
+    prevDmPeerRef.current = dmPeerId;
+    prevMsgCount.current = messages.length;
+    prevDmCount.current = dmMessages.length;
+  }, [messages, dmMessages, localLines, viewMode, activeChannelId, dmPeerId]);
 
   // ── Chat commands ──────────────────────────────────────────────────────────
   const handleCommand = async (cmd: string): Promise<boolean> => {
@@ -272,34 +438,86 @@ const GlobalChatBox = () => {
     return false;
   };
 
-  // ── Send message ───────────────────────────────────────────────────────────
+  // ── Send message (channel or DM) ──────────────────────────────────────────
   const sendMessage = async () => {
-    if (!input.trim() || !user || !activeChannelId) return;
+    if (!input.trim() || !user) return;
 
-    if (input.startsWith("!")) {
-      const handled = await handleCommand(input);
-      if (handled) { setInput(""); return; }
+    if (viewMode === "channel") {
+      if (!activeChannelId) return;
+      if (input.startsWith("!")) {
+        const handled = await handleCommand(input);
+        if (handled) { setInput(""); return; }
+      }
+      setSending(true);
+      await supabase.from("chat_messages").insert({
+        user_id: user.id,
+        display_name: userProfile?.display_name ?? user.email ?? "Kullanıcı",
+        title: userProfile?.custom_title ?? null,
+        title_color: userProfile?.title_color ?? "#6366f1",
+        content: input.trim(),
+        channel_id: activeChannelId,
+      } as any);
+      setInput("");
+      setSending(false);
+    } else {
+      if (!dmPeerId) return;
+      setSending(true);
+      await supabase.from("direct_messages" as any).insert({
+        sender_id: user.id,
+        receiver_id: dmPeerId,
+        content: input.trim(),
+      } as any);
+      setInput("");
+      setSending(false);
     }
-
-    setSending(true);
-    await supabase.from("chat_messages").insert({
-      user_id: user.id,
-      display_name: userProfile?.display_name ?? user.email ?? "Kullanıcı",
-      title: userProfile?.custom_title ?? null,
-      title_color: userProfile?.title_color ?? "#6366f1",
-      content: input.trim(),
-      channel_id: activeChannelId,
-    } as any);
-    setInput("");
-    setSending(false);
   };
 
   const deleteMessage = async (id: string) => {
     await supabase.from("chat_messages").update({ is_deleted: true, deleted_by: user!.id } as any).eq("id", id);
   };
 
-  // ── Render messages with date dividers ────────────────────────────────────
-  const renderMessages = () => {
+  // ── Delete DM conversation (soft delete) ──────────────────────────────────
+  const deleteDmConversation = async (peerId: string) => {
+    if (!user) return;
+    // Mark all messages in this conversation as deleted by current user
+    // Messages where I'm sender
+    await supabase
+      .from("direct_messages" as any)
+      .update({ deleted_by_sender: true } as any)
+      .eq("sender_id", user.id)
+      .eq("receiver_id", peerId);
+    // Messages where I'm receiver
+    await supabase
+      .from("direct_messages" as any)
+      .update({ deleted_by_receiver: true } as any)
+      .eq("receiver_id", user.id)
+      .eq("sender_id", peerId);
+
+    // Remove from local state
+    setDmPeers((prev) => prev.filter((p) => p.userId !== peerId));
+    if (dmPeerId === peerId) {
+      setViewMode("channel");
+      setDmPeerId(null);
+    }
+  };
+
+  // ── Start DM with a user ──────────────────────────────────────────────────
+  const startDm = (targetUserId: string) => {
+    setViewMode("dm");
+    setDmPeerId(targetUserId);
+    setShowUserPicker(false);
+    setUserSearch("");
+  };
+
+  // ── Switch to channel view ────────────────────────────────────────────────
+  const switchToChannel = (channelId: string) => {
+    setViewMode("channel");
+    setDmPeerId(null);
+    setActiveChannelId(channelId);
+  };
+
+  // ── Render channel messages with date dividers ───────────────────────────
+  const renderChannelMessages = () => {
     const items: React.ReactNode[] = [];
     let lastDate = "";
 
@@ -315,7 +533,6 @@ const GlobalChatBox = () => {
       const initials = (msg.display_name ?? "?")
         .split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
 
-      // Check if same sender as previous (for grouped messages)
       const prevMsg = messages[i - 1];
       const isGrouped =
         prevMsg &&
@@ -324,7 +541,6 @@ const GlobalChatBox = () => {
 
       items.push(
         <div key={msg.id} className={`group flex gap-3 px-3 py-0.5 hover:bg-muted/20 rounded-lg transition-colors ${!isGrouped ? "mt-3" : ""}`}>
-          {/* Avatar column */}
           <div className="w-8 flex-shrink-0 flex items-start pt-0.5">
             {!isGrouped ? (
               <div
@@ -343,46 +559,27 @@ const GlobalChatBox = () => {
               </span>
             )}
           </div>
-
-          {/* Content column */}
           <div className="flex-1 min-w-0">
             {!isGrouped && (
               <div className="flex items-baseline gap-2 flex-wrap mb-0.5">
-                <span
-                  className="text-sm font-semibold leading-none"
-                  style={{ color: msg.title_color ?? "hsl(var(--foreground))" }}
-                >
+                <span className="text-sm font-semibold leading-none" style={{ color: msg.title_color ?? "hsl(var(--foreground))" }}>
                   {msg.display_name ?? "Kullanıcı"}
                 </span>
                 {msg.title && (
-                  <span
-                    className="text-[10px] font-medium px-1.5 py-0.5 rounded-md leading-none"
-                    style={{
-                      background: `${msg.title_color ?? "#6366f1"}18`,
-                      color: msg.title_color ?? "#6366f1",
-                      border: `1px solid ${msg.title_color ?? "#6366f1"}30`,
-                    }}
-                  >
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md leading-none"
+                    style={{ background: `${msg.title_color ?? "#6366f1"}18`, color: msg.title_color ?? "#6366f1", border: `1px solid ${msg.title_color ?? "#6366f1"}30` }}>
                     {msg.title}
                   </span>
                 )}
-                {isMe && (
-                  <Shield className="w-3 h-3 text-muted-foreground/40" />
-                )}
-                <span className="text-[10px] text-muted-foreground/50 leading-none">
-                  {formatTime(msg.created_at)}
-                </span>
+                {isMe && <Shield className="w-3 h-3 text-muted-foreground/40" />}
+                <span className="text-[10px] text-muted-foreground/50 leading-none">{formatTime(msg.created_at)}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <p className="text-sm text-foreground/90 leading-relaxed break-words min-w-0 flex-1">
-                {msg.content}
-              </p>
+              <p className="text-sm text-foreground/90 leading-relaxed break-words min-w-0 flex-1">{msg.content}</p>
               {canDelete && (
-                <button
-                  onClick={() => deleteMessage(msg.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0"
-                >
+                <button onClick={() => deleteMessage(msg.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0">
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
@@ -392,7 +589,6 @@ const GlobalChatBox = () => {
       );
     });
 
-    // Local system lines
     localLines.forEach((line) => {
       if (line.type === "help") {
         items.push(
@@ -413,14 +609,81 @@ const GlobalChatBox = () => {
     return items;
   };
 
+  // ── Render DM messages ────────────────────────────────────────────────────
+  const renderDmMessages = () => {
+    const items: React.ReactNode[] = [];
+    let lastDate = "";
+
+    dmMessages.forEach((msg, i) => {
+      const msgDate = formatDateDivider(msg.created_at);
+      if (msgDate !== lastDate) {
+        items.push(<DateDivider key={`divider-${i}`} label={msgDate} />);
+        lastDate = msgDate;
+      }
+
+      const isMe = msg.sender_id === user?.id;
+      const senderName = isMe
+        ? (userProfile?.display_name ?? "Ben")
+        : (userNameMap[msg.sender_id] ?? "Kullanıcı");
+      const initials = senderName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+      const prevMsg = dmMessages[i - 1];
+      const isGrouped =
+        prevMsg &&
+        prevMsg.sender_id === msg.sender_id &&
+        new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() < 5 * 60 * 1000;
+
+      items.push(
+        <div key={msg.id} className={`group flex gap-3 px-3 py-0.5 hover:bg-muted/20 rounded-lg transition-colors ${!isGrouped ? "mt-3" : ""}`}>
+          <div className="w-8 flex-shrink-0 flex items-start pt-0.5">
+            {!isGrouped ? (
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold select-none"
+                style={{
+                  background: isMe ? "hsl(var(--primary) / 0.15)" : "hsl(var(--accent) / 0.3)",
+                  border: `1.5px solid ${isMe ? "hsl(var(--primary) / 0.3)" : "hsl(var(--accent))"}`,
+                  color: isMe ? "hsl(var(--primary))" : "hsl(var(--accent-foreground))",
+                }}>
+                {initials}
+              </div>
+            ) : (
+              <span className="w-8 text-center text-[9px] text-muted-foreground/30 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {formatTime(msg.created_at)}
+              </span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            {!isGrouped && (
+              <div className="flex items-baseline gap-2 mb-0.5">
+                <span className="text-sm font-semibold leading-none" style={{ color: isMe ? "hsl(var(--primary))" : "hsl(var(--foreground))" }}>
+                  {senderName}
+                </span>
+                <span className="text-[10px] text-muted-foreground/50 leading-none">{formatTime(msg.created_at)}</span>
+              </div>
+            )}
+            <p className="text-sm text-foreground/90 leading-relaxed break-words">{msg.content}</p>
+          </div>
+        </div>
+      );
+    });
+
+    return items;
+  };
+
   const activeChannel = channels.find((c) => c.id === activeChannelId);
+  const dmPeerName = dmPeerId ? (userNameMap[dmPeerId] ?? "Kullanıcı") : "";
+  const totalDmUnread = Object.values(dmUnreadCounts).reduce((s, n) => s + n, 0);
+
+  const filteredUsers = allUsers.filter((u) =>
+    (u.display_name ?? "").toLowerCase().includes(userSearch.toLowerCase()) &&
+    !dmPeers.some((p) => p.userId === u.user_id)
+  );
 
   return (
     <div className="flex rounded-xl overflow-hidden border border-border/60 bg-card/80 backdrop-blur-sm"
       style={{ minHeight: 600, height: "min(900px, calc(100vh - 280px))" }}>
 
       {/* ── Sidebar ── */}
-      <div className="w-48 flex-shrink-0 bg-muted/20 border-r border-border/40 flex flex-col">
+      <div className="w-52 flex-shrink-0 bg-muted/20 border-r border-border/40 flex flex-col">
         {/* Server header */}
         <div className="px-3 py-3 border-b border-border/40">
           <div className="flex items-center gap-2">
@@ -431,8 +694,8 @@ const GlobalChatBox = () => {
           </div>
         </div>
 
-        {/* Channels section */}
         <div className="flex-1 overflow-y-auto py-2">
+          {/* Channels section */}
           <div className="px-3 py-1.5">
             <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
               Kanallar
@@ -440,11 +703,11 @@ const GlobalChatBox = () => {
           </div>
           {channels.map((ch) => {
             const unread = unreadCounts[ch.id] ?? 0;
-            const isActive = activeChannelId === ch.id;
+            const isActive = viewMode === "channel" && activeChannelId === ch.id;
             return (
               <button
                 key={ch.id}
-                onClick={() => setActiveChannelId(ch.id)}
+                onClick={() => switchToChannel(ch.id)}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-all duration-150 rounded-md mx-1 ${
                   isActive
                     ? "bg-primary/15 text-foreground font-medium"
@@ -461,16 +724,112 @@ const GlobalChatBox = () => {
                 {isActive ? (
                   <ChevronRight className="w-3 h-3 flex-shrink-0" />
                 ) : unread > 0 ? (
-                  <span
-                    className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center text-white"
-                    style={{ background: ch.color }}
-                  >
+                  <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center text-white"
+                    style={{ background: ch.color }}>
                     {unread > 99 ? "99+" : unread}
                   </span>
                 ) : null}
               </button>
             );
           })}
+
+          {/* DM section */}
+          <div className="px-3 py-1.5 mt-3 flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
+              Özel Mesajlar
+            </span>
+            <button
+              onClick={() => { setShowUserPicker(!showUserPicker); setUserSearch(""); }}
+              className="p-0.5 rounded hover:bg-muted/40 text-muted-foreground hover:text-primary transition-colors"
+              title="Yeni özel mesaj"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* User picker dropdown */}
+          {showUserPicker && (
+            <div className="mx-2 mb-2 rounded-lg border border-border/60 bg-card/90 shadow-lg overflow-hidden">
+              <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/40">
+                <Users className="w-3 h-3 text-muted-foreground/60" />
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Kullanıcı ara..."
+                  className="flex-1 text-[11px] bg-transparent border-0 outline-none text-foreground placeholder:text-muted-foreground/40"
+                  autoFocus
+                />
+                <button onClick={() => setShowUserPicker(false)} className="p-0.5 hover:bg-muted/40 rounded">
+                  <X className="w-3 h-3 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="max-h-32 overflow-y-auto">
+                {filteredUsers.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground/50 text-center py-2">Kullanıcı bulunamadı</p>
+                ) : (
+                  filteredUsers.map((u) => (
+                    <button
+                      key={u.user_id}
+                      onClick={() => startDm(u.user_id)}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-foreground hover:bg-primary/10 transition-colors"
+                    >
+                      <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
+                        {(u.display_name ?? "?")[0].toUpperCase()}
+                      </div>
+                      <span className="truncate">{u.display_name ?? "Kullanıcı"}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* DM peer list */}
+          {dmPeers.map((peer) => {
+            const isActive = viewMode === "dm" && dmPeerId === peer.userId;
+            const unread = dmUnreadCounts[peer.userId] ?? 0;
+            return (
+              <div key={peer.userId} className="flex items-center mx-1 group/dm">
+                <button
+                  onClick={() => startDm(peer.userId)}
+                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 text-xs transition-all duration-150 rounded-md ${
+                    isActive
+                      ? "bg-primary/15 text-foreground font-medium"
+                      : unread > 0
+                      ? "text-foreground font-semibold hover:bg-muted/40"
+                      : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                  }`}
+                >
+                  <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary flex-shrink-0">
+                    {peer.displayName[0].toUpperCase()}
+                  </div>
+                  <span className="truncate flex-1 text-left">{peer.displayName}</span>
+                  {isActive ? (
+                    <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                  ) : unread > 0 ? (
+                    <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center text-white bg-primary">
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  ) : null}
+                </button>
+                {/* Delete conversation button */}
+                <button
+                  onClick={() => deleteDmConversation(peer.userId)}
+                  className="opacity-0 group-hover/dm:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all flex-shrink-0 mr-1"
+                  title="Konuşmayı sil"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+
+          {dmPeers.length === 0 && !showUserPicker && (
+            <p className="text-[10px] text-muted-foreground/40 text-center px-3 py-2">
+              Henüz özel mesaj yok
+            </p>
+          )}
         </div>
 
         {/* User info at bottom */}
@@ -497,13 +856,11 @@ const GlobalChatBox = () => {
 
       {/* ── Main chat area ── */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Channel header */}
+        {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-card/60 flex-shrink-0">
-          {activeChannel && (
+          {viewMode === "channel" && activeChannel && (
             <>
-              <span style={{ color: activeChannel.color }}>
-                {channelIcon(activeChannel.name)}
-              </span>
+              <span style={{ color: activeChannel.color }}>{channelIcon(activeChannel.name)}</span>
               <span className="text-sm font-semibold text-foreground">{activeChannel.name}</span>
               {activeChannel.description && (
                 <>
@@ -511,18 +868,28 @@ const GlobalChatBox = () => {
                   <span className="text-xs text-muted-foreground truncate">{activeChannel.description}</span>
                 </>
               )}
+              <div className="ml-auto flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-muted-foreground/50" />
+                <span className="text-[11px] text-muted-foreground/50">{messages.length} mesaj</span>
+              </div>
             </>
           )}
-          <div className="ml-auto flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-muted-foreground/50" />
-            <span className="text-[11px] text-muted-foreground/50">{messages.length} mesaj</span>
-          </div>
+          {viewMode === "dm" && dmPeerId && (
+            <>
+              <Mail className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">{dmPeerName}</span>
+              <span className="text-xs text-muted-foreground">ile özel mesaj</span>
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground/50">{dmMessages.length} mesaj</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Messages */}
         <ScrollArea className="flex-1">
           <div className="py-2 space-y-0.5">
-            {messages.length === 0 && localLines.length === 0 && (
+            {viewMode === "channel" && messages.length === 0 && localLines.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <Hash className="w-10 h-10 mb-3 opacity-20" />
                 <p className="text-sm font-medium">#{activeChannel?.name} kanalına hoş geldiniz!</p>
@@ -532,7 +899,14 @@ const GlobalChatBox = () => {
                 </p>
               </div>
             )}
-            {renderMessages()}
+            {viewMode === "dm" && dmMessages.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <Mail className="w-10 h-10 mb-3 opacity-20" />
+                <p className="text-sm font-medium">{dmPeerName} ile konuşma başlat</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">İlk mesajı siz gönderin.</p>
+              </div>
+            )}
+            {viewMode === "channel" ? renderChannelMessages() : renderDmMessages()}
             <div ref={bottomRef} />
           </div>
         </ScrollArea>
@@ -541,28 +915,38 @@ const GlobalChatBox = () => {
         <div className="px-4 py-3 border-t border-border/40 bg-card/40 flex-shrink-0">
           <div className="flex items-center gap-2 bg-muted/40 border border-border/60 rounded-xl px-3 py-2 focus-within:border-primary/40 focus-within:bg-muted/60 transition-all">
             <span className="text-muted-foreground/50 flex-shrink-0">
-              {activeChannel ? channelIcon(activeChannel.name) : <Hash className="w-3.5 h-3.5" />}
+              {viewMode === "channel"
+                ? (activeChannel ? channelIcon(activeChannel.name) : <Hash className="w-3.5 h-3.5" />)
+                : <Mail className="w-3.5 h-3.5 text-primary/60" />
+              }
             </span>
             <Input
-              placeholder={`#${activeChannel?.name ?? "kanal"} kanalına mesaj yaz... (!yardim için komutlar)`}
+              placeholder={
+                viewMode === "channel"
+                  ? `#${activeChannel?.name ?? "kanal"} kanalına mesaj yaz... (!yardim için komutlar)`
+                  : `${dmPeerName} kullanıcısına mesaj yaz...`
+              }
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
               className="flex-1 border-0 bg-transparent p-0 h-auto focus-visible:ring-0 text-sm placeholder:text-muted-foreground/40"
-              disabled={!user || sending || !activeChannelId}
+              disabled={!user || sending || (viewMode === "channel" ? !activeChannelId : !dmPeerId)}
             />
             <Button
               size="icon"
               variant="ghost"
               onClick={sendMessage}
-              disabled={!input.trim() || !user || sending || !activeChannelId}
+              disabled={!input.trim() || !user || sending || (viewMode === "channel" ? !activeChannelId : !dmPeerId)}
               className="w-7 h-7 flex-shrink-0 hover:bg-primary/20 hover:text-primary"
             >
               <Send className="w-3.5 h-3.5" />
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground/40 mt-1.5 px-1">
-            Son 30 günlük mesajlar saklanır • <span className="font-mono">!yardim</span> ile komutları görüntüle
+            {viewMode === "channel"
+              ? <>Son 30 günlük mesajlar saklanır • <span className="font-mono">!yardim</span> ile komutları görüntüle</>
+              : "Özel mesajlar sadece sizin ve karşı tarafın görebildiği güvenli bir alandır"
+            }
           </p>
         </div>
       </div>
