@@ -68,12 +68,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    return { error: error as Error | null };
+    return { error: error as Error | null, data: data ?? undefined };
   };
 
   const signOut = async () => {
