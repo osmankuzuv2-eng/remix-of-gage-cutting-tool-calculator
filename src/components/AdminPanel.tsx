@@ -1498,6 +1498,57 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Login Logs Dialog */}
+      <Dialog open={showLoginLogsDialog} onOpenChange={setShowLoginLogsDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" />
+              Giriş Logları — {loginLogsUser?.profile?.display_name || loginLogsUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {loginLogsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : loginLogs.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Giriş kaydı bulunamadı.</p>
+            ) : (
+              loginLogs.map((log, i) => (
+                <div key={log.id || i} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30 border border-border">
+                  <div className="mt-0.5 p-1.5 rounded-md bg-primary/10">
+                    <History className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {new Date(log.created_at).toLocaleString("tr-TR", {
+                        day: "2-digit", month: "2-digit", year: "numeric",
+                        hour: "2-digit", minute: "2-digit", second: "2-digit"
+                      })}
+                    </p>
+                    {log.ip_address && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Globe className="w-3 h-3" /> {log.ip_address}
+                      </p>
+                    )}
+                    {log.user_agent && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                        <Smartphone className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{log.user_agent}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLoginLogsDialog(false)}>Kapat</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
