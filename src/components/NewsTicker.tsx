@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Newspaper } from "lucide-react";
+import { Megaphone, Sparkles } from "lucide-react";
 
 interface NewsItem {
   id: string;
@@ -9,9 +9,11 @@ interface NewsItem {
 
 const NewsTicker = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchNews = async () => {
       const { data } = await supabase
         .from("news_items" as any)
         .select("id, content")
@@ -19,26 +21,48 @@ const NewsTicker = () => {
         .order("sort_order", { ascending: true });
       if (data) setNews(data as any[]);
     };
-    fetch();
+    fetchNews();
   }, []);
 
   if (!news.length) return null;
 
-  // Duplicate items for seamless loop
-  const items = [...news, ...news];
+  // Triple items for seamless infinite loop
+  const items = [...news, ...news, ...news];
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-border/60 bg-card/80 backdrop-blur-sm">
+    <div
+      className="w-full overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 via-card/90 to-primary/5 backdrop-blur-sm shadow-sm relative group"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      {/* Gradient fade edges */}
+      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-card to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card to-transparent z-10 pointer-events-none" />
+
       <div className="flex items-center">
-        <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-primary/10 border-r border-border/60">
-          <Newspaper className="w-4 h-4 text-primary" />
-          <span className="text-xs font-semibold text-primary whitespace-nowrap">HABERLER</span>
+        {/* Label */}
+        <div className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-primary/10 border-r border-primary/20 z-20 relative">
+          <Megaphone className="w-4 h-4 text-primary animate-pulse" />
+          <span className="text-xs font-bold text-primary whitespace-nowrap tracking-wider uppercase">
+            Duyurular
+          </span>
         </div>
-        <div className="overflow-hidden flex-1 py-2">
-          <div className="flex animate-news-scroll whitespace-nowrap">
+
+        {/* Scrolling area */}
+        <div className="overflow-hidden flex-1 py-2.5" ref={scrollRef}>
+          <div
+            className="flex whitespace-nowrap"
+            style={{
+              animation: `news-scroll 15s linear infinite`,
+              animationPlayState: isPaused ? "paused" : "running",
+            }}
+          >
             {items.map((item, i) => (
-              <span key={`${item.id}-${i}`} className="inline-flex items-center mx-8 text-sm text-foreground/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 mr-3 flex-shrink-0" />
+              <span
+                key={`${item.id}-${i}`}
+                className="inline-flex items-center mx-10 text-sm font-medium text-foreground/90"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-primary/70 mr-2.5 flex-shrink-0" />
                 {item.content}
               </span>
             ))}
