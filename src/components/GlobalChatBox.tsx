@@ -566,16 +566,26 @@ const GlobalChatBox = () => {
         <div key={msg.id} className={`group flex gap-3 px-3 py-0.5 hover:bg-muted/20 rounded-lg transition-colors ${!isGrouped ? "mt-3" : ""}`}>
           <div className="w-8 flex-shrink-0 flex items-start pt-0.5">
             {!isGrouped ? (
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold select-none"
-                style={{
-                  background: `${msg.title_color ?? "#6366f1"}20`,
-                  border: `1.5px solid ${msg.title_color ?? "#6366f1"}40`,
-                  color: msg.title_color ?? "#6366f1",
-                }}
-              >
-                {initials}
-              </div>
+              (() => {
+                const avatarUrl = userAvatarMap[msg.user_id] ?? (msg.user_id === user?.id ? userProfile?.avatar_url : null);
+                return avatarUrl ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+                    style={{ border: `1.5px solid ${msg.title_color ?? "#6366f1"}40` }}>
+                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold select-none"
+                    style={{
+                      background: `${msg.title_color ?? "#6366f1"}20`,
+                      border: `1.5px solid ${msg.title_color ?? "#6366f1"}40`,
+                      color: msg.title_color ?? "#6366f1",
+                    }}
+                  >
+                    {initials}
+                  </div>
+                );
+              })()
             ) : (
               <span className="w-8 text-center text-[9px] text-muted-foreground/30 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {formatTime(msg.created_at)}
