@@ -46,7 +46,7 @@ const OnlineUsersPanel = () => {
                 return (
                   <li
                     key={u.user_id}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors min-w-0 overflow-hidden ${
                       isMe
                         ? "bg-emerald-500/10 border border-emerald-500/20"
                         : "bg-muted/30 hover:bg-muted/50"
