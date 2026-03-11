@@ -10,7 +10,8 @@ interface NewsItem {
 const NewsTicker = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [isPaused, setIsPaused] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [contentWidth, setContentWidth] = useState(0);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -24,10 +25,22 @@ const NewsTicker = () => {
     fetchNews();
   }, []);
 
+  // Measure one set of items
+  useEffect(() => {
+    if (innerRef.current && news.length > 0) {
+      // Measure after render
+      requestAnimationFrame(() => {
+        if (innerRef.current) {
+          setContentWidth(innerRef.current.scrollWidth / 2);
+        }
+      });
+    }
+  }, [news]);
+
   if (!news.length) return null;
 
-  // Triple items for seamless infinite loop
-  const items = [...news, ...news, ...news];
+  // Duplicate once for seamless loop
+  const items = [...news, ...news];
 
   return (
     <div
@@ -40,7 +53,6 @@ const NewsTicker = () => {
       <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card to-transparent z-10 pointer-events-none" />
 
       <div className="flex items-center">
-        {/* Label */}
         <div className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-primary/10 border-r border-primary/20 z-20 relative">
           <Megaphone className="w-4 h-4 text-primary animate-pulse" />
           <span className="text-xs font-bold text-primary whitespace-nowrap tracking-wider uppercase">
@@ -48,12 +60,14 @@ const NewsTicker = () => {
           </span>
         </div>
 
-        {/* Scrolling area */}
-        <div className="overflow-hidden flex-1 py-2.5" ref={scrollRef}>
+        <div className="overflow-hidden flex-1 py-2.5">
           <div
-            className="flex whitespace-nowrap"
+            ref={innerRef}
+            className="flex whitespace-nowrap will-change-transform"
             style={{
-              animation: `news-scroll 15s linear infinite`,
+              animation: contentWidth
+                ? `ticker-scroll ${Math.max(contentWidth / 60, 8)}s linear infinite`
+                : undefined,
               animationPlayState: isPaused ? "paused" : "running",
             }}
           >
@@ -69,6 +83,13 @@ const NewsTicker = () => {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes ticker-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 };
