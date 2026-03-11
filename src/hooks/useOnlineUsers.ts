@@ -51,7 +51,20 @@ export function useOnlineUsers() {
       .order("last_seen", { ascending: false });
 
     if (data) {
-      setOnlineUsers(data as unknown as OnlineUser[]);
+      const users = data as unknown as OnlineUser[];
+      // Fetch avatar_url from profiles for each user
+      const userIds = users.map(u => u.user_id);
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, avatar_url")
+          .in("user_id", userIds);
+        const avatarMap = new Map((profiles || []).map(p => [p.user_id, p.avatar_url]));
+        users.forEach(u => {
+          u.avatar_url = avatarMap.get(u.user_id) ?? null;
+        });
+      }
+      setOnlineUsers(users);
     }
   }, []);
 
