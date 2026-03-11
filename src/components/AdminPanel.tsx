@@ -727,7 +727,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
       <h2 className="text-2xl font-bold text-foreground">{t("admin", "title")}</h2>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Kullanıcılar</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Building2 className="w-4 h-4" /> Müşteriler</TabsTrigger>
           <TabsTrigger value="factories" className="gap-2"><Factory className="w-4 h-4" /> Fabrikalar</TabsTrigger>
@@ -738,6 +738,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           <TabsTrigger value="toolroom" className="gap-2"><BarChart3 className="w-4 h-4" /> Takımhane</TabsTrigger>
           <TabsTrigger value="modules" className="gap-2"><Package className="w-4 h-4" /> Modüller</TabsTrigger>
           <TabsTrigger value="menu" className="gap-2"><LayoutGrid className="w-4 h-4" /> Menü</TabsTrigger>
+          <TabsTrigger value="chat" className="gap-2"><Hash className="w-4 h-4" /> Chat Kanalları</TabsTrigger>
           <TabsTrigger value="feedback" className="gap-2" onClick={() => { if (!feedbacks.length) loadFeedbacks(); }}><Brain className="w-4 h-4" /> AI Eğitim</TabsTrigger>
           <TabsTrigger value="quiz" className="gap-2"><TrendingUp className="w-4 h-4" /> Quiz</TabsTrigger>
         </TabsList>
