@@ -258,9 +258,7 @@ const Index = () => {
 
                   {/* Dropdown positioned below this category button */}
                   {isOpen && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-max max-w-[90vw]">
-                      {/* Invisible bridge to prevent gap hover loss */}
-                      <div className="absolute -top-2 left-0 right-0 h-2" />
+                    <ClampedDropdown>
                       <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200`}>
                         {cat.modules.map((mod, modIdx) => {
                           const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
@@ -301,7 +299,7 @@ const Index = () => {
                           );
                         })}
                       </div>
-                    </div>
+                    </ClampedDropdown>
                   )}
                 </div>
               );
