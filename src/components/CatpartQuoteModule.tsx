@@ -510,20 +510,29 @@ const CatpartQuoteModule = () => {
                   : "border-border hover:border-primary/50 hover:bg-primary/5"
               }`}
             >
-              <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff" onChange={handleFileInput} className="hidden" />
+              <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff,.step,.stp" onChange={handleFileInput} className="hidden" />
               <div className="p-5 rounded-full bg-primary/10">
                 <Upload className="w-10 h-10 text-primary" />
               </div>
               <div className="text-center">
                 <p className="text-base font-semibold text-foreground mb-1">
-                  CATIA çizimini buraya sürükle veya tıkla
+                  CATIA dosyasını buraya sürükle veya tıkla
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  CATIA'dan <strong>PDF veya DXF'ten dönüştürülmüş JPG</strong> olarak dışa aktar
+                  <strong>STEP/STP</strong> (önerilen) veya teknik çizim <strong>PDF/JPG</strong>
                 </p>
                 <div className="flex gap-2 justify-center mt-3 flex-wrap">
-                  {["PDF", "JPG", "PNG", "TIF"].map(f => (
-                    <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
+                  {[
+                    { label: "STEP", highlight: true },
+                    { label: "STP", highlight: true },
+                    { label: "PDF", highlight: false },
+                    { label: "JPG", highlight: false },
+                    { label: "PNG", highlight: false },
+                    { label: "TIF", highlight: false },
+                  ].map(({ label, highlight }) => (
+                    <Badge key={label} variant={highlight ? "default" : "secondary"} className={`text-xs ${highlight ? "bg-primary/20 text-primary border border-primary/40" : ""}`}>
+                      {label}
+                    </Badge>
                   ))}
                 </div>
               </div>
