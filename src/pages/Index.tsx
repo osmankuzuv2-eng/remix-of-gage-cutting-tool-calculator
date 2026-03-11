@@ -260,7 +260,7 @@ const Index = () => {
                   {/* Dropdown positioned below this category button */}
                   {isOpen && (
                     <ClampedDropdown align={dropdownAlign}>
-                      <div className="grid gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200" style={{ gridTemplateColumns: `repeat(${Math.min(cat.modules.length, 6)}, minmax(100px, 1fr))` }}>
+                      <div className="grid gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200" style={{ gridTemplateColumns: `repeat(${Math.min(cat.modules.length, 4)}, minmax(100px, 1fr))` }}>
                         {cat.modules.map((mod, modIdx) => {
                           const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
                           const accessible = hasAccess(mod.module_key);
