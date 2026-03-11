@@ -257,31 +257,30 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Query auth audit log via pg
-        const dbUrl = Deno.env.get("SUPABASE_DB_URL")!;
-        const pgClient = await import("https://deno.land/x/postgres@v0.17.0/mod.ts");
-        const client = new pgClient.Client(dbUrl);
-        await client.connect();
+        // Use Supabase admin REST to get user's last_sign_in_at
+        // and query audit_log_entries via service role client
+        const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(user_id);
 
-        const result = await client.queryArray(
-          `SELECT id, created_at, ip_address, user_agent
-           FROM auth.audit_log_entries
-           WHERE payload->>'actor_id' = $1
-             AND payload->>'action' IN ('login', 'token_refreshed')
-           ORDER BY created_at DESC
-           LIMIT 10`,
-          [user_id]
+        // Query audit_log_entries using service role via raw SQL
+        const { data: auditData, error: auditError } = await supabaseAdmin.rpc(
+          "get_user_login_logs" as any,
+          { p_user_id: user_id }
         );
-        await client.end();
 
-        const logs = result.rows.map((row) => ({
-          id: row[0],
-          created_at: row[1],
-          ip_address: row[2],
-          user_agent: row[3],
-        }));
+        if (auditError) {
+          // Fallback: just return last_sign_in_at from user record
+          const logs = userInfo?.user ? [{
+            id: "1",
+            created_at: userInfo.user.last_sign_in_at || userInfo.user.created_at,
+            ip_address: null,
+            user_agent: null,
+          }] : [];
+          return new Response(JSON.stringify({ logs }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
-        return new Response(JSON.stringify({ logs }), {
+        return new Response(JSON.stringify({ logs: auditData || [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
