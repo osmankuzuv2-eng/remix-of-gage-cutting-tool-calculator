@@ -26,15 +26,15 @@ const OnlineUsersPanel = () => {
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 min-h-0 p-0 px-4 pb-4">
-        <ScrollArea className="h-full max-h-[1040px]">
+      <CardContent className="flex-1 min-h-0 p-0 px-4 pb-0 flex flex-col">
+        <ScrollArea className="flex-1 max-h-[1040px]">
           {onlineUsers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
               <Users className="w-8 h-8 mb-2 opacity-30" />
               <p className="text-sm">Şu an kimse çevrimiçi değil</p>
             </div>
           ) : (
-            <ul className="space-y-1.5 pr-2">
+            <ul className="space-y-1.5 pr-2 py-1">
               {onlineUsers.map((u) => {
                 const isMe = u.user_id === user?.id;
                 const initials = (u.display_name ?? "?")
@@ -43,7 +43,6 @@ const OnlineUsersPanel = () => {
                   .slice(0, 2)
                   .join("")
                   .toUpperCase();
-
                 return (
                   <li
                     key={u.user_id}
@@ -80,11 +79,11 @@ const OnlineUsersPanel = () => {
               })}
             </ul>
           )}
-          {/* Footer info inside scroll area */}
-          <p className="text-[10px] text-muted-foreground/50 mt-3 mb-1 text-center">
-            Her 5 dakikada bir güncellenir
-          </p>
         </ScrollArea>
+        {/* Footer always pinned at bottom */}
+        <p className="text-[10px] text-muted-foreground/50 py-2 text-center border-t border-border/30 mt-1 flex-shrink-0">
+          Her 5 dakikada bir güncellenir
+        </p>
       </CardContent>
     </Card>
   );
