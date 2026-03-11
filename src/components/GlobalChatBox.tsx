@@ -852,8 +852,12 @@ const GlobalChatBox = () => {
         {user && (
           <div className="border-t border-border/40 px-3 py-2.5 bg-muted/30">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">
-                {(userProfile?.display_name ?? user.email ?? "?")[0].toUpperCase()}
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0 overflow-hidden">
+                {userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  (userProfile?.display_name ?? user.email ?? "?")[0].toUpperCase()
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-semibold truncate text-foreground">
