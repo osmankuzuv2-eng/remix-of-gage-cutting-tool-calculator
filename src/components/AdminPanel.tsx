@@ -345,6 +345,14 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   };
 
   const resetCreateForm = () => {
+    setNewEmail("");
+    setNewPassword("");
+    setNewDisplayName("");
+    setNewIsAdmin(false);
+    setNewDefaultLanguage("tr");
+    setNewPermissions({});
+    const ap: Record<string, { can_view: boolean; can_edit: boolean }> = {};
+    ADMIN_PANEL_KEYS.forEach((k) => { ap[k] = { can_view: true, can_edit: false }; });
     setNewAdminPerms(ap);
   };
 
