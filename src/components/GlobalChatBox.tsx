@@ -902,6 +902,7 @@ const GlobalChatBox = () => {
         </div>
 
         {/* Messages */}
+        <div ref={scrollContainerRef}>
         <ScrollArea className="flex-1">
           <div className="py-2 space-y-0.5">
             {viewMode === "channel" && messages.length === 0 && localLines.length === 0 && (
