@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Language } from "@/i18n/translations";
@@ -45,13 +46,27 @@ const Auth = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { error, data } = await signIn(email, password);
       if (error) {
         const message = error.message.includes("Invalid login credentials")
           ? t("auth", "invalidCredentials")
           : t("auth", "loginError");
         toast({ title: t("common", "error"), description: message, variant: "destructive" });
       } else {
+        // Log the login
+        if (data?.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("user_id", data.user.id)
+            .maybeSingle();
+          await supabase.from("login_logs" as any).insert({
+            user_id: data.user.id,
+            display_name: profile?.display_name ?? data.user.email,
+            email: data.user.email,
+            user_agent: navigator.userAgent,
+          } as any);
+        }
         toast({ title: t("auth", "welcome"), description: t("auth", "loginSuccess") });
       }
     } catch {

@@ -257,14 +257,16 @@ Deno.serve(async (req) => {
           });
         }
 
-        const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(user_id);
+        const { data: logData, error: logError } = await supabaseAdmin
+          .from("login_logs")
+          .select("*")
+          .eq("user_id", user_id)
+          .order("created_at", { ascending: false })
+          .limit(10);
 
-        const { data: auditData, error: auditError } = await supabaseAdmin.rpc(
-          "get_user_login_logs" as any,
-          { p_user_id: user_id }
-        );
-
-        if (auditError) {
+        if (logError) {
+          // Fallback: use last_sign_in_at
+          const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(user_id);
           const logs = userInfo?.user ? [{
             id: "1",
             created_at: userInfo.user.last_sign_in_at || userInfo.user.created_at,
@@ -276,13 +278,12 @@ Deno.serve(async (req) => {
           });
         }
 
-        return new Response(JSON.stringify({ logs: auditData || [] }), {
+        return new Response(JSON.stringify({ logs: logData || [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       case "get_all_login_logs": {
-        // Returns last 10 login entries across all users from auth.audit_log_entries
         const { data: allUsers } = await supabaseAdmin.auth.admin.listUsers();
         const userMap: Record<string, { email: string; display_name: string | null }> = {};
         if (allUsers?.users) {
@@ -297,12 +298,13 @@ Deno.serve(async (req) => {
           });
         }
 
-        const { data: auditData, error: auditError } = await supabaseAdmin.rpc(
-          "get_all_login_logs" as any,
-          {}
-        );
+        const { data: logData, error: logError } = await supabaseAdmin
+          .from("login_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(10);
 
-        if (auditError) {
+        if (logError || !logData || logData.length === 0) {
           // Fallback: use last_sign_in_at from each user
           const logs = (allUsers?.users || [])
             .filter((u) => u.last_sign_in_at)
@@ -322,10 +324,10 @@ Deno.serve(async (req) => {
           });
         }
 
-        const enriched = (auditData || []).map((log: any) => ({
+        const enriched = logData.map((log: any) => ({
           ...log,
-          email: userMap[log.user_id]?.email || log.user_id,
-          display_name: userMap[log.user_id]?.display_name || null,
+          email: log.email || userMap[log.user_id]?.email || log.user_id,
+          display_name: log.display_name || userMap[log.user_id]?.display_name || null,
         }));
 
         return new Response(JSON.stringify({ logs: enriched }), {
