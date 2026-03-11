@@ -53,7 +53,6 @@ const OnlineUsersPanel = () => {
                         : "bg-muted/30 hover:bg-muted/50"
                     }`}
                   >
-                    {/* Avatar */}
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                         isMe
@@ -63,8 +62,6 @@ const OnlineUsersPanel = () => {
                     >
                       {initials}
                     </div>
-
-                    {/* Name */}
                     <div className="flex-1 min-w-0">
                       <span
                         className={`text-sm font-medium truncate block ${
@@ -77,20 +74,17 @@ const OnlineUsersPanel = () => {
                         )}
                       </span>
                     </div>
-
-                    {/* Online dot */}
                     <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse" />
                   </li>
                 );
               })}
             </ul>
           )}
+          {/* Footer info inside scroll area */}
+          <p className="text-[10px] text-muted-foreground/50 mt-3 mb-1 text-center">
+            Her 5 dakikada bir güncellenir
+          </p>
         </ScrollArea>
-
-        {/* Footer info */}
-        <p className="text-[10px] text-muted-foreground/50 mt-3 text-center">
-          Her 5 dakikada bir güncellenir
-        </p>
       </CardContent>
     </Card>
   );
