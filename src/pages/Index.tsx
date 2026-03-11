@@ -198,9 +198,9 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6">
         {/* Grouped Mega Menu */}
-        <nav className="mb-6 space-y-2" onMouseLeave={() => setOpenCategory(null)}>
+        <nav className="mb-6" onMouseLeave={() => setOpenCategory(null)}>
           {/* Category buttons row */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 relative">
             {/* Home button */}
             <button
               onClick={() => handleTabClick("home")}
@@ -220,73 +220,73 @@ const Index = () => {
               const isOpen = openCategory === cat.id;
               const isActiveCat = activeCategoryId === cat.id;
               return (
-                <button
-                  key={cat.id}
-                  onMouseEnter={() => setOpenCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border group ${
-                    isActiveCat
-                      ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.97]`
-                      : isOpen
-                      ? `${cat.bg_color} ${cat.text_color} ${cat.border_color} border hover:scale-[1.02]`
-                      : `bg-card border-border text-muted-foreground hover:${cat.text_color} hover:${cat.border_color} hover:scale-[1.03] hover:shadow-md active:scale-[0.97]`
-                  }`}
-                >
-                  <CatIcon className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
-                  {language === "en" && cat.name_en ? cat.name_en : language === "fr" && cat.name_fr ? cat.name_fr : cat.name}
-                  <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isOpen ? "rotate-180" : "group-hover:translate-y-0.5"}`} />
-                </button>
+                <div key={cat.id} className="relative" onMouseEnter={() => setOpenCategory(cat.id)}>
+                  <button
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border group ${
+                      isActiveCat
+                        ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.97]`
+                        : isOpen
+                        ? `${cat.bg_color} ${cat.text_color} ${cat.border_color} border hover:scale-[1.02]`
+                        : `bg-card border-border text-muted-foreground hover:${cat.text_color} hover:${cat.border_color} hover:scale-[1.03] hover:shadow-md active:scale-[0.97]`
+                    }`}
+                  >
+                    <CatIcon className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
+                    {language === "en" && cat.name_en ? cat.name_en : language === "fr" && cat.name_fr ? cat.name_fr : cat.name}
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isOpen ? "rotate-180" : "group-hover:translate-y-0.5"}`} />
+                  </button>
+
+                  {/* Dropdown positioned below this category button */}
+                  {isOpen && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-max max-w-[90vw]">
+                      {/* Invisible bridge to prevent gap hover loss */}
+                      <div className="absolute -top-2 left-0 right-0 h-2" />
+                      <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200`}>
+                        {cat.modules.map((mod, modIdx) => {
+                          const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
+                          const accessible = hasAccess(mod.module_key);
+                          const isActive = activeTab === mod.module_key;
+                          return (
+                            <button
+                              key={mod.module_key}
+                              onClick={() => { handleTabClick(mod.module_key as TabId); setOpenCategory(null); }}
+                              disabled={!accessible}
+                              style={{ animationDelay: `${modIdx * 30}ms` }}
+                              className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 animate-fade-in group min-w-[100px] ${
+                                !accessible
+                                  ? "bg-muted/20 border-border/30 text-muted-foreground/30 cursor-not-allowed"
+                                  : isActive
+                                  ? `${cat.bg_color} ${cat.border_color} border shadow-md scale-[1.02]`
+                                  : `bg-card/60 border-border hover:${cat.bg_color} hover:${cat.border_color} hover:shadow-lg hover:scale-[1.05] hover:-translate-y-1 active:scale-[0.95]`
+                              }`}
+                            >
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                                isActive
+                                  ? `bg-gradient-to-br ${cat.color} text-white shadow-lg`
+                                  : accessible
+                                  ? `${cat.bg_color} ${cat.text_color} group-hover:scale-110 group-hover:shadow-md`
+                                  : "bg-muted/30 text-muted-foreground/30"
+                              }`}>
+                                {accessible ? <ModIcon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" /> : <Lock className="w-4 h-4" />}
+                              </div>
+                              <span className={`text-xs font-medium text-center leading-tight transition-colors duration-300 ${
+                                isActive ? cat.text_color : accessible ? "text-foreground" : "text-muted-foreground/30"
+                              }`}>
+                                {getModuleName(mod.module_key)}
+                              </span>
+                              {isActive && (
+                                <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-gradient-to-r ${cat.color} animate-scale-in`} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
 
           </div>
-
-          {/* Expanded module cards for open category */}
-          {openCategory && (() => {
-            const cat = categories.find((c) => c.id === openCategory);
-            if (!cat) return null;
-            return (
-              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-200`}>
-                {cat.modules.map((mod, modIdx) => {
-                  const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
-                  const accessible = hasAccess(mod.module_key);
-                  const isActive = activeTab === mod.module_key;
-                  return (
-                    <button
-                      key={mod.module_key}
-                      onClick={() => handleTabClick(mod.module_key as TabId)}
-                      disabled={!accessible}
-                      style={{ animationDelay: `${modIdx * 50}ms` }}
-                      className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 animate-fade-in group ${
-                        !accessible
-                          ? "bg-muted/20 border-border/30 text-muted-foreground/30 cursor-not-allowed"
-                          : isActive
-                          ? `${cat.bg_color} ${cat.border_color} border shadow-md scale-[1.02]`
-                          : `bg-card/60 border-border hover:${cat.bg_color} hover:${cat.border_color} hover:shadow-lg hover:scale-[1.05] hover:-translate-y-1 active:scale-[0.95]`
-                      }`}
-                    >
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                        isActive
-                          ? `bg-gradient-to-br ${cat.color} text-white shadow-lg`
-                          : accessible
-                          ? `${cat.bg_color} ${cat.text_color} group-hover:scale-110 group-hover:shadow-md`
-                          : "bg-muted/30 text-muted-foreground/30"
-                      }`}>
-                        {accessible ? <ModIcon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" /> : <Lock className="w-4 h-4" />}
-                      </div>
-                      <span className={`text-xs font-medium text-center leading-tight transition-colors duration-300 ${
-                        isActive ? cat.text_color : accessible ? "text-foreground" : "text-muted-foreground/30"
-                      }`}>
-                        {getModuleName(mod.module_key)}
-                      </span>
-                      {isActive && (
-                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-gradient-to-r ${cat.color} animate-scale-in`} />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })()}
         </nav>
 
         {/* News Ticker */}
