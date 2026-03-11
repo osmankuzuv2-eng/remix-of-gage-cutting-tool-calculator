@@ -255,14 +255,19 @@ const GlobalChatBox = () => {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("user_id, display_name");
+      .select("user_id, display_name, avatar_url");
     if (data) {
       const filtered = data.filter((u: any) => u.user_id !== user.id);
       setAllUsers(filtered);
       // Build name map
       const map: Record<string, string> = {};
-      data.forEach((u: any) => { map[u.user_id] = u.display_name ?? "Kullanıcı"; });
+      const avatarMap: Record<string, string | null> = {};
+      data.forEach((u: any) => {
+        map[u.user_id] = u.display_name ?? "Kullanıcı";
+        avatarMap[u.user_id] = u.avatar_url ?? null;
+      });
       setUserNameMap(map);
+      setUserAvatarMap(avatarMap);
     }
   }, [user]);
 
