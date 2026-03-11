@@ -236,10 +236,11 @@ const Index = () => {
               Anasayfa
             </button>
 
-            {categories.map((cat) => {
+            {categories.map((cat, index) => {
               const CatIcon = getIcon(cat.icon);
               const isOpen = openCategory === cat.id;
               const isActiveCat = activeCategoryId === cat.id;
+              const dropdownAlign = index >= categories.length - 2 ? "right" : "center";
               return (
                 <div key={cat.id} className="relative" onMouseEnter={() => setOpenCategory(cat.id)}>
                   <button
