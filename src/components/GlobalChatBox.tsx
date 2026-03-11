@@ -670,14 +670,24 @@ const GlobalChatBox = () => {
         <div key={msg.id} className={`group flex gap-3 px-3 py-0.5 hover:bg-muted/20 rounded-lg transition-colors ${!isGrouped ? "mt-3" : ""}`}>
           <div className="w-8 flex-shrink-0 flex items-start pt-0.5">
             {!isGrouped ? (
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold select-none"
-                style={{
-                  background: isMe ? "hsl(var(--primary) / 0.15)" : "hsl(var(--accent) / 0.3)",
-                  border: `1.5px solid ${isMe ? "hsl(var(--primary) / 0.3)" : "hsl(var(--accent))"}`,
-                  color: isMe ? "hsl(var(--primary))" : "hsl(var(--accent-foreground))",
-                }}>
-                {initials}
-              </div>
+              (() => {
+                const avatarUrl = isMe ? userProfile?.avatar_url : userAvatarMap[msg.sender_id];
+                return avatarUrl ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+                    style={{ border: `1.5px solid ${isMe ? "hsl(var(--primary) / 0.3)" : "hsl(var(--accent))"}` }}>
+                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold select-none"
+                    style={{
+                      background: isMe ? "hsl(var(--primary) / 0.15)" : "hsl(var(--accent) / 0.3)",
+                      border: `1.5px solid ${isMe ? "hsl(var(--primary) / 0.3)" : "hsl(var(--accent))"}`,
+                      color: isMe ? "hsl(var(--primary))" : "hsl(var(--accent-foreground))",
+                    }}>
+                    {initials}
+                  </div>
+                );
+              })()
             ) : (
               <span className="w-8 text-center text-[9px] text-muted-foreground/30 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {formatTime(msg.created_at)}
