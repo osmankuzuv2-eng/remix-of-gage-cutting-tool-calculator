@@ -160,7 +160,7 @@ const GlobalChatBox = () => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, custom_title, title_color")
+      .select("display_name, custom_title, title_color, avatar_url")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => { if (data) setUserProfile(data); });
