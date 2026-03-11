@@ -142,41 +142,60 @@ const CatpartQuoteModule = () => {
   // ── File processing ───────────────────────────────────────────────────────
 
   const processFile = useCallback(async (file: File) => {
-    const ACCEPTED = ["image/jpeg","image/png","image/webp","image/tiff","application/pdf"];
+    const isStep = /\.(step|stp)$/i.test(file.name);
     const isTif = /\.tiff?$/i.test(file.name);
     const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
-    if (!ACCEPTED.includes(file.type) && !isTif && !isPdf) {
-      toast.error("Desteklenmeyen format. JPG, PNG, PDF veya TIF yükleyin.");
+    const isImage = /\.(jpe?g|png|webp)$/i.test(file.name) || ["image/jpeg","image/png","image/webp"].includes(file.type);
+
+    if (!isStep && !isTif && !isPdf && !isImage) {
+      toast.error("Desteklenmeyen format. STEP, STP, PDF, JPG, PNG veya TIF yükleyin.");
       return;
     }
-    if (file.size > 20 * 1024 * 1024) { toast.error("Dosya 20MB'dan büyük olamaz."); return; }
+    if (file.size > 50 * 1024 * 1024) { toast.error("Dosya 50MB'dan büyük olamaz."); return; }
 
     setFileName(file.name);
     setStage("analyzing");
 
     try {
-      let processedFile = file;
-      if (isTif) processedFile = await convertTifToJpg(file);
-      else if (isPdf) processedFile = await convertPdfToJpg(file);
-
-      setPreviewUrl(URL.createObjectURL(processedFile));
-
-      const base64 = await fileToBase64(processedFile);
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/catpart-quote-analyze`;
+      let data: any;
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
-        body: JSON.stringify({ imageBase64: base64, mimeType: "image/jpeg", language: "tr" }),
-      });
+      if (isStep) {
+        // ── STEP dosyası: metin olarak oku, step-parse edge function'a gönder ──
+        const stepContent = await file.text();
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/step-parse`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
+          body: JSON.stringify({ stepContent, language: "tr" }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        data = await res.json();
+        // STEP'te görsel yok — bounding box bilgisi göster
+        setPreviewUrl(null);
+      } else {
+        // ── Görsel/PDF: AI vision analizi ──
+        let processedFile = file;
+        if (isTif) processedFile = await convertTifToJpg(file);
+        else if (isPdf) processedFile = await convertPdfToJpg(file);
+        setPreviewUrl(URL.createObjectURL(processedFile));
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const base64 = await fileToBase64(processedFile);
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/catpart-quote-analyze`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
+          body: JSON.stringify({ imageBase64: base64, mimeType: "image/jpeg", language: "tr" }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        data = await res.json();
       }
-
-      const data = await res.json();
 
       // Map AI operations to QuoteOperation, matching machines
       const ops: QuoteOperation[] = (data.operations || []).map((op: any, idx: number) => {
@@ -213,6 +232,12 @@ const CatpartQuoteModule = () => {
         setup_time_min: data.setup_time_min ?? 15,
         complexity: data.complexity ?? "Orta",
         notes: data.notes ?? "",
+        // Extra STEP fields
+        estimated_volume_cm3: data.estimated_volume_cm3,
+        estimated_surface_area_cm2: data.estimated_surface_area_cm2,
+        face_count: data.face_count,
+        bounding_box: data.bounding_box,
+        material_hint: data.material_hint,
       });
       setStage("quote");
     } catch (e: any) {
