@@ -6,6 +6,7 @@ export interface OnlineUser {
   user_id: string;
   display_name: string | null;
   last_seen: string;
+  avatar_url: string | null;
 }
 
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes
