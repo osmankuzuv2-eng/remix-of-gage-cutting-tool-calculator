@@ -52,8 +52,8 @@ const Index = () => {
   const { categories, reload: reloadMenu } = useMenuConfig();
   const { getModuleName } = useModuleTranslations();
   const { materialPrices, afkMultipliers, updatePrice, updateAfkMultiplier } = useMaterialSettings();
-  const [activeTab, setActiveTab] = useState<TabId>("ai-learn");
-  const [visibleTab, setVisibleTab] = useState<TabId>("ai-learn");
+  const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [visibleTab, setVisibleTab] = useState<TabId>("home");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
