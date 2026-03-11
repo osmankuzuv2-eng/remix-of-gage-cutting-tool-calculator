@@ -132,8 +132,8 @@ const GlobalChatBox = () => {
       .order("sort_order")
       .then(({ data }) => {
         if (data && data.length > 0) {
-          setChannels(data as Channel[]);
-          setActiveChannelId((data as Channel[])[0].id);
+          setChannels(data as unknown as Channel[]);
+          setActiveChannelId((data as unknown as Channel[])[0].id);
         }
       });
   }, []);
