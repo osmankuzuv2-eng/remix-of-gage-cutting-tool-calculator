@@ -1112,6 +1112,10 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
           {!canEditMenu && <ReadOnlyBanner />}
           <MenuManager onUpdated={() => { onMenuUpdated?.(); reloadModules(); }} readOnly={!canEditMenu} />
         </TabsContent>
+        {/* ── Chat Channels Tab ── */}
+        <TabsContent value="chat" className="mt-4">
+          <ChatChannelManager readOnly={false} />
+        </TabsContent>
 
         {/* ── Feedback Tab ── */}
         <TabsContent value="feedback" className="space-y-4 mt-4">
