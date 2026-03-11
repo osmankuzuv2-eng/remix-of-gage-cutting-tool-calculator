@@ -99,6 +99,17 @@ interface QuoteData {
   setup_time_min: number;
   complexity: string;
   notes: string;
+  // STEP-specific extras
+  estimated_volume_cm3?: number;
+  estimated_surface_area_cm2?: number;
+  face_count?: number;
+  bounding_box?: {
+    x_min: number; x_max: number;
+    y_min: number; y_max: number;
+    z_min: number; z_max: number;
+    length_mm: number; width_mm: number; height_mm: number;
+  };
+  material_hint?: string | null;
 }
 
 const MACHINE_TYPES = ["Freze", "Torna", "Taşlama", "Delme", "Tel Erozyon", "5 Eksen"];
@@ -142,41 +153,60 @@ const CatpartQuoteModule = () => {
   // ── File processing ───────────────────────────────────────────────────────
 
   const processFile = useCallback(async (file: File) => {
-    const ACCEPTED = ["image/jpeg","image/png","image/webp","image/tiff","application/pdf"];
+    const isStep = /\.(step|stp)$/i.test(file.name);
     const isTif = /\.tiff?$/i.test(file.name);
     const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
-    if (!ACCEPTED.includes(file.type) && !isTif && !isPdf) {
-      toast.error("Desteklenmeyen format. JPG, PNG, PDF veya TIF yükleyin.");
+    const isImage = /\.(jpe?g|png|webp)$/i.test(file.name) || ["image/jpeg","image/png","image/webp"].includes(file.type);
+
+    if (!isStep && !isTif && !isPdf && !isImage) {
+      toast.error("Desteklenmeyen format. STEP, STP, PDF, JPG, PNG veya TIF yükleyin.");
       return;
     }
-    if (file.size > 20 * 1024 * 1024) { toast.error("Dosya 20MB'dan büyük olamaz."); return; }
+    if (file.size > 50 * 1024 * 1024) { toast.error("Dosya 50MB'dan büyük olamaz."); return; }
 
     setFileName(file.name);
     setStage("analyzing");
 
     try {
-      let processedFile = file;
-      if (isTif) processedFile = await convertTifToJpg(file);
-      else if (isPdf) processedFile = await convertPdfToJpg(file);
-
-      setPreviewUrl(URL.createObjectURL(processedFile));
-
-      const base64 = await fileToBase64(processedFile);
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/catpart-quote-analyze`;
+      let data: any;
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
-        body: JSON.stringify({ imageBase64: base64, mimeType: "image/jpeg", language: "tr" }),
-      });
+      if (isStep) {
+        // ── STEP dosyası: metin olarak oku, step-parse edge function'a gönder ──
+        const stepContent = await file.text();
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/step-parse`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
+          body: JSON.stringify({ stepContent, language: "tr" }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        data = await res.json();
+        // STEP'te görsel yok — bounding box bilgisi göster
+        setPreviewUrl(null);
+      } else {
+        // ── Görsel/PDF: AI vision analizi ──
+        let processedFile = file;
+        if (isTif) processedFile = await convertTifToJpg(file);
+        else if (isPdf) processedFile = await convertPdfToJpg(file);
+        setPreviewUrl(URL.createObjectURL(processedFile));
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const base64 = await fileToBase64(processedFile);
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/catpart-quote-analyze`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
+          body: JSON.stringify({ imageBase64: base64, mimeType: "image/jpeg", language: "tr" }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        data = await res.json();
       }
-
-      const data = await res.json();
 
       // Map AI operations to QuoteOperation, matching machines
       const ops: QuoteOperation[] = (data.operations || []).map((op: any, idx: number) => {
@@ -213,6 +243,12 @@ const CatpartQuoteModule = () => {
         setup_time_min: data.setup_time_min ?? 15,
         complexity: data.complexity ?? "Orta",
         notes: data.notes ?? "",
+        // Extra STEP fields
+        estimated_volume_cm3: data.estimated_volume_cm3,
+        estimated_surface_area_cm2: data.estimated_surface_area_cm2,
+        face_count: data.face_count,
+        bounding_box: data.bounding_box,
+        material_hint: data.material_hint,
       });
       setStage("quote");
     } catch (e: any) {
@@ -442,7 +478,7 @@ const CatpartQuoteModule = () => {
                 </Badge>
               </h2>
               <p className="text-xs text-muted-foreground">
-                PDF/Resim teknik çizimi yükle → AI analiz eder → Teklif oluşturur
+                STEP/STP yükle → Geometri parse edilir → AI operasyon tahmini → PDF teklif
               </p>
             </div>
           </div>
@@ -474,20 +510,29 @@ const CatpartQuoteModule = () => {
                   : "border-border hover:border-primary/50 hover:bg-primary/5"
               }`}
             >
-              <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff" onChange={handleFileInput} className="hidden" />
+              <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff,.step,.stp" onChange={handleFileInput} className="hidden" />
               <div className="p-5 rounded-full bg-primary/10">
                 <Upload className="w-10 h-10 text-primary" />
               </div>
               <div className="text-center">
                 <p className="text-base font-semibold text-foreground mb-1">
-                  CATIA çizimini buraya sürükle veya tıkla
+                  CATIA dosyasını buraya sürükle veya tıkla
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  CATIA'dan <strong>PDF veya DXF'ten dönüştürülmüş JPG</strong> olarak dışa aktar
+                  <strong>STEP/STP</strong> (önerilen) veya teknik çizim <strong>PDF/JPG</strong>
                 </p>
                 <div className="flex gap-2 justify-center mt-3 flex-wrap">
-                  {["PDF", "JPG", "PNG", "TIF"].map(f => (
-                    <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
+                  {[
+                    { label: "STEP", highlight: true },
+                    { label: "STP", highlight: true },
+                    { label: "PDF", highlight: false },
+                    { label: "JPG", highlight: false },
+                    { label: "PNG", highlight: false },
+                    { label: "TIF", highlight: false },
+                  ].map(({ label, highlight }) => (
+                    <Badge key={label} variant={highlight ? "default" : "secondary"} className={`text-xs ${highlight ? "bg-primary/20 text-primary border border-primary/40" : ""}`}>
+                      {label}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -496,9 +541,9 @@ const CatpartQuoteModule = () => {
             {/* Workflow info */}
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { icon: Upload, label: "1. Çizimi Yükle", desc: "CATIA'dan PDF/JPG olarak dışa aktarın" },
-                { icon: Sparkles, label: "2. AI Analizi", desc: "Gemini boyutları, malzemeyi ve operasyonları çıkarır" },
-                { icon: FileText, label: "3. Teklif Oluştur", desc: "Düzenle ve profesyonel PDF teklif al" },
+                { icon: Upload, label: "1. STEP/STP Yükle", desc: "CATIA'dan File > Save As > STEP AP203/214 ile dışa aktar" },
+                { icon: Sparkles, label: "2. AI Analizi", desc: "Geometri parse edilir: boyutlar, hacim, yüzey alanı, ağırlık" },
+                { icon: FileText, label: "3. Teklif Oluştur", desc: "AI operasyonları tahmin eder, siz düzenler ve PDF alırsınız" },
               ].map(({ icon: Icon, label, desc }) => (
                 <div key={label} className="flex gap-3 p-3 rounded-lg bg-secondary/20 border border-border">
                   <div className="p-2 rounded-lg bg-primary/10 h-fit"><Icon className="w-4 h-4 text-primary" /></div>
@@ -523,9 +568,13 @@ const CatpartQuoteModule = () => {
               </div>
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-foreground">AI çizimi analiz ediyor...</p>
+              <p className="text-lg font-semibold text-foreground">
+                {/\.(step|stp)$/i.test(fileName) ? "STEP dosyası parse ediliyor..." : "AI çizimi analiz ediyor..."}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Parça geometrisi, malzeme ve operasyonlar tespit ediliyor
+                {/\.(step|stp)$/i.test(fileName)
+                  ? "Bounding box, hacim, yüzey alanı hesaplanıyor → AI operasyon tahmini"
+                  : "Parça geometrisi, malzeme ve operasyonlar tespit ediliyor"}
               </p>
               <p className="text-xs text-muted-foreground mt-2 font-mono">{fileName}</p>
             </div>
@@ -546,6 +595,42 @@ const CatpartQuoteModule = () => {
                   <div className="p-2 border-t border-border">
                     <p className="text-xs text-muted-foreground truncate font-mono">{fileName}</p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* STEP: bounding box info card (no visual preview) */}
+            {!previewUrl && quote.bounding_box && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" /> STEP Geometri Verileri
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <p className="text-[10px] text-muted-foreground font-mono mb-3 truncate">{fileName}</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {[
+                      ["L (X)", `${quote.bounding_box.length_mm} mm`],
+                      ["G (Y)", `${quote.bounding_box.width_mm} mm`],
+                      ["Y (Z)", `${quote.bounding_box.height_mm} mm`],
+                      ["Hacim", `${quote.estimated_volume_cm3?.toFixed(1)} cm³`],
+                      ["Yüzey", `${quote.estimated_surface_area_cm2?.toFixed(0)} cm²`],
+                      ["Yüz sayısı", `${quote.face_count ?? "-"}`],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex justify-between p-1.5 rounded bg-background/50">
+                        <span className="text-muted-foreground">{k}</span>
+                        <span className="font-mono font-semibold text-foreground">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {quote.material_hint && (
+                    <div className="mt-2 p-2 rounded bg-warning/10 border border-warning/30">
+                      <p className="text-[10px] text-warning-foreground">
+                        <span className="font-semibold">Malzeme ipucu (STEP):</span> {quote.material_hint}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

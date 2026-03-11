@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.generate-quiz]
 verify_jwt = false
+
+[functions.catpart-quote-analyze]
+verify_jwt = false
+
+[functions.step-parse]
+verify_jwt = false
