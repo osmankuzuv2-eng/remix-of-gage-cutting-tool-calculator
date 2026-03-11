@@ -257,14 +257,16 @@ Deno.serve(async (req) => {
           });
         }
 
-        const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(user_id);
+        const { data: logData, error: logError } = await supabaseAdmin
+          .from("login_logs")
+          .select("*")
+          .eq("user_id", user_id)
+          .order("created_at", { ascending: false })
+          .limit(10);
 
-        const { data: auditData, error: auditError } = await supabaseAdmin.rpc(
-          "get_user_login_logs" as any,
-          { p_user_id: user_id }
-        );
-
-        if (auditError) {
+        if (logError) {
+          // Fallback: use last_sign_in_at
+          const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(user_id);
           const logs = userInfo?.user ? [{
             id: "1",
             created_at: userInfo.user.last_sign_in_at || userInfo.user.created_at,
@@ -276,7 +278,7 @@ Deno.serve(async (req) => {
           });
         }
 
-        return new Response(JSON.stringify({ logs: auditData || [] }), {
+        return new Response(JSON.stringify({ logs: logData || [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
