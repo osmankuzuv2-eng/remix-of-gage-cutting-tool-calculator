@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, TrendingDown, Building2, Factory, Lock, Camera, Package, Upload, FileText, Wrench, BarChart3 } from "lucide-react";
+import { Loader2, Plus, Pencil, Key, Trash2, Shield, ShieldCheck, Users, Monitor, LayoutGrid, Palette, Brain, Check, X, MessageSquare, Star, TrendingUp, TrendingDown, Building2, Factory, Lock, Camera, Package, Upload, FileText, Wrench, BarChart3, History, Globe, Smartphone } from "lucide-react";
 import TimeImprovements from "@/components/TimeImprovements";
 import MaintenanceModule from "@/components/MaintenanceModule";
 import ToolroomReport from "@/components/ToolroomReport";
@@ -100,6 +100,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(null);
   const [uploadingEditAvatar, setUploadingEditAvatar] = useState(false);
   const editAvatarRef = useRef<HTMLInputElement>(null);
+
+  // Login logs
+  const [showLoginLogsDialog, setShowLoginLogsDialog] = useState(false);
+  const [loginLogs, setLoginLogs] = useState<{ id: string; created_at: string; ip_address: string | null; user_agent: string | null }[]>([]);
+  const [loginLogsLoading, setLoginLogsLoading] = useState(false);
+  const [loginLogsUser, setLoginLogsUser] = useState<UserData | null>(null);
 
   // Customers state
   const { customers: allCustomers, reload: reloadCustomers } = useCustomers();
@@ -321,6 +327,21 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     setSelectedUser(user);
     setChangePassword("");
     setShowPasswordDialog(true);
+  };
+
+  const openLoginLogs = async (user: UserData) => {
+    setLoginLogsUser(user);
+    setLoginLogs([]);
+    setLoginLogsLoading(true);
+    setShowLoginLogsDialog(true);
+    try {
+      const data = await callAdmin({ action: "get_login_logs", user_id: user.id });
+      setLoginLogs(data.logs || []);
+    } catch (e: any) {
+      toast({ title: t("common", "error"), description: e.message, variant: "destructive" });
+    } finally {
+      setLoginLogsLoading(false);
+    }
   };
 
   const resetCreateForm = () => {
@@ -761,6 +782,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                       </div>
                     {canEditUsers && (
                       <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openLoginLogs(user)} title="Giriş Logları">
+                          <History className="w-4 h-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={t("admin", "editUser")}>
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -1471,6 +1495,57 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
               {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               {t("admin", "changePassword")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Login Logs Dialog */}
+      <Dialog open={showLoginLogsDialog} onOpenChange={setShowLoginLogsDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" />
+              Giriş Logları — {loginLogsUser?.profile?.display_name || loginLogsUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {loginLogsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : loginLogs.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Giriş kaydı bulunamadı.</p>
+            ) : (
+              loginLogs.map((log, i) => (
+                <div key={log.id || i} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30 border border-border">
+                  <div className="mt-0.5 p-1.5 rounded-md bg-primary/10">
+                    <History className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {new Date(log.created_at).toLocaleString("tr-TR", {
+                        day: "2-digit", month: "2-digit", year: "numeric",
+                        hour: "2-digit", minute: "2-digit", second: "2-digit"
+                      })}
+                    </p>
+                    {log.ip_address && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Globe className="w-3 h-3" /> {log.ip_address}
+                      </p>
+                    )}
+                    {log.user_agent && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                        <Smartphone className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{log.user_agent}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLoginLogsDialog(false)}>Kapat</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

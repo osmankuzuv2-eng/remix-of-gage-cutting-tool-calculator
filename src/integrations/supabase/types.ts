@@ -1411,6 +1411,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_login_logs: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          ip_address: string
+          user_agent: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

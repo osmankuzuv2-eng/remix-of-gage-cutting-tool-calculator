@@ -248,6 +248,43 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "get_login_logs": {
+        const { user_id } = params;
+        if (!user_id) {
+          return new Response(JSON.stringify({ error: "user_id required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Use Supabase admin REST to get user's last_sign_in_at
+        // and query audit_log_entries via service role client
+        const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(user_id);
+
+        // Query audit_log_entries using service role via raw SQL
+        const { data: auditData, error: auditError } = await supabaseAdmin.rpc(
+          "get_user_login_logs" as any,
+          { p_user_id: user_id }
+        );
+
+        if (auditError) {
+          // Fallback: just return last_sign_in_at from user record
+          const logs = userInfo?.user ? [{
+            id: "1",
+            created_at: userInfo.user.last_sign_in_at || userInfo.user.created_at,
+            ip_address: null,
+            user_agent: null,
+          }] : [];
+          return new Response(JSON.stringify({ logs }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ logs: auditData || [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400,
