@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
@@ -47,21 +47,21 @@ const ALWAYS_ACCESSIBLE = ["home", "ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 // Prices and AFK multipliers are now stored in the database via useMaterialSettings
 
-/** Dropdown that clamps itself within the viewport so it doesn't overflow left/right */
-const ClampedDropdown = ({ children }: { children: React.ReactNode }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.left < 8) {
-      el.style.transform = `translateX(${8 - rect.left}px)`;
-    } else if (rect.right > window.innerWidth - 8) {
-      el.style.transform = `translateX(${window.innerWidth - 8 - rect.right}px)`;
-    }
-  }, []);
+/** Dropdown aligned per button so edge items don't leave empty space */
+const ClampedDropdown = ({
+  children,
+  align = "center",
+}: {
+  children: React.ReactNode;
+  align?: "center" | "right";
+}) => {
   return (
-    <div ref={ref} className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-max max-w-[calc(100vw-16px)]">
+    <div
+      className={align === "right"
+        ? "absolute top-full right-0 mt-2 z-50 w-max max-w-[calc(100vw-16px)]"
+        : "absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-max max-w-[calc(100vw-16px)]"
+      }
+    >
       <div className="absolute -top-2 left-0 right-0 h-2" />
       {children}
     </div>
@@ -236,10 +236,11 @@ const Index = () => {
               Anasayfa
             </button>
 
-            {categories.map((cat) => {
+            {categories.map((cat, index) => {
               const CatIcon = getIcon(cat.icon);
               const isOpen = openCategory === cat.id;
               const isActiveCat = activeCategoryId === cat.id;
+              const dropdownAlign = index >= categories.length - 2 ? "right" : "center";
               return (
                 <div key={cat.id} className="relative" onMouseEnter={() => setOpenCategory(cat.id)}>
                   <button
@@ -258,7 +259,7 @@ const Index = () => {
 
                   {/* Dropdown positioned below this category button */}
                   {isOpen && (
-                    <ClampedDropdown>
+                    <ClampedDropdown align={dropdownAlign}>
                       <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200`}>
                         {cat.modules.map((mod, modIdx) => {
                           const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
