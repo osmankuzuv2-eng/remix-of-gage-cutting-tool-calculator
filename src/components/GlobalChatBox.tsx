@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Hash, Send, Trash2, Shield, AlertCircle, Info,
+  Hash, Send, Trash2, Shield, Info,
   ChevronRight, Users, Megaphone, Wrench, Scissors, MessageSquare
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
@@ -93,6 +93,10 @@ const GlobalChatBox = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // unreadCounts: channelId → count of messages newer than last-read
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  // allChannelMessages: channelId → latest message timestamp (for unread calc)
+  const [latestMsgTime, setLatestMsgTime] = useState<Record<string, string>>({});
   const [localLines, setLocalLines] = useState<{ id: string; text: string; type: "system" | "help" }[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -103,6 +107,15 @@ const GlobalChatBox = () => {
     title_color: string | null;
   } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // ── Last-read helpers (localStorage) ──────────────────────────────────────
+  const getLastRead = (channelId: string): string =>
+    localStorage.getItem(`chat_last_read_${channelId}`) ?? "1970-01-01";
+
+  const markAsRead = useCallback((channelId: string) => {
+    localStorage.setItem(`chat_last_read_${channelId}`, new Date().toISOString());
+    setUnreadCounts((prev) => ({ ...prev, [channelId]: 0 }));
+  }, []);
 
   // ── Load admin status ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -138,6 +151,32 @@ const GlobalChatBox = () => {
       });
   }, []);
 
+  // ── Compute unread counts across all channels ─────────────────────────────
+  const refreshUnread = useCallback(async (channelList: Channel[]) => {
+    if (channelList.length === 0) return;
+    const counts: Record<string, number> = {};
+    await Promise.all(channelList.map(async (ch) => {
+      const lastRead = getLastRead(ch.id);
+      const { count } = await supabase
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("channel_id", ch.id)
+        .eq("is_deleted", false)
+        .gt("created_at", lastRead);
+      counts[ch.id] = count ?? 0;
+    }));
+    setUnreadCounts(counts);
+  }, []);
+
+  useEffect(() => {
+    if (channels.length > 0) refreshUnread(channels);
+  }, [channels, refreshUnread]);
+
+  // ── Mark active channel as read when switching ────────────────────────────
+  useEffect(() => {
+    if (activeChannelId) markAsRead(activeChannelId);
+  }, [activeChannelId, markAsRead]);
+
   // ── Load messages for active channel ──────────────────────────────────────
   const loadMessages = useCallback(async () => {
     if (!activeChannelId) return;
@@ -149,21 +188,34 @@ const GlobalChatBox = () => {
       .order("created_at", { ascending: true })
       .limit(200);
     if (data) setMessages(data as ChatMessage[]);
-  }, [activeChannelId]);
+    markAsRead(activeChannelId);
+  }, [activeChannelId, markAsRead]);
 
   useEffect(() => {
     loadMessages();
     setLocalLines([]);
   }, [loadMessages]);
 
-  // ── Realtime subscription ──────────────────────────────────────────────────
+  // ── Realtime subscription — also updates unread on new messages ───────────
   useEffect(() => {
     const channel = supabase
       .channel("chat_realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, loadMessages)
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, (payload) => {
+        loadMessages();
+        // Update unread for other channels
+        if (channels.length > 0) {
+          const changedChannelId = (payload.new as any)?.channel_id;
+          if (changedChannelId && changedChannelId !== activeChannelId) {
+            setUnreadCounts((prev) => ({
+              ...prev,
+              [changedChannelId]: (prev[changedChannelId] ?? 0) + 1,
+            }));
+          }
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadMessages]);
+  }, [loadMessages, channels, activeChannelId]);
 
   // ── Auto scroll ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -386,26 +438,39 @@ const GlobalChatBox = () => {
               Kanallar
             </span>
           </div>
-          {channels.map((ch) => (
-            <button
-              key={ch.id}
-              onClick={() => setActiveChannelId(ch.id)}
-              className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-all duration-150 rounded-md mx-1 ${
-                activeChannelId === ch.id
-                  ? "bg-primary/15 text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-              }`}
-              style={activeChannelId === ch.id ? { color: ch.color } : {}}
-            >
-              <span style={{ color: activeChannelId === ch.id ? ch.color : undefined }}>
-                {channelIcon(ch.name)}
-              </span>
-              <span className="truncate">{ch.name}</span>
-              {activeChannelId === ch.id && (
-                <ChevronRight className="w-3 h-3 ml-auto flex-shrink-0" />
-              )}
-            </button>
-          ))}
+          {channels.map((ch) => {
+            const unread = unreadCounts[ch.id] ?? 0;
+            const isActive = activeChannelId === ch.id;
+            return (
+              <button
+                key={ch.id}
+                onClick={() => setActiveChannelId(ch.id)}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-all duration-150 rounded-md mx-1 ${
+                  isActive
+                    ? "bg-primary/15 text-foreground font-medium"
+                    : unread > 0
+                    ? "text-foreground font-semibold hover:bg-muted/40"
+                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                }`}
+                style={isActive ? { color: ch.color } : {}}
+              >
+                <span style={{ color: isActive ? ch.color : unread > 0 ? ch.color : undefined }}>
+                  {channelIcon(ch.name)}
+                </span>
+                <span className="truncate flex-1 text-left">{ch.name}</span>
+                {isActive ? (
+                  <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                ) : unread > 0 ? (
+                  <span
+                    className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center text-white"
+                    style={{ background: ch.color }}
+                  >
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
         {/* User info at bottom */}
