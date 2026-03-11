@@ -50,7 +50,7 @@ export function useOnlineUsers() {
       .order("last_seen", { ascending: false });
 
     if (data) {
-      setOnlineUsers(data as OnlineUser[]);
+      setOnlineUsers(data as unknown as OnlineUser[]);
     }
   }, []);
 
