@@ -99,6 +99,17 @@ interface QuoteData {
   setup_time_min: number;
   complexity: string;
   notes: string;
+  // STEP-specific extras
+  estimated_volume_cm3?: number;
+  estimated_surface_area_cm2?: number;
+  face_count?: number;
+  bounding_box?: {
+    x_min: number; x_max: number;
+    y_min: number; y_max: number;
+    z_min: number; z_max: number;
+    length_mm: number; width_mm: number; height_mm: number;
+  };
+  material_hint?: string | null;
 }
 
 const MACHINE_TYPES = ["Freze", "Torna", "Taşlama", "Delme", "Tel Erozyon", "5 Eksen"];
