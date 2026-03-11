@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Hash, Send, Trash2, Shield, AlertCircle, Info,
+  Hash, Send, Trash2, Shield, Info,
   ChevronRight, Users, Megaphone, Wrench, Scissors, MessageSquare
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
