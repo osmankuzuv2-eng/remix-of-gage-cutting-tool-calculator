@@ -161,8 +161,23 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     }
   };
 
+  const loadGlobalLogs = async () => {
+    setGlobalLogsLoading(true);
+    try {
+      const data = await callAdmin({ action: "get_all_login_logs" });
+      setGlobalLogs(data.logs || []);
+    } catch (e: any) {
+      // silently fail
+    } finally {
+      setGlobalLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (session) loadUsers();
+    if (session) {
+      loadUsers();
+      loadGlobalLogs();
+    }
   }, [session]);
 
   const handleCreate = async () => {
