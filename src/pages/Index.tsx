@@ -259,7 +259,7 @@ const Index = () => {
 
                   {/* Dropdown positioned below this category button */}
                   {isOpen && (
-                    <ClampedDropdown>
+                    <ClampedDropdown align={dropdownAlign}>
                       <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200`}>
                         {cat.modules.map((mod, modIdx) => {
                           const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
