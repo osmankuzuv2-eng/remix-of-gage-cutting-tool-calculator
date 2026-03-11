@@ -62,12 +62,7 @@ const Index = () => {
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
-  // Open first category by default
-  useEffect(() => {
-    if (categories.length > 0 && openCategory === null) {
-      setOpenCategory(categories[0].id);
-    }
-  }, [categories]);
+  // No category open by default — only on hover
 
   // Load custom materials from database
   useEffect(() => {
@@ -202,12 +197,13 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6">
         {/* Grouped Mega Menu */}
-        <nav className="mb-6 space-y-2">
+        <nav className="mb-6 space-y-2" onMouseLeave={() => setOpenCategory(null)}>
           {/* Category buttons row */}
           <div className="flex flex-wrap gap-2">
             {/* Home button */}
             <button
               onClick={() => handleTabClick("home")}
+              onMouseEnter={() => setOpenCategory(null)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border group ${
                 activeTab === "home"
                   ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-transparent shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.97]"
@@ -225,7 +221,7 @@ const Index = () => {
               return (
                 <button
                   key={cat.id}
-                  onClick={() => toggleCategory(cat.id)}
+                  onMouseEnter={() => setOpenCategory(cat.id)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border group ${
                     isActiveCat
                       ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.97]`
