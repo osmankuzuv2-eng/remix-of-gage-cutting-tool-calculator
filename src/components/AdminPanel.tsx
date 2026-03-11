@@ -782,6 +782,9 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                       </div>
                     {canEditUsers && (
                       <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openLoginLogs(user)} title="Giriş Logları">
+                          <History className="w-4 h-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={t("admin", "editUser")}>
                           <Pencil className="w-4 h-4" />
                         </Button>
