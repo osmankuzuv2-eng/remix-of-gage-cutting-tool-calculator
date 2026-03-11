@@ -595,6 +595,42 @@ const CatpartQuoteModule = () => {
               </Card>
             )}
 
+            {/* STEP: bounding box info card (no visual preview) */}
+            {!previewUrl && quote.bounding_box && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" /> STEP Geometri Verileri
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <p className="text-[10px] text-muted-foreground font-mono mb-3 truncate">{fileName}</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {[
+                      ["L (X)", `${quote.bounding_box.length_mm} mm`],
+                      ["G (Y)", `${quote.bounding_box.width_mm} mm`],
+                      ["Y (Z)", `${quote.bounding_box.height_mm} mm`],
+                      ["Hacim", `${quote.estimated_volume_cm3?.toFixed(1)} cm³`],
+                      ["Yüzey", `${quote.estimated_surface_area_cm2?.toFixed(0)} cm²`],
+                      ["Yüz sayısı", `${quote.face_count ?? "-"}`],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex justify-between p-1.5 rounded bg-background/50">
+                        <span className="text-muted-foreground">{k}</span>
+                        <span className="font-mono font-semibold text-foreground">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {quote.material_hint && (
+                    <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/30">
+                      <p className="text-[10px] text-amber-400">
+                        <span className="font-semibold">Malzeme ipucu (STEP):</span> {quote.material_hint}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-border bg-card">
               <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="text-sm flex items-center gap-2">
