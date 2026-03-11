@@ -121,6 +121,7 @@ const GlobalChatBox = () => {
     display_name: string | null;
     custom_title: string | null;
     title_color: string | null;
+    avatar_url: string | null;
   } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
