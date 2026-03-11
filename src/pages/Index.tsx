@@ -288,6 +288,11 @@ const Index = () => {
           })()}
         </nav>
 
+        {/* News Ticker */}
+        <div className="mb-4">
+          <NewsTicker />
+        </div>
+
         {/* Module Content */}
         <div className="space-y-6">
           {isTransitioning && (
