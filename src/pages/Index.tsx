@@ -237,6 +237,11 @@ const Index = () => {
             </button>
 
             {categories.map((cat, index) => {
+              // Filter modules to only those the user can access
+              const accessibleModules = cat.modules.filter((mod) => hasAccess(mod.module_key));
+              // Hide entire category if user has no accessible modules
+              if (accessibleModules.length === 0) return null;
+
               const CatIcon = getIcon(cat.icon);
               const isOpen = openCategory === cat.id;
               const isActiveCat = activeCategoryId === cat.id;
@@ -260,21 +265,17 @@ const Index = () => {
                   {/* Dropdown positioned below this category button */}
                   {isOpen && (
                     <ClampedDropdown align={dropdownAlign}>
-                      <div className="grid gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200" style={{ gridTemplateColumns: `repeat(${Math.min(cat.modules.length, 4)}, minmax(100px, 1fr))` }}>
-                        {cat.modules.map((mod, modIdx) => {
+                      <div className="grid gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200" style={{ gridTemplateColumns: `repeat(${Math.min(accessibleModules.length, 4)}, minmax(100px, 1fr))` }}>
+                        {accessibleModules.map((mod, modIdx) => {
                           const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
-                          const accessible = hasAccess(mod.module_key);
                           const isActive = activeTab === mod.module_key;
                           return (
                             <button
                               key={mod.module_key}
                               onClick={() => { handleTabClick(mod.module_key as TabId); setOpenCategory(null); }}
-                              disabled={!accessible}
                               style={{ animationDelay: `${modIdx * 30}ms` }}
                               className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 animate-fade-in group min-w-[100px] ${
-                                !accessible
-                                  ? "bg-muted/20 border-border/30 text-muted-foreground/30 cursor-not-allowed"
-                                  : isActive
+                                isActive
                                   ? `${cat.bg_color} ${cat.border_color} border shadow-md scale-[1.02]`
                                   : `bg-card/60 border-border hover:${cat.bg_color} hover:${cat.border_color} hover:shadow-lg hover:scale-[1.05] hover:-translate-y-1 active:scale-[0.95]`
                               }`}
@@ -282,14 +283,12 @@ const Index = () => {
                               <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
                                 isActive
                                   ? `bg-gradient-to-br ${cat.color} text-white shadow-lg`
-                                  : accessible
-                                  ? `${cat.bg_color} ${cat.text_color} group-hover:scale-110 group-hover:shadow-md`
-                                  : "bg-muted/30 text-muted-foreground/30"
+                                  : `${cat.bg_color} ${cat.text_color} group-hover:scale-110 group-hover:shadow-md`
                               }`}>
-                                {accessible ? <ModIcon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" /> : <Lock className="w-4 h-4" />}
+                                <ModIcon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" />
                               </div>
                               <span className={`text-xs font-medium text-center leading-tight transition-colors duration-300 ${
-                                isActive ? cat.text_color : accessible ? "text-foreground" : "text-muted-foreground/30"
+                                isActive ? cat.text_color : "text-foreground"
                               }`}>
                                 {getModuleName(mod.module_key)}
                               </span>
