@@ -31,6 +31,7 @@ import RFQModule from "@/components/RFQModule";
 import ProductionComparisonModule from "@/components/ProductionComparisonModule";
 import BalloonedDrawingModule from "@/components/BalloonedDrawingModule";
 import CatpartQuoteModule from "@/components/CatpartQuoteModule";
+import SlotMachine from "@/components/SlotMachine";
 import AdminPanel from "@/components/AdminPanel";
 import HomePage from "@/components/HomePage";
 import { Material, materials as defaultMaterials } from "@/data/materials";
@@ -41,7 +42,7 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "admin";
+type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "slot-machine" | "admin";
 
 const ALWAYS_ACCESSIBLE = ["home", "ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
@@ -368,6 +369,7 @@ const Index = () => {
             {visibleTab === "production-comparison" && hasAccess("production-comparison") && <ProductionComparisonModule />}
             {visibleTab === "balloon-drawing" && hasAccess("balloon-drawing") && <BalloonedDrawingModule />}
             {visibleTab === "catpart-quote" && hasAccess("catpart-quote") && <CatpartQuoteModule />}
+            {visibleTab === "slot-machine" && hasAccess("slot-machine") && <SlotMachine />}
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             
