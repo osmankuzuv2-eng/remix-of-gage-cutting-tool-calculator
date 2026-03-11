@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
@@ -46,6 +46,27 @@ type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drill
 const ALWAYS_ACCESSIBLE = ["home", "ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 // Prices and AFK multipliers are now stored in the database via useMaterialSettings
+
+/** Dropdown that clamps itself within the viewport so it doesn't overflow left/right */
+const ClampedDropdown = ({ children }: { children: React.ReactNode }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.left < 8) {
+      el.style.transform = `translateX(${8 - rect.left}px)`;
+    } else if (rect.right > window.innerWidth - 8) {
+      el.style.transform = `translateX(${window.innerWidth - 8 - rect.right}px)`;
+    }
+  }, []);
+  return (
+    <div ref={ref} className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-max max-w-[calc(100vw-16px)]">
+      <div className="absolute -top-2 left-0 right-0 h-2" />
+      {children}
+    </div>
+  );
+};
 
 const Index = () => {
   const { t, language } = useLanguage();
@@ -237,9 +258,7 @@ const Index = () => {
 
                   {/* Dropdown positioned below this category button */}
                   {isOpen && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-max max-w-[90vw]">
-                      {/* Invisible bridge to prevent gap hover loss */}
-                      <div className="absolute -top-2 left-0 right-0 h-2" />
+                    <ClampedDropdown>
                       <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2 duration-200`}>
                         {cat.modules.map((mod, modIdx) => {
                           const ModIcon = moduleIcons[mod.module_key] || getIcon(cat.icon);
@@ -280,7 +299,7 @@ const Index = () => {
                           );
                         })}
                       </div>
-                    </div>
+                    </ClampedDropdown>
                   )}
                 </div>
               );
