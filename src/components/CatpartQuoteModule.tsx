@@ -541,9 +541,9 @@ const CatpartQuoteModule = () => {
             {/* Workflow info */}
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { icon: Upload, label: "1. Çizimi Yükle", desc: "CATIA'dan PDF/JPG olarak dışa aktarın" },
-                { icon: Sparkles, label: "2. AI Analizi", desc: "Gemini boyutları, malzemeyi ve operasyonları çıkarır" },
-                { icon: FileText, label: "3. Teklif Oluştur", desc: "Düzenle ve profesyonel PDF teklif al" },
+                { icon: Upload, label: "1. STEP/STP Yükle", desc: "CATIA'dan File > Save As > STEP AP203/214 ile dışa aktar" },
+                { icon: Sparkles, label: "2. AI Analizi", desc: "Geometri parse edilir: boyutlar, hacim, yüzey alanı, ağırlık" },
+                { icon: FileText, label: "3. Teklif Oluştur", desc: "AI operasyonları tahmin eder, siz düzenler ve PDF alırsınız" },
               ].map(({ icon: Icon, label, desc }) => (
                 <div key={label} className="flex gap-3 p-3 rounded-lg bg-secondary/20 border border-border">
                   <div className="p-2 rounded-lg bg-primary/10 h-fit"><Icon className="w-4 h-4 text-primary" /></div>
