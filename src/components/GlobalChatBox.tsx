@@ -93,6 +93,10 @@ const GlobalChatBox = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // unreadCounts: channelId → count of messages newer than last-read
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  // allChannelMessages: channelId → latest message timestamp (for unread calc)
+  const [latestMsgTime, setLatestMsgTime] = useState<Record<string, string>>({});
   const [localLines, setLocalLines] = useState<{ id: string; text: string; type: "system" | "help" }[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -103,6 +107,15 @@ const GlobalChatBox = () => {
     title_color: string | null;
   } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // ── Last-read helpers (localStorage) ──────────────────────────────────────
+  const getLastRead = (channelId: string): string =>
+    localStorage.getItem(`chat_last_read_${channelId}`) ?? "1970-01-01";
+
+  const markAsRead = useCallback((channelId: string) => {
+    localStorage.setItem(`chat_last_read_${channelId}`, new Date().toISOString());
+    setUnreadCounts((prev) => ({ ...prev, [channelId]: 0 }));
+  }, []);
 
   // ── Load admin status ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -138,6 +151,32 @@ const GlobalChatBox = () => {
       });
   }, []);
 
+  // ── Compute unread counts across all channels ─────────────────────────────
+  const refreshUnread = useCallback(async (channelList: Channel[]) => {
+    if (channelList.length === 0) return;
+    const counts: Record<string, number> = {};
+    await Promise.all(channelList.map(async (ch) => {
+      const lastRead = getLastRead(ch.id);
+      const { count } = await supabase
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("channel_id", ch.id)
+        .eq("is_deleted", false)
+        .gt("created_at", lastRead);
+      counts[ch.id] = count ?? 0;
+    }));
+    setUnreadCounts(counts);
+  }, []);
+
+  useEffect(() => {
+    if (channels.length > 0) refreshUnread(channels);
+  }, [channels, refreshUnread]);
+
+  // ── Mark active channel as read when switching ────────────────────────────
+  useEffect(() => {
+    if (activeChannelId) markAsRead(activeChannelId);
+  }, [activeChannelId, markAsRead]);
+
   // ── Load messages for active channel ──────────────────────────────────────
   const loadMessages = useCallback(async () => {
     if (!activeChannelId) return;
@@ -149,21 +188,34 @@ const GlobalChatBox = () => {
       .order("created_at", { ascending: true })
       .limit(200);
     if (data) setMessages(data as ChatMessage[]);
-  }, [activeChannelId]);
+    markAsRead(activeChannelId);
+  }, [activeChannelId, markAsRead]);
 
   useEffect(() => {
     loadMessages();
     setLocalLines([]);
   }, [loadMessages]);
 
-  // ── Realtime subscription ──────────────────────────────────────────────────
+  // ── Realtime subscription — also updates unread on new messages ───────────
   useEffect(() => {
     const channel = supabase
       .channel("chat_realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, loadMessages)
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, (payload) => {
+        loadMessages();
+        // Update unread for other channels
+        if (channels.length > 0) {
+          const changedChannelId = (payload.new as any)?.channel_id;
+          if (changedChannelId && changedChannelId !== activeChannelId) {
+            setUnreadCounts((prev) => ({
+              ...prev,
+              [changedChannelId]: (prev[changedChannelId] ?? 0) + 1,
+            }));
+          }
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadMessages]);
+  }, [loadMessages, channels, activeChannelId]);
 
   // ── Auto scroll ────────────────────────────────────────────────────────────
   useEffect(() => {
