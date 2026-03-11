@@ -257,18 +257,14 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Use Supabase admin REST to get user's last_sign_in_at
-        // and query audit_log_entries via service role client
         const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(user_id);
 
-        // Query audit_log_entries using service role via raw SQL
         const { data: auditData, error: auditError } = await supabaseAdmin.rpc(
           "get_user_login_logs" as any,
           { p_user_id: user_id }
         );
 
         if (auditError) {
-          // Fallback: just return last_sign_in_at from user record
           const logs = userInfo?.user ? [{
             id: "1",
             created_at: userInfo.user.last_sign_in_at || userInfo.user.created_at,
@@ -281,6 +277,58 @@ Deno.serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ logs: auditData || [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "get_all_login_logs": {
+        // Returns last 10 login entries across all users from auth.audit_log_entries
+        const { data: allUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const userMap: Record<string, { email: string; display_name: string | null }> = {};
+        if (allUsers?.users) {
+          const userIds = allUsers.users.map((u) => u.id);
+          const { data: profilesData } = await supabaseAdmin
+            .from("profiles")
+            .select("user_id, display_name")
+            .in("user_id", userIds);
+          allUsers.users.forEach((u) => {
+            const prof = profilesData?.find((p) => p.user_id === u.id);
+            userMap[u.id] = { email: u.email || "", display_name: prof?.display_name || null };
+          });
+        }
+
+        const { data: auditData, error: auditError } = await supabaseAdmin.rpc(
+          "get_all_login_logs" as any,
+          {}
+        );
+
+        if (auditError) {
+          // Fallback: use last_sign_in_at from each user
+          const logs = (allUsers?.users || [])
+            .filter((u) => u.last_sign_in_at)
+            .sort((a, b) => new Date(b.last_sign_in_at!).getTime() - new Date(a.last_sign_in_at!).getTime())
+            .slice(0, 10)
+            .map((u) => ({
+              id: u.id,
+              user_id: u.id,
+              email: u.email,
+              display_name: userMap[u.id]?.display_name || null,
+              created_at: u.last_sign_in_at,
+              ip_address: null,
+              user_agent: null,
+            }));
+          return new Response(JSON.stringify({ logs }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const enriched = (auditData || []).map((log: any) => ({
+          ...log,
+          email: userMap[log.user_id]?.email || log.user_id,
+          display_name: userMap[log.user_id]?.display_name || null,
+        }));
+
+        return new Response(JSON.stringify({ logs: enriched }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

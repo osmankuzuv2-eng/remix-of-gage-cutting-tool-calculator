@@ -101,11 +101,15 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [uploadingEditAvatar, setUploadingEditAvatar] = useState(false);
   const editAvatarRef = useRef<HTMLInputElement>(null);
 
-  // Login logs
+  // Login logs (per user dialog)
   const [showLoginLogsDialog, setShowLoginLogsDialog] = useState(false);
   const [loginLogs, setLoginLogs] = useState<{ id: string; created_at: string; ip_address: string | null; user_agent: string | null }[]>([]);
   const [loginLogsLoading, setLoginLogsLoading] = useState(false);
   const [loginLogsUser, setLoginLogsUser] = useState<UserData | null>(null);
+
+  // Global login logs (bottom of users tab)
+  const [globalLogs, setGlobalLogs] = useState<{ id: string; user_id: string; email: string; display_name: string | null; created_at: string; ip_address: string | null; user_agent: string | null }[]>([]);
+  const [globalLogsLoading, setGlobalLogsLoading] = useState(false);
 
   // Customers state
   const { customers: allCustomers, reload: reloadCustomers } = useCustomers();
@@ -157,8 +161,23 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
     }
   };
 
+  const loadGlobalLogs = async () => {
+    setGlobalLogsLoading(true);
+    try {
+      const data = await callAdmin({ action: "get_all_login_logs" });
+      setGlobalLogs(data.logs || []);
+    } catch (e: any) {
+      // silently fail
+    } finally {
+      setGlobalLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (session) loadUsers();
+    if (session) {
+      loadUsers();
+      loadGlobalLogs();
+    }
   }, [session]);
 
   const handleCreate = async () => {
@@ -800,6 +819,81 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* ── Global Login Log Panel ── */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-primary" />
+                <h3 className="text-base font-semibold text-foreground">Son Giriş Logları</h3>
+                <span className="text-xs text-muted-foreground">(tüm kullanıcılar — son 10)</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={loadGlobalLogs} disabled={globalLogsLoading} className="gap-1.5 text-xs">
+                {globalLogsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <History className="w-3.5 h-3.5" />}
+                Yenile
+              </Button>
+            </div>
+            <Card className="border-border bg-card">
+              <CardContent className="p-0">
+                {globalLogsLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : globalLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-10">Giriş kaydı bulunamadı.</p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {globalLogs.map((log, i) => (
+                      <div key={log.id || i} className="flex items-start gap-4 px-4 py-3 hover:bg-muted/30 transition-colors">
+                        {/* Avatar / Index */}
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-xs font-bold text-primary">{i + 1}</span>
+                        </div>
+                        {/* User info */}
+                        <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr] gap-1 sm:gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {log.display_name || log.email}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">{log.email}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="text-xs text-muted-foreground truncate">
+                              {log.ip_address || "—"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Smartphone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="text-xs text-muted-foreground truncate" title={log.user_agent || undefined}>
+                              {log.user_agent
+                                ? log.user_agent.length > 40
+                                  ? log.user_agent.slice(0, 40) + "…"
+                                  : log.user_agent
+                                : "—"}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Timestamp */}
+                        <div className="flex-shrink-0 text-right">
+                          <p className="text-xs font-medium text-foreground">
+                            {new Date(log.created_at).toLocaleDateString("tr-TR", {
+                              day: "2-digit", month: "2-digit", year: "numeric"
+                            })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(log.created_at).toLocaleTimeString("tr-TR", {
+                              hour: "2-digit", minute: "2-digit", second: "2-digit"
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
