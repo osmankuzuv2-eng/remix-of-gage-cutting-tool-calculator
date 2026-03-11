@@ -30,6 +30,7 @@ import RFQModule from "@/components/RFQModule";
 import ProductionComparisonModule from "@/components/ProductionComparisonModule";
 import BalloonedDrawingModule from "@/components/BalloonedDrawingModule";
 import CatpartQuoteModule from "@/components/CatpartQuoteModule";
+import OnlineUsersPanel from "@/components/OnlineUsersPanel";
 
 import AdminPanel from "@/components/AdminPanel";
 import { Material, materials as defaultMaterials } from "@/data/materials";
@@ -287,7 +288,12 @@ const Index = () => {
             </div>
           )}
           <div className={isTransitioning ? "hidden" : undefined}>
-            {visibleTab === "ai-learn" && <AILearningModule />}
+            {visibleTab === "ai-learn" && (
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-start">
+                <AILearningModule />
+                <OnlineUsersPanel />
+              </div>
+            )}
             {visibleTab === "cutting" && hasAccess("cutting") && <CuttingCalculator customMaterials={customMaterials} />}
             {visibleTab === "toollife" && hasAccess("toollife") && <ToolLifeCalculator customMaterials={customMaterials} />}
             {visibleTab === "threading" && hasAccess("threading") && <ThreadingCalculator />}
