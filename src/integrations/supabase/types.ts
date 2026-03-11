@@ -274,6 +274,36 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string
+          deleted_by_receiver: boolean
+          deleted_by_sender: boolean
+          id: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          deleted_by_receiver?: boolean
+          deleted_by_sender?: boolean
+          id?: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          deleted_by_receiver?: boolean
+          deleted_by_sender?: boolean
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       factories: {
         Row: {
           created_at: string
