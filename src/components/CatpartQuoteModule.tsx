@@ -568,9 +568,13 @@ const CatpartQuoteModule = () => {
               </div>
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-foreground">AI çizimi analiz ediyor...</p>
+              <p className="text-lg font-semibold text-foreground">
+                {/\.(step|stp)$/i.test(fileName) ? "STEP dosyası parse ediliyor..." : "AI çizimi analiz ediyor..."}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Parça geometrisi, malzeme ve operasyonlar tespit ediliyor
+                {/\.(step|stp)$/i.test(fileName)
+                  ? "Bounding box, hacim, yüzey alanı hesaplanıyor → AI operasyon tahmini"
+                  : "Parça geometrisi, malzeme ve operasyonlar tespit ediliyor"}
               </p>
               <p className="text-xs text-muted-foreground mt-2 font-mono">{fileName}</p>
             </div>
