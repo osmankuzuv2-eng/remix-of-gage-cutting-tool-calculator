@@ -53,13 +53,23 @@ const OnlineUsersPanel = () => {
                         <div className="flex flex-col items-center gap-1 w-[72px] cursor-default">
                           <div className="relative">
                             <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
+                              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden ${
                                 isMe
-                                  ? "bg-emerald-500/25 text-emerald-300 ring-2 ring-emerald-500/40"
-                                  : "bg-primary/15 text-primary"
+                                  ? "ring-2 ring-emerald-500/40"
+                                  : ""
                               }`}
                             >
-                              {initials}
+                              {u.avatar_url ? (
+                                <img src={u.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className={`w-full h-full flex items-center justify-center ${
+                                  isMe
+                                    ? "bg-emerald-500/25 text-emerald-300"
+                                    : "bg-primary/15 text-primary"
+                                }`}>
+                                  {initials}
+                                </div>
+                              )}
                             </div>
                             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-card animate-pulse" />
                           </div>
