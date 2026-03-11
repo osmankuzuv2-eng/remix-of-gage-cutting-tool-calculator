@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
-import { Lock, Plus, ChevronDown } from "lucide-react";
+import { Lock, Plus, ChevronDown, Home } from "lucide-react";
 import Header from "@/components/Header";
 import LiveTicker from "@/components/LiveTicker";
 import CuttingCalculator from "@/components/CuttingCalculator";
