@@ -47,6 +47,27 @@ const ALWAYS_ACCESSIBLE = ["home", "ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
 // Prices and AFK multipliers are now stored in the database via useMaterialSettings
 
+/** Dropdown that clamps itself within the viewport so it doesn't overflow left/right */
+const ClampedDropdown = ({ children }: { children: React.ReactNode }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.left < 8) {
+      el.style.transform = `translateX(${8 - rect.left}px)`;
+    } else if (rect.right > window.innerWidth - 8) {
+      el.style.transform = `translateX(${window.innerWidth - 8 - rect.right}px)`;
+    }
+  }, []);
+  return (
+    <div ref={ref} className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-max max-w-[calc(100vw-16px)]">
+      <div className="absolute -top-2 left-0 right-0 h-2" />
+      {children}
+    </div>
+  );
+};
+
 const Index = () => {
   const { t, language } = useLanguage();
   const { user } = useAuth();
