@@ -28,6 +28,7 @@ import MachineManager from "@/components/MachineManager";
 import QuizAdminPanel from "@/components/QuizAdminPanel";
 import CoatingManager from "@/components/CoatingManager";
 import ChatChannelManager from "@/components/ChatChannelManager";
+import NewsManager from "@/components/NewsManager";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useFactories } from "@/hooks/useFactories";
