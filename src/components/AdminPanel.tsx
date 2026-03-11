@@ -101,6 +101,12 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
   const [uploadingEditAvatar, setUploadingEditAvatar] = useState(false);
   const editAvatarRef = useRef<HTMLInputElement>(null);
 
+  // Login logs
+  const [showLoginLogsDialog, setShowLoginLogsDialog] = useState(false);
+  const [loginLogs, setLoginLogs] = useState<{ id: string; created_at: string; ip_address: string | null; user_agent: string | null }[]>([]);
+  const [loginLogsLoading, setLoginLogsLoading] = useState(false);
+  const [loginLogsUser, setLoginLogsUser] = useState<UserData | null>(null);
+
   // Customers state
   const { customers: allCustomers, reload: reloadCustomers } = useCustomers();
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
