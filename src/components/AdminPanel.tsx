@@ -1387,6 +1387,7 @@ const AdminPanel = ({ onMenuUpdated }: AdminPanelProps) => {
         {/* ── News Tab ── */}
         <TabsContent value="news" className="space-y-4 mt-4">
           <NewsManager />
+        </TabsContent>
       </Tabs>
 
       {/* Reject Reason Dialog */}
