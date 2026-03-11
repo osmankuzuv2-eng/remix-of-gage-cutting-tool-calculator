@@ -10,7 +10,7 @@ import {
 export const iconMap: Record<string, LucideIcon> = {
   Calculator, Clock, Database, DollarSign, History, GitCompare, Wrench, Circle,
   BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
-  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users, TrendingDown, Video, FileText, ArrowLeftRight, Crosshair, ScanLine,
+  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users, TrendingDown, Video, FileText, ArrowLeftRight, Crosshair, ScanLine, Gamepad2, Dice5,
 };
 
 export const getIcon = (name: string): LucideIcon => iconMap[name] || Sparkles;
