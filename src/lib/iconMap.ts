@@ -40,5 +40,5 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "production-comparison": ArrowLeftRight,
   "balloon-drawing": Crosshair,
   "catpart-quote": Layers,
-  "slot-machine": Dice5,
+  
 };
