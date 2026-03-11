@@ -438,26 +438,39 @@ const GlobalChatBox = () => {
               Kanallar
             </span>
           </div>
-          {channels.map((ch) => (
-            <button
-              key={ch.id}
-              onClick={() => setActiveChannelId(ch.id)}
-              className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-all duration-150 rounded-md mx-1 ${
-                activeChannelId === ch.id
-                  ? "bg-primary/15 text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-              }`}
-              style={activeChannelId === ch.id ? { color: ch.color } : {}}
-            >
-              <span style={{ color: activeChannelId === ch.id ? ch.color : undefined }}>
-                {channelIcon(ch.name)}
-              </span>
-              <span className="truncate">{ch.name}</span>
-              {activeChannelId === ch.id && (
-                <ChevronRight className="w-3 h-3 ml-auto flex-shrink-0" />
-              )}
-            </button>
-          ))}
+          {channels.map((ch) => {
+            const unread = unreadCounts[ch.id] ?? 0;
+            const isActive = activeChannelId === ch.id;
+            return (
+              <button
+                key={ch.id}
+                onClick={() => setActiveChannelId(ch.id)}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-all duration-150 rounded-md mx-1 ${
+                  isActive
+                    ? "bg-primary/15 text-foreground font-medium"
+                    : unread > 0
+                    ? "text-foreground font-semibold hover:bg-muted/40"
+                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                }`}
+                style={isActive ? { color: ch.color } : {}}
+              >
+                <span style={{ color: isActive ? ch.color : unread > 0 ? ch.color : undefined }}>
+                  {channelIcon(ch.name)}
+                </span>
+                <span className="truncate flex-1 text-left">{ch.name}</span>
+                {isActive ? (
+                  <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                ) : unread > 0 ? (
+                  <span
+                    className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center text-white"
+                    style={{ background: ch.color }}
+                  >
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
         {/* User info at bottom */}
