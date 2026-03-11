@@ -205,6 +205,19 @@ const Index = () => {
         <nav className="mb-6 space-y-2">
           {/* Category buttons row */}
           <div className="flex flex-wrap gap-2">
+            {/* Home button */}
+            <button
+              onClick={() => handleTabClick("home")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border group ${
+                activeTab === "home"
+                  ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-transparent shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.97]"
+                  : "bg-card border-border text-muted-foreground hover:text-primary hover:border-primary/30 hover:scale-[1.03] hover:shadow-md active:scale-[0.97]"
+              }`}
+            >
+              <Home className="w-4 h-4 transition-transform duration-300 group-hover:rotate-6" />
+              Anasayfa
+            </button>
+
             {categories.map((cat) => {
               const CatIcon = getIcon(cat.icon);
               const isOpen = openCategory === cat.id;
