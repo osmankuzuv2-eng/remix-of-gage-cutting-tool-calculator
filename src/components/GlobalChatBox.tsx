@@ -136,6 +136,8 @@ const GlobalChatBox = () => {
   const [userSearch, setUserSearch] = useState("");
   // Map userId → display_name for DM rendering
   const [userNameMap, setUserNameMap] = useState<Record<string, string>>({});
+  // Map userId → avatar_url
+  const [userAvatarMap, setUserAvatarMap] = useState<Record<string, string | null>>({});
 
   // ── Last-read helpers (localStorage) ──────────────────────────────────────
   const getLastRead = (key: string): string =>
