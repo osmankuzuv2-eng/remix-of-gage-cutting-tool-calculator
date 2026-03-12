@@ -629,6 +629,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     const peerState: PeerState = {
       userId: targetUserId, displayName: targetName, avatarUrl: targetAvatar,
       stream: null, pc, isAudioMuted: false, isVideoOff: false, isAdminMuted: false, isAdminVideoOff: false,
+      quality: "unknown",
     };
 
     setPeers(prev => { const n = new Map(prev); n.set(targetUserId, peerState); return n; });
