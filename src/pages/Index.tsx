@@ -89,6 +89,8 @@ const Index = () => {
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [userDisplayName, setUserDisplayName] = useState<string>("");
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [showMeetingLeaveConfirm, setShowMeetingLeaveConfirm] = useState(false);
+  const [pendingTabId, setPendingTabId] = useState<TabId | null>(null);
 
   // No category open by default — only on hover
 
@@ -196,43 +198,45 @@ const Index = () => {
     materialPrices[m.id] !== undefined ? { ...m, pricePerKg: materialPrices[m.id] } : m
   );
 
-  const handleTabClick = useCallback((tabId: TabId) => {
+  const doNavigate = useCallback((tabId: TabId) => {
     if (!hasAccess(tabId)) {
-      toast({
-        title: "Erişim Engellendi",
-        description: "Bu alana giriş yetkiniz bulunmuyor.",
-        variant: "destructive",
-      });
+      toast({ title: "Erişim Engellendi", description: "Bu alana giriş yetkiniz bulunmuyor.", variant: "destructive" });
       return;
     }
     if (tabId === visibleTab) return;
-    // Log activity - using profile display_name fetched at login
     if (user && tabId !== "home" && tabId !== "admin") {
       supabase.from("user_activity_logs").insert({
         user_id: user.id,
         display_name: userDisplayName || user.email?.split("@")[0] || "Kullanıcı",
         module_key: tabId,
         module_name: getModuleName(tabId) || tabId,
-      }).then(({ error }) => {
-        if (error) console.error("Activity log error:", error);
-      });
+      }).then(({ error }) => { if (error) console.error("Activity log error:", error); });
     }
     setActiveTab(tabId);
     setIsTransitioning(true);
-    setTimeout(() => {
-      setVisibleTab(tabId);
-      setIsTransitioning(false);
-    }, 1000);
+    setTimeout(() => { setVisibleTab(tabId); setIsTransitioning(false); }, 1000);
   }, [visibleTab, permissions, isAdmin, toast, user, getModuleName, userDisplayName]);
 
+  const handleTabClick = useCallback((tabId: TabId) => {
+    // Warn if leaving active meeting
+    if (visibleTab === "canli-toplanti" && tabId !== "canli-toplanti") {
+      setPendingTabId(tabId);
+      setShowMeetingLeaveConfirm(true);
+      return;
+    }
+    doNavigate(tabId);
+  }, [visibleTab, doNavigate]);
+
   const handleAdminClick = useCallback(() => {
+    if (visibleTab === "canli-toplanti") {
+      setPendingTabId("admin");
+      setShowMeetingLeaveConfirm(true);
+      return;
+    }
     if (visibleTab === "admin") return;
     setActiveTab("admin");
     setIsTransitioning(true);
-    setTimeout(() => {
-      setVisibleTab("admin");
-      setIsTransitioning(false);
-    }, 1000);
+    setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
   }, [visibleTab]);
 
   const toggleCategory = (catId: string) => {
@@ -429,6 +433,42 @@ const Index = () => {
 
       {showMaterialForm && (
         <MaterialForm onAddMaterial={handleAddMaterial} onClose={() => setShowMaterialForm(false)} />
+      )}
+
+      {/* Meeting leave confirmation */}
+      {showMeetingLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="font-semibold text-foreground mb-2">Canlı Toplantıdan Çık?</h3>
+            <p className="text-sm text-muted-foreground mb-4">Başka bir modüle geçmek için önce canlı toplantıdan ayrılmanız gerekiyor.</p>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
+                onClick={() => { setShowMeetingLeaveConfirm(false); setPendingTabId(null); }}
+              >
+                İptal
+              </button>
+              <button
+                className="flex-1 px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                onClick={() => {
+                  setShowMeetingLeaveConfirm(false);
+                  if (pendingTabId) {
+                    if (pendingTabId === "admin") {
+                      setActiveTab("admin");
+                      setIsTransitioning(true);
+                      setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
+                    } else {
+                      doNavigate(pendingTabId);
+                    }
+                    setPendingTabId(null);
+                  }
+                }}
+              >
+                Toplantıdan Çık ve Devam Et
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
