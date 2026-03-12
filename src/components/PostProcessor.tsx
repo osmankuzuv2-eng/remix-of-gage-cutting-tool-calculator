@@ -886,6 +886,28 @@ const PostProcessor = () => {
           </div>
 
           {/* CLS Input */}
+          {/* Quick sample loader */}
+          <div>
+            <label className="label-industrial block mb-2">Örnek Yükle</label>
+            <div className="flex flex-wrap gap-1.5">
+              {SAMPLES.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setClsInput(s.cls);
+                    setController(s.ctrl);
+                    setConverted(false);
+                    setOutput("");
+                    setProgramName(s.label.split("–")[1]?.trim().split(" ")[0] ?? "SAMPLE");
+                  }}
+                  className="px-2.5 py-1 rounded-md border border-border bg-card hover:border-primary/50 hover:bg-primary/5 text-xs text-muted-foreground transition-all"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="label-industrial">CLS / APT Girişi</label>
