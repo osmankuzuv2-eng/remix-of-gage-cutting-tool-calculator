@@ -37,6 +37,8 @@ interface Participant {
   last_heartbeat?: string;
 }
 
+type ConnectionQuality = "excellent" | "good" | "poor" | "unknown";
+
 interface PeerState {
   userId: string;
   displayName: string;
@@ -47,7 +49,45 @@ interface PeerState {
   isVideoOff: boolean;
   isAdminMuted: boolean;
   isAdminVideoOff: boolean;
+  quality: ConnectionQuality;
 }
+
+// ─── Quality helpers ──────────────────────────────────────────────────────────
+
+const qualityFromStats = (rtt: number | null, lossRate: number): ConnectionQuality => {
+  if (rtt === null) return "unknown";
+  if (rtt < 0.1 && lossRate < 0.02) return "excellent";
+  if (rtt < 0.3 && lossRate < 0.05) return "good";
+  return "poor";
+};
+
+const QualityBars = ({ quality }: { quality: ConnectionQuality }) => {
+  const bars = [
+    quality !== "unknown",
+    quality === "good" || quality === "excellent",
+    quality === "excellent",
+  ];
+  const color =
+    quality === "excellent" ? "bg-emerald-400" :
+    quality === "good"      ? "bg-yellow-400"  :
+    quality === "poor"      ? "bg-red-400"      : "bg-muted-foreground/40";
+  const heights = ["h-1.5", "h-2.5", "h-3.5"];
+  const label =
+    quality === "excellent" ? "Mükemmel" :
+    quality === "good"      ? "İyi"      :
+    quality === "poor"      ? "Zayıf"    : "";
+
+  return (
+    <div className="flex items-end gap-px" title={label}>
+      {heights.map((h, i) => (
+        <div
+          key={i}
+          className={`w-1 rounded-sm transition-colors ${h} ${bars[i] ? color : "bg-muted-foreground/20"}`}
+        />
+      ))}
+    </div>
+  );
+};
 
 interface ChatMessage {
   id: string;
@@ -83,7 +123,7 @@ const fetchIceServers = async (): Promise<RTCConfiguration> => {
 // ─── VideoTile ────────────────────────────────────────────────────────────────
 
 const VideoTile = ({
-  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick, isScreenSharing,
+  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick, isScreenSharing, quality,
 }: {
   stream: MediaStream | null;
   name: string;
@@ -96,6 +136,7 @@ const VideoTile = ({
   isOwner?: boolean;
   onKick?: () => void;
   isScreenSharing?: boolean;
+  quality?: ConnectionQuality;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -149,7 +190,10 @@ const VideoTile = ({
             {isLocal ? `${name} (Sen)` : name}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          {!isLocal && quality && quality !== "unknown" && (
+            <QualityBars quality={quality} />
+          )}
           {audioMuted && <MicOff className="w-3 h-3 text-red-400" />}
           {videoHidden && <VideoOff className="w-3 h-3 text-red-400" />}
         </div>
@@ -279,6 +323,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const participantIdRef = useRef<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const statsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const peersRef = useRef<Map<string, PeerState>>(new Map());
   const activeRoomRef = useRef<Room | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -589,6 +634,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     const peerState: PeerState = {
       userId: targetUserId, displayName: targetName, avatarUrl: targetAvatar,
       stream: null, pc, isAudioMuted: false, isVideoOff: false, isAdminMuted: false, isAdminVideoOff: false,
+      quality: "unknown",
     };
 
     setPeers(prev => { const n = new Map(prev); n.set(targetUserId, peerState); return n; });
@@ -1150,6 +1196,62 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     };
   }, []); // eslint-disable-line
 
+  // ── Connection quality polling ────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (statsIntervalRef.current) clearInterval(statsIntervalRef.current);
+
+    statsIntervalRef.current = setInterval(async () => {
+      const updates: { userId: string; quality: ConnectionQuality }[] = [];
+
+      for (const [userId, peerState] of peersRef.current) {
+        const { pc } = peerState;
+        if (pc.connectionState !== "connected") continue;
+
+        try {
+          const stats = await pc.getStats();
+          let rtt: number | null = null;
+          let packetsSent = 0;
+          let packetsLost = 0;
+
+          stats.forEach((report) => {
+            // outbound-rtp gives us packet loss
+            if (report.type === "outbound-rtp" && report.kind === "video") {
+              packetsSent += report.packetsSent ?? 0;
+            }
+            // remote-inbound-rtp gives RTT and fraction lost
+            if (report.type === "remote-inbound-rtp") {
+              if (report.roundTripTime !== undefined) rtt = report.roundTripTime;
+              packetsLost += report.packetsLost ?? 0;
+            }
+          });
+
+          const total = packetsSent + packetsLost;
+          const lossRate = total > 0 ? packetsLost / total : 0;
+          const quality = qualityFromStats(rtt, lossRate);
+          updates.push({ userId, quality });
+        } catch {
+          // ignore — connection may be transitioning
+        }
+      }
+
+      if (updates.length > 0) {
+        setPeers(prev => {
+          const next = new Map(prev);
+          updates.forEach(({ userId, quality }) => {
+            const p = next.get(userId);
+            if (p && p.quality !== quality) next.set(userId, { ...p, quality });
+          });
+          return next;
+        });
+      }
+    }, 3000);
+
+    return () => {
+      if (statsIntervalRef.current) clearInterval(statsIntervalRef.current);
+    };
+  }, []); // eslint-disable-line
+
   // ── Chat scroll ───────────────────────────────────────────────────────────────
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -1304,6 +1406,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
                 isAdminMuted={peer.isAdminMuted} isAdminVideoOff={peer.isAdminVideoOff}
                 isOwner={activeRoom.owner_id === peer.userId}
                 onKick={canControl && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
+                quality={peer.quality}
               />
             ))}
           </div>
