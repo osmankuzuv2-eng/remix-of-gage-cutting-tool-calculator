@@ -222,14 +222,15 @@ const Index = () => {
   }, [visibleTab, permissions, isAdmin, toast, user, getModuleName, userDisplayName]);
 
   const handleTabClick = useCallback((tabId: TabId) => {
-    // Warn if leaving active meeting
-    if (visibleTab === "canli-toplanti" && tabId !== "canli-toplanti") {
+    // Warn if leaving active meeting (only if user is actually inside a room)
+    if (isInActiveMeeting && tabId !== "canli-toplanti") {
       setPendingTabId(tabId);
+      meetingLeaveCallbackRef.current = () => doNavigate(tabId);
       setShowMeetingLeaveConfirm(true);
       return;
     }
     doNavigate(tabId);
-  }, [visibleTab, doNavigate]);
+  }, [isInActiveMeeting, doNavigate]);
 
   const handleAdminClick = useCallback(() => {
     if (visibleTab === "canli-toplanti") {
