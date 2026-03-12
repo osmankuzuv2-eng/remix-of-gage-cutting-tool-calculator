@@ -73,6 +73,7 @@ const ClampedDropdown = ({
 const Index = () => {
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { categories, reload: reloadMenu } = useMenuConfig();
   const { getModuleName } = useModuleTranslations();
   const { materialPrices, afkMultipliers, updatePrice, updateAfkMultiplier } = useMaterialSettings();
