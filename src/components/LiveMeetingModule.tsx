@@ -1106,6 +1106,8 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
   useEffect(() => {
     return () => {
+      // Stop screen share if active
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
       // Stop all local media tracks immediately
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       // Close all peer connections
