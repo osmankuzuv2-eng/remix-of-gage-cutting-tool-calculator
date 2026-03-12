@@ -3,6 +3,7 @@ import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
 import { Lock, Plus, ChevronDown, Home } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import LiveTicker from "@/components/LiveTicker";
 import NewsTicker from "@/components/NewsTicker";
