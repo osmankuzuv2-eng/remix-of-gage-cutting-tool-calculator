@@ -286,6 +286,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const isLeavingRef = useRef(false);
   const currentRoomIdRef = useRef<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const iceConfigRef = useRef<RTCConfiguration>(STUN_FALLBACK);
   // Buffer for ICE candidates received before remote description is set
   const iceCandidateBufferRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   // Track which connections are currently making an offer to prevent glare
