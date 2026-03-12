@@ -85,20 +85,29 @@ const VideoTile = ({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    if (videoRef.current) {
+      if (stream && !isVideoOff && !isAdminVideoOff) {
+        videoRef.current.srcObject = stream;
+      } else {
+        videoRef.current.srcObject = null;
+      }
     }
-  }, [stream]);
+  }, [stream, isVideoOff, isAdminVideoOff]);
 
   const videoHidden = isVideoOff || isAdminVideoOff;
   const audioMuted = isMuted || isAdminMuted;
 
   return (
     <div className="relative rounded-xl overflow-hidden bg-muted/30 border border-border aspect-video flex items-center justify-center group">
-      {!videoHidden && stream ? (
-        <video ref={videoRef} autoPlay playsInline muted={isLocal} className="w-full h-full object-cover" />
-      ) : (
-        <div className="flex flex-col items-center gap-2">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={isLocal}
+        className={`w-full h-full object-cover ${videoHidden ? "hidden" : "block"}`}
+      />
+      {videoHidden && (
+        <div className="flex flex-col items-center gap-2 absolute inset-0 flex items-center justify-center">
           {avatarUrl ? (
             <img src={avatarUrl} alt={name} className="w-16 h-16 rounded-full object-cover border-2 border-primary/30" />
           ) : (
@@ -234,7 +243,7 @@ const LiveMeetingModule = () => {
   const [pendingRoom, setPendingRoom] = useState<Room | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true); // default open
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [unreadChat, setUnreadChat] = useState(0);
@@ -251,13 +260,13 @@ const LiveMeetingModule = () => {
   const localStreamRef = useRef<MediaStream | null>(null);
   const isOwnerRef = useRef(false);
   const isLeavingRef = useRef(false);
+  const currentRoomIdRef = useRef<string | null>(null);
   peersRef.current = peers;
 
   // ── Load profile + check admin ────────────────────────────────────────────────
 
   useEffect(() => {
     if (!user) return;
-    // Load profile
     supabase.from("profiles").select("display_name, avatar_url").eq("user_id", user.id).single().then(({ data }) => {
       if (data) {
         setMyProfile({
@@ -268,7 +277,6 @@ const LiveMeetingModule = () => {
         setMyProfile({ display_name: user.email?.split("@")[0] || "Kullanıcı", avatar_url: null });
       }
     });
-    // Check global admin role
     supabase.from("user_roles" as any).select("role").eq("user_id", user.id).then(({ data }) => {
       if (data && (data as any[]).some((r: any) => r.role === "admin")) {
         setIsGlobalAdmin(true);
@@ -345,7 +353,7 @@ const LiveMeetingModule = () => {
 
   const enterRoom = useCallback(async (room: Room) => {
     if (!user) return;
-    if (room.participant_count >= room.max_participants && room.owner_id !== user.id) {
+    if (room.participant_count >= room.max_participants && room.owner_id !== user.id && !isGlobalAdmin) {
       toast({ title: "Oda dolu", variant: "destructive" });
       return;
     }
@@ -370,16 +378,16 @@ const LiveMeetingModule = () => {
       }
     }
 
-    // Remove any stale participant entry for this user in this room first
+    currentRoomIdRef.current = room.id;
+
+    // Remove stale participant entry first
     await supabase.from("meeting_participants" as any).delete().eq("room_id", room.id).eq("user_id", user.id);
 
-    // Claim room if empty
     const amOwner = !room.owner_id || room.owner_id === user.id;
     if (!room.owner_id) {
       await supabase.from("meeting_rooms" as any).update({ owner_id: user.id, owner_name: displayName }).eq("id", room.id);
     }
 
-    // Insert participant with profile data
     const { data: pData } = await supabase
       .from("meeting_participants" as any)
       .insert({ room_id: room.id, user_id: user.id, display_name: displayName })
@@ -388,7 +396,6 @@ const LiveMeetingModule = () => {
 
     if (pData) participantIdRef.current = (pData as any).id;
 
-    // Recalculate participant count from DB
     const { count } = await supabase
       .from("meeting_participants" as any)
       .select("*", { count: "exact", head: true })
@@ -404,14 +411,12 @@ const LiveMeetingModule = () => {
     setActiveRoom(finalRoom);
     activeRoomRef.current = finalRoom;
 
-    // Heartbeat every 8s
     heartbeatRef.current = setInterval(async () => {
       if (participantIdRef.current) {
         await supabase.from("meeting_participants" as any).update({ last_heartbeat: new Date().toISOString() }).eq("id", participantIdRef.current);
       }
     }, 8000);
 
-    // Cleanup stale participants every 30s
     cleanupRef.current = setInterval(async () => {
       const cutoff = new Date(Date.now() - 30000).toISOString();
       await supabase.from("meeting_participants" as any).delete().eq("room_id", room.id).lt("last_heartbeat", cutoff);
@@ -420,7 +425,7 @@ const LiveMeetingModule = () => {
     setupSignaling(room.id, stream, amOwner);
     loadChatMessages(room.id);
     setupChatChannel(room.id);
-  }, [user, displayName, toast]);
+  }, [user, displayName, toast, isGlobalAdmin]);
 
   // ── Chat ──────────────────────────────────────────────────────────────────────
 
@@ -440,7 +445,7 @@ const LiveMeetingModule = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `channel_id=eq.${roomId}` }, (payload) => {
         const msg = payload.new as ChatMessage;
         setChatMessages(prev => [...prev, msg]);
-        if (!showChat) setUnreadChat(c => c + 1);
+        setUnreadChat(c => c + 1);
       })
       .subscribe();
   };
@@ -462,7 +467,6 @@ const LiveMeetingModule = () => {
     targetUserId: string, targetName: string, targetAvatar: string | null,
     stream: MediaStream | null, roomId: string, isInitiator: boolean,
   ) => {
-    // Don't create duplicate connections
     const existing = peersRef.current.get(targetUserId);
     if (existing) { existing.pc.close(); }
 
@@ -529,7 +533,6 @@ const LiveMeetingModule = () => {
   const setupSignaling = useCallback(async (roomId: string, stream: MediaStream | null, _amOwner: boolean) => {
     if (!user) return;
 
-    // Load existing participants (excluding self)
     const { data: existing } = await supabase
       .from("meeting_participants" as any)
       .select("*")
@@ -539,12 +542,10 @@ const LiveMeetingModule = () => {
     const enriched = await enrichParticipantsWithProfiles((existing as unknown as Participant[]) || []);
     setParticipants(enriched);
 
-    // Create connections to all existing participants
     for (const p of enriched) {
       createPeerConnection(p.user_id, p.display_name || "Kullanıcı", p.avatar_url || null, stream, roomId, true);
     }
 
-    // Listen for signals (only for this room + this user)
     const signalCh = supabase
       .channel(`signals-${roomId}-${user.id}`)
       .on("postgres_changes", {
@@ -552,14 +553,20 @@ const LiveMeetingModule = () => {
         filter: `to_user_id=eq.${user.id}`,
       }, async (payload) => {
         const signal = payload.new as any;
-        // Isolate: ignore signals from other rooms
         if (signal.room_id !== roomId) return;
 
         const fromId = signal.from_user_id;
+
+        // Handle room_reset signal
+        if (signal.signal_type === "room_reset") {
+          toast({ title: "🔄 Oda Sıfırlandı", description: `"${signal.payload?.room_name || "Toplantı odası"}" admin tarafından sıfırlandı.`, variant: "destructive" });
+          performLeave(false);
+          return;
+        }
+
         let pc = peersRef.current.get(fromId)?.pc;
 
         if (!pc || pc.connectionState === "closed" || pc.connectionState === "failed") {
-          // Get this user's name and avatar
           const { data: pProfile } = await supabase.from("profiles").select("display_name, avatar_url").eq("user_id", fromId).single();
           const name = pProfile?.display_name || "Kullanıcı";
           const avatar = pProfile?.avatar_url || null;
@@ -581,7 +588,6 @@ const LiveMeetingModule = () => {
         } else if (signal.signal_type === "ice") {
           try { await pc.addIceCandidate(new RTCIceCandidate(signal.payload.candidate)); } catch {}
         } else if (signal.signal_type === "admin_control") {
-          // Received admin command → apply locally
           const payload_data = signal.payload as any;
           if (payload_data.kick && payload_data.target_user_id === user.id) {
             toast({ title: "Odadan çıkarıldınız", description: "Toplantı yöneticisi sizi odadan çıkardı.", variant: "destructive" });
@@ -594,7 +600,6 @@ const LiveMeetingModule = () => {
             return;
           }
           if (payload_data.isAdminMuted !== undefined) {
-            // Update our local audio
             const localStreamNow = localStreamRef.current;
             if (localStreamNow) {
               localStreamNow.getAudioTracks().forEach(t => { t.enabled = !payload_data.isAdminMuted; });
@@ -616,7 +621,6 @@ const LiveMeetingModule = () => {
       })
       .subscribe();
 
-    // Listen for participant changes in this room
     const participantCh = supabase
       .channel(`participants-${roomId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "meeting_participants", filter: `room_id=eq.${roomId}` }, async () => {
@@ -624,7 +628,6 @@ const LiveMeetingModule = () => {
         const enriched2 = await enrichParticipantsWithProfiles((data as unknown as Participant[]) || []);
         setParticipants(enriched2);
 
-        // Update room participant count
         const { count } = await supabase.from("meeting_participants" as any).select("*", { count: "exact", head: true }).eq("room_id", roomId);
         await supabase.from("meeting_rooms" as any).update({ participant_count: count ?? 0 }).eq("id", roomId);
       })
@@ -643,16 +646,13 @@ const LiveMeetingModule = () => {
     const room = activeRoomRef.current;
     const amOwner = isOwnerRef.current;
 
-    // Stop media
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     localStreamRef.current = null;
     setLocalStream(null);
 
-    // Close peer connections
     peersRef.current.forEach(p => p.pc.close());
     setPeers(new Map());
 
-    // Remove participant
     if (participantIdRef.current) {
       await supabase.from("meeting_participants" as any).delete().eq("id", participantIdRef.current);
       participantIdRef.current = null;
@@ -660,7 +660,6 @@ const LiveMeetingModule = () => {
 
     if (room) {
       if (amOwner && isInitiator) {
-        // Kick all participants from this room
         const { data: allParts } = await supabase.from("meeting_participants" as any).select("user_id").eq("room_id", room.id);
         if (allParts && (allParts as any[]).length > 0) {
           for (const p of allParts as any[]) {
@@ -670,19 +669,16 @@ const LiveMeetingModule = () => {
             });
           }
         }
-        // Delete all participants and reset room
         await supabase.from("meeting_participants" as any).delete().eq("room_id", room.id);
         await supabase.from("meeting_rooms" as any)
           .update({ owner_id: null, owner_name: null, is_locked: false, password: null, participant_count: 0 })
           .eq("id", room.id);
       } else {
-        // Recalculate count
         const { count } = await supabase.from("meeting_participants" as any).select("*", { count: "exact", head: true }).eq("room_id", room.id);
         await supabase.from("meeting_rooms" as any).update({ participant_count: count ?? 0 }).eq("id", room.id);
       }
     }
 
-    // Cleanup channels and intervals
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     if (cleanupRef.current) clearInterval(cleanupRef.current);
     if (signalChannelRef.current) supabase.removeChannel(signalChannelRef.current);
@@ -691,6 +687,7 @@ const LiveMeetingModule = () => {
 
     setActiveRoom(null);
     activeRoomRef.current = null;
+    currentRoomIdRef.current = null;
     setIsOwner(false);
     isOwnerRef.current = false;
     setParticipants([]);
@@ -698,7 +695,7 @@ const LiveMeetingModule = () => {
     setIsVideoOff(false);
     setChatMessages([]);
     setUnreadChat(0);
-    setShowChat(false);
+    setShowChat(true);
     isLeavingRef.current = false;
     loadRooms();
   }, [user, loadRooms]);
@@ -707,30 +704,78 @@ const LiveMeetingModule = () => {
 
   // ── Media controls ────────────────────────────────────────────────────────────
 
-  const toggleAudio = useCallback(() => {
+  const toggleAudio = useCallback(async () => {
     const stream = localStreamRef.current;
     if (!stream) return;
-    const newMuted = !isAudioMuted;
-    stream.getAudioTracks().forEach(t => { t.enabled = !newMuted; });
-    setIsAudioMuted(newMuted);
+    const audioTracks = stream.getAudioTracks();
+
+    if (isAudioMuted) {
+      // Un-mute: if tracks exist re-enable, otherwise re-acquire
+      if (audioTracks.length > 0) {
+        audioTracks.forEach(t => { t.enabled = true; });
+        setIsAudioMuted(false);
+      } else {
+        try {
+          const newStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          newStream.getAudioTracks().forEach(track => {
+            stream.addTrack(track);
+            peersRef.current.forEach(peer => {
+              const sender = peer.pc.getSenders().find(s => s.track?.kind === "audio");
+              if (sender) sender.replaceTrack(track);
+              else peer.pc.addTrack(track, stream);
+            });
+          });
+          setIsAudioMuted(false);
+        } catch { return; }
+      }
+    } else {
+      audioTracks.forEach(t => { t.enabled = false; });
+      setIsAudioMuted(true);
+    }
+
     if (participantIdRef.current) {
-      supabase.from("meeting_participants" as any).update({ is_audio_muted: newMuted }).eq("id", participantIdRef.current);
+      supabase.from("meeting_participants" as any).update({ is_audio_muted: !isAudioMuted }).eq("id", participantIdRef.current);
     }
   }, [isAudioMuted]);
 
-  const toggleVideo = useCallback(() => {
+  const toggleVideo = useCallback(async () => {
     const stream = localStreamRef.current;
     if (!stream) return;
-    const newOff = !isVideoOff;
-    stream.getVideoTracks().forEach(t => { t.enabled = !newOff; });
-    setIsVideoOff(newOff);
+    const videoTracks = stream.getVideoTracks();
+
+    if (isVideoOff) {
+      // Turn on: if tracks exist, re-enable them
+      if (videoTracks.length > 0) {
+        videoTracks.forEach(t => { t.enabled = true; });
+        setIsVideoOff(false);
+      } else {
+        // No video tracks — re-acquire camera
+        try {
+          const newStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          newStream.getVideoTracks().forEach(track => {
+            stream.addTrack(track);
+            peersRef.current.forEach(peer => {
+              const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
+              if (sender) sender.replaceTrack(track);
+              else peer.pc.addTrack(track, stream);
+            });
+          });
+          setIsVideoOff(false);
+        } catch { return; }
+      }
+    } else {
+      // Turn off
+      videoTracks.forEach(t => { t.enabled = false; });
+      setIsVideoOff(true);
+    }
+
     if (participantIdRef.current) {
-      supabase.from("meeting_participants" as any).update({ is_video_off: newOff }).eq("id", participantIdRef.current);
+      supabase.from("meeting_participants" as any).update({ is_video_off: !isVideoOff }).eq("id", participantIdRef.current);
     }
   }, [isVideoOff]);
 
   // ── Admin controls ────────────────────────────────────────────────────────────
-  // isOwner = room owner, isGlobalAdmin = system admin (full authority in all rooms)
+
   const canControl = isOwner || isGlobalAdmin;
 
   const adminMute = async (targetUserId: string, currentlyMuted: boolean) => {
@@ -783,45 +828,46 @@ const LiveMeetingModule = () => {
     toast({ title: "Oda şifrelendi" });
   };
 
-  // ── Reset room (admin only — from room list or inside room) ───────────────────
+  // ── Reset room ────────────────────────────────────────────────────────────────
 
   const resetRoom = async (roomId: string, roomName: string) => {
     if (!isGlobalAdmin || !user) return;
-    // Kick all participants via signal
+    // Notify all participants with room_reset signal
     const { data: allParts } = await supabase.from("meeting_participants" as any).select("user_id").eq("room_id", roomId);
     if (allParts) {
       for (const p of allParts as any[]) {
         if (p.user_id === user.id) continue;
         await supabase.from("meeting_signals" as any).insert({
           room_id: roomId, from_user_id: user.id, to_user_id: p.user_id,
-          signal_type: "admin_control", payload: { owner_left: true },
+          signal_type: "room_reset", payload: { room_name: roomName },
         });
       }
     }
-    // Clear all participants and reset room state
     await supabase.from("meeting_participants" as any).delete().eq("room_id", roomId);
     await supabase.from("meeting_rooms" as any).update({
       owner_id: null, owner_name: null, is_locked: false, password: null, participant_count: 0,
     }).eq("id", roomId);
-    // If we're inside this room, leave
+    // If we're inside this room, leave cleanly
     if (activeRoom?.id === roomId) {
-      setActiveRoom(null);
-      activeRoomRef.current = null;
-      setIsOwner(false);
-      isOwnerRef.current = false;
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
       setLocalStream(null);
       peersRef.current.forEach(p => p.pc.close());
       setPeers(new Map());
       setParticipants([]);
+      setActiveRoom(null);
+      activeRoomRef.current = null;
+      setIsOwner(false);
+      isOwnerRef.current = false;
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       if (cleanupRef.current) clearInterval(cleanupRef.current);
       if (signalChannelRef.current) supabase.removeChannel(signalChannelRef.current);
       if (chatChannelRef.current) supabase.removeChannel(chatChannelRef.current);
       if (participantChannelRef.current) supabase.removeChannel(participantChannelRef.current);
+      setChatMessages([]);
+      setShowChat(true);
     }
-    toast({ title: `"${roomName}" sıfırlandı`, description: "Tüm katılımcılar odadan çıkarıldı." });
+    toast({ title: `"${roomName}" sıfırlandı`, description: "Tüm katılımcılar bilgilendirildi ve odadan çıkarıldı." });
     loadRooms();
   };
 
@@ -905,19 +951,19 @@ const LiveMeetingModule = () => {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // RENDER: Active meeting
+  // RENDER: Active meeting — full height, no scroll
   // ─────────────────────────────────────────────────────────────────────────────
 
   const allPeers = Array.from(peers.values());
   const totalParticipants = allPeers.length + 1;
 
   return (
-    <div className="flex flex-col gap-3 h-[calc(100vh-220px)] min-h-[600px]">
-      {/* Room header */}
-      <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-2.5 flex-shrink-0">
+    <div className="flex flex-col h-[calc(100vh-160px)] min-h-0 gap-2">
+      {/* ── Room header ── */}
+      <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-2 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Video className="w-4 h-4 text-primary" />
-          <span className="font-bold text-foreground">{activeRoom.name}</span>
+          <span className="font-bold text-foreground text-sm">{activeRoom.name}</span>
           {isOwner && <Crown className="w-4 h-4 text-yellow-400" />}
           {isGlobalAdmin && !isOwner && (
             <span className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
@@ -929,23 +975,23 @@ const LiveMeetingModule = () => {
             <Users className="w-3 h-3" />{totalParticipants}/{activeRoom.max_participants}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {canControl && (
-            <Button size="sm" variant="outline" className={`h-7 px-2.5 text-xs ${activeRoom.is_locked ? "border-amber-500/40 text-amber-400" : ""}`} onClick={lockRoom}>
+            <Button size="sm" variant="outline" className={`h-7 px-2 text-xs ${activeRoom.is_locked ? "border-amber-500/40 text-amber-400" : ""}`} onClick={lockRoom}>
               {activeRoom.is_locked ? <><Unlock className="w-3 h-3 mr-1" />Kilidi Kaldır</> : <><Lock className="w-3 h-3 mr-1" />Kilitle</>}
             </Button>
           )}
           {isGlobalAdmin && (
-            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => resetRoom(activeRoom.id, activeRoom.name)} title="Odayı Sıfırla">
+            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => resetRoom(activeRoom.id, activeRoom.name)} title="Odayı Sıfırla">
               <RotateCcw className="w-3 h-3 mr-1" />Sıfırla
             </Button>
           )}
           <Button
             size="sm" variant="outline"
-            className={`h-7 px-2.5 text-xs relative ${unreadChat > 0 ? "border-primary text-primary" : ""}`}
+            className={`h-7 px-2 text-xs relative ${unreadChat > 0 ? "border-primary text-primary" : ""}`}
             onClick={() => { setShowChat(!showChat); setUnreadChat(0); }}
           >
-            <MessageSquare className="w-3 h-3 mr-1" />Sohbet
+            <MessageSquare className="w-3 h-3 mr-1" />{showChat ? "Sohbeti Gizle" : "Sohbet"}
             {unreadChat > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground rounded-full text-[9px] flex items-center justify-center font-bold">
                 {unreadChat}
@@ -955,23 +1001,29 @@ const LiveMeetingModule = () => {
         </div>
       </div>
 
-      {/* Main area */}
-      <div className="flex gap-3 flex-1 min-h-0">
-        {/* Video grid */}
-        <div className="flex-1 flex flex-col gap-3 min-w-0">
+      {/* ── Main area: video + sidebar ── */}
+      <div className="flex gap-2 flex-1 min-h-0">
+
+        {/* ── Video column ── */}
+        <div className="flex flex-col flex-1 min-w-0 min-h-0 gap-2">
+          {/* Video grid — takes remaining height */}
           <div
-            className="flex-1 overflow-auto"
-            style={{ display: "grid", gap: "12px",
-              gridTemplateColumns: totalParticipants === 1 ? "1fr" : totalParticipants === 2 ? "1fr 1fr" : totalParticipants <= 4 ? "repeat(2,1fr)" : totalParticipants <= 9 ? "repeat(3,1fr)" : "repeat(4,1fr)",
+            className="flex-1 min-h-0 overflow-auto"
+            style={{
+              display: "grid",
+              gap: "8px",
+              gridTemplateColumns: totalParticipants === 1 ? "1fr"
+                : totalParticipants === 2 ? "1fr 1fr"
+                : totalParticipants <= 4 ? "repeat(2,1fr)"
+                : totalParticipants <= 9 ? "repeat(3,1fr)"
+                : "repeat(4,1fr)",
               alignContent: "start",
             }}
           >
-            {/* Local tile */}
             <VideoTile
               stream={localStream} name={displayName} avatarUrl={myProfile.avatar_url}
               isLocal={true} isMuted={isAudioMuted} isVideoOff={isVideoOff} isOwner={isOwner}
             />
-            {/* Remote tiles */}
             {allPeers.map(peer => (
               <VideoTile
                 key={peer.userId}
@@ -984,8 +1036,8 @@ const LiveMeetingModule = () => {
             ))}
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center justify-center gap-3 bg-card border border-border rounded-xl py-3 flex-shrink-0">
+          {/* Controls bar */}
+          <div className="flex items-center justify-center gap-3 bg-card border border-border rounded-xl py-2.5 flex-shrink-0">
             <Button
               size="icon" variant={isAudioMuted ? "destructive" : "outline"} className="w-11 h-11 rounded-full"
               onClick={toggleAudio} title={isAudioMuted ? "Mikrofonu Aç" : "Mikrofonu Kapat"}
@@ -1007,23 +1059,27 @@ const LiveMeetingModule = () => {
           </div>
         </div>
 
-        {/* Right panel: participants + chat */}
-        <div className="w-64 flex-shrink-0 flex flex-col gap-3">
-          {/* Participants */}
-          <div className="bg-card border border-border rounded-xl flex flex-col overflow-hidden" style={{ maxHeight: showChat ? "45%" : "100%" }}>
-            <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 flex-shrink-0">
+        {/* ── Right sidebar: participants + chat ── */}
+        <div className="w-60 flex-shrink-0 flex flex-col gap-2 min-h-0">
+
+          {/* Participants list */}
+          <div
+            className="bg-card border border-border rounded-xl flex flex-col min-h-0"
+            style={{ flex: showChat ? "0 0 auto" : "1 1 auto", maxHeight: showChat ? "220px" : "100%" }}
+          >
+            <div className="px-3 py-2 border-b border-border flex items-center gap-2 flex-shrink-0">
               <Users className="w-4 h-4 text-primary" />
               <span className="font-semibold text-sm text-foreground">Katılımcılar</span>
               <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{totalParticipants}</span>
             </div>
-            <div className="overflow-y-auto divide-y divide-border/50">
+            <div className="overflow-y-auto flex-1 divide-y divide-border/50">
               {/* Self */}
               <div className="px-3 py-2 flex items-center gap-2">
                 {myProfile.avatar_url ? (
-                  <img src={myProfile.avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt={displayName} />
+                  <img src={myProfile.avatar_url} className="w-7 h-7 rounded-full object-cover flex-shrink-0" alt={displayName} />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[11px] font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -1042,10 +1098,10 @@ const LiveMeetingModule = () => {
                 return (
                   <div key={p.id} className="px-3 py-2 flex items-center gap-2 group">
                     {(p as any).avatar_url ? (
-                      <img src={(p as any).avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt={p.display_name || ""} />
+                      <img src={(p as any).avatar_url} className="w-7 h-7 rounded-full object-cover flex-shrink-0" alt={p.display_name || ""} />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-muted-foreground">{(p.display_name || "K").charAt(0).toUpperCase()}</span>
+                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <span className="text-[11px] font-bold text-muted-foreground">{(p.display_name || "K").charAt(0).toUpperCase()}</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -1078,29 +1134,28 @@ const LiveMeetingModule = () => {
           {/* Chat panel */}
           {showChat && (
             <div className="bg-card border border-border rounded-xl flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-2 border-b border-border flex items-center gap-2 flex-shrink-0">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 <span className="font-semibold text-sm text-foreground">Toplantı Sohbeti</span>
-                <button className="ml-auto text-muted-foreground hover:text-foreground" onClick={() => setShowChat(false)}><X className="w-4 h-4" /></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
+              <div className="flex-1 overflow-y-auto p-2 space-y-1.5 text-xs min-h-0">
                 {chatMessages.length === 0 ? (
-                  <p className="text-center text-muted-foreground pt-4">Henüz mesaj yok</p>
+                  <p className="text-center text-muted-foreground pt-4 text-xs">Henüz mesaj yok</p>
                 ) : chatMessages.map(msg => (
                   <div key={msg.id} className={`flex flex-col ${msg.user_id === user?.id ? "items-end" : "items-start"}`}>
                     <span className="text-[10px] text-muted-foreground mb-0.5">{msg.display_name}</span>
-                    <div className={`px-2.5 py-1.5 rounded-xl max-w-[90%] break-words ${msg.user_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                    <div className={`px-2 py-1 rounded-lg max-w-[95%] break-words text-xs ${msg.user_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
                       {msg.content}
                     </div>
                   </div>
                 ))}
                 <div ref={chatEndRef} />
               </div>
-              <div className="p-2 border-t border-border flex gap-2 flex-shrink-0">
+              <div className="p-2 border-t border-border flex gap-1.5 flex-shrink-0">
                 <Input
                   value={chatInput} onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && sendChatMessage()}
-                  placeholder="Mesaj yaz..." className="h-8 text-xs"
+                  placeholder="Mesaj yaz..." className="h-8 text-xs flex-1"
                 />
                 <Button size="icon" className="h-8 w-8 flex-shrink-0" onClick={sendChatMessage}>
                   <Send className="w-3.5 h-3.5" />
