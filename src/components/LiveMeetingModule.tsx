@@ -223,7 +223,7 @@ const RoomCard = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const LiveMeetingModule = () => {
+const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoom: boolean) => void }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 

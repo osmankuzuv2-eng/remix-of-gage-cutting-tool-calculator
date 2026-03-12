@@ -91,6 +91,8 @@ const Index = () => {
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [showMeetingLeaveConfirm, setShowMeetingLeaveConfirm] = useState(false);
   const [pendingTabId, setPendingTabId] = useState<TabId | null>(null);
+  const [isInActiveMeeting, setIsInActiveMeeting] = useState(false);
+  const meetingLeaveCallbackRef = useRef<(() => void) | null>(null);
 
   // No category open by default — only on hover
 
