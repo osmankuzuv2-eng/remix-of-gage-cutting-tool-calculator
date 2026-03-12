@@ -1055,7 +1055,7 @@ const LiveMeetingModule = () => {
                     <div className="flex items-center gap-0.5">
                       {(p.is_audio_muted || p.is_admin_muted || peer?.isAdminMuted) && <MicOff className="w-3 h-3 text-red-400" />}
                       {(p.is_video_off || p.is_admin_video_off || peer?.isAdminVideoOff) && <VideoOff className="w-3 h-3 text-red-400" />}
-                      {isOwner && activeRoom.owner_id !== p.user_id && (
+                      {canControl && activeRoom.owner_id !== p.user_id && (
                         <div className="flex gap-0.5 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button className="w-5 h-5 rounded hover:bg-muted flex items-center justify-center" title={p.is_admin_muted ? "Sesi Aç" : "Sesi Kapat"} onClick={() => adminMute(p.user_id, p.is_admin_muted)}>
                             {p.is_admin_muted ? <Volume2 className="w-3 h-3 text-emerald-400" /> : <VolumeX className="w-3 h-3 text-muted-foreground" />}
