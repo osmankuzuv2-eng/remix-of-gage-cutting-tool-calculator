@@ -766,6 +766,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     setUnreadChat(0);
     setShowChat(true);
     isLeavingRef.current = false;
+    onActiveRoomChange?.(false);
     loadRooms();
   }, [user, loadRooms]);
 
