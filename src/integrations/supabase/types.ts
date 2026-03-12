@@ -1762,6 +1762,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_profile_by_email: {
+        Args: { p_email: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+        }[]
+      }
       get_user_login_logs: {
         Args: { p_user_id: string }
         Returns: {
