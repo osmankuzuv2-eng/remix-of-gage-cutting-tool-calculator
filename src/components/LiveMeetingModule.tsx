@@ -1282,6 +1282,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
             <VideoTile
               stream={localStream} name={displayName} avatarUrl={myProfile.avatar_url}
               isLocal={true} isMuted={isAudioMuted} isVideoOff={isVideoOff} isOwner={isOwner}
+              isScreenSharing={isScreenSharing}
             />
             {allPeers.map(peer => (
               <VideoTile
@@ -1308,6 +1309,15 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
               onClick={toggleVideo} title={isVideoOff ? "Kamerayı Aç" : "Kamerayı Kapat"}
             >
               {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+            </Button>
+            <Button
+              size="icon"
+              variant={isScreenSharing ? "default" : "outline"}
+              className={`w-11 h-11 rounded-full ${isScreenSharing ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-500" : ""}`}
+              onClick={toggleScreenShare}
+              title={isScreenSharing ? "Ekran Paylaşımını Durdur" : "Ekran Paylaş"}
+            >
+              {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
             </Button>
             <Button
               size="icon" variant="destructive" className="w-12 h-12 rounded-full"
