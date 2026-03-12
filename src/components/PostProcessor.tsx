@@ -475,7 +475,7 @@ const PostProcessor = () => {
                 {converted ? `● ${selectedCtrl.dialect}` : "● Bekleniyor"}
               </span>
             </div>
-            <pre className="p-4 text-xs font-mono text-green-400 overflow-auto flex-1 whitespace-pre min-h-[400px]">
+            <pre className="p-4 text-xs font-mono text-success overflow-auto flex-1 whitespace-pre min-h-[400px]">
               {output || (
                 <span className="text-muted-foreground">
                   {`// Çıktı burada görünecek\n// Soldaki panelden CLS verinizi\n// girin ve "Çevir" butonuna tıklayın.`}
