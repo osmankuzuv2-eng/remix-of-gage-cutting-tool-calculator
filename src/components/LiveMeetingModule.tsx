@@ -229,10 +229,11 @@ const LiveMeetingModule = () => {
   const isLeavingRef = useRef(false);
   peersRef.current = peers;
 
-  // ── Load profile ─────────────────────────────────────────────────────────────
+  // ── Load profile + check admin ────────────────────────────────────────────────
 
   useEffect(() => {
     if (!user) return;
+    // Load profile
     supabase.from("profiles").select("display_name, avatar_url").eq("user_id", user.id).single().then(({ data }) => {
       if (data) {
         setMyProfile({
@@ -241,6 +242,12 @@ const LiveMeetingModule = () => {
         });
       } else {
         setMyProfile({ display_name: user.email?.split("@")[0] || "Kullanıcı", avatar_url: null });
+      }
+    });
+    // Check global admin role
+    supabase.from("user_roles" as any).select("role").eq("user_id", user.id).then(({ data }) => {
+      if (data && (data as any[]).some((r: any) => r.role === "admin")) {
+        setIsGlobalAdmin(true);
       }
     });
   }, [user]);
