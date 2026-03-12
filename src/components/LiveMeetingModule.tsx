@@ -867,7 +867,12 @@ const LiveMeetingModule = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {rooms.map(room => <RoomCard key={room.id} room={room} onJoin={handleJoinAttempt} currentUserId={user?.id || ""} />)}
+            {rooms.map(room => (
+              <RoomCard key={room.id} room={room} onJoin={handleJoinAttempt}
+                currentUserId={user?.id || ""} isGlobalAdmin={isGlobalAdmin}
+                onReset={(r) => resetRoom(r.id, r.name)}
+              />
+            ))}
           </div>
         )}
 
