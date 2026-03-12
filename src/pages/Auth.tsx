@@ -189,7 +189,7 @@ const Auth = () => {
                   </>
                 ) : (
                   <>
-                    {t("common", "continue") || "Devam Et"}
+                    Devam Et
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
