@@ -55,6 +55,9 @@ const ActivityFeed = () => {
   useEffect(() => {
     loadActivities();
 
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(loadActivities, 5000);
+
     const channel = supabase
       .channel("activity-feed-realtime-v2")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "user_activity_logs" }, async (payload) => {
@@ -71,7 +74,10 @@ const ActivityFeed = () => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading) {
