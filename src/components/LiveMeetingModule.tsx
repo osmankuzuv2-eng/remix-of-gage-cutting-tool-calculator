@@ -37,6 +37,8 @@ interface Participant {
   last_heartbeat?: string;
 }
 
+type ConnectionQuality = "excellent" | "good" | "poor" | "unknown";
+
 interface PeerState {
   userId: string;
   displayName: string;
@@ -47,7 +49,45 @@ interface PeerState {
   isVideoOff: boolean;
   isAdminMuted: boolean;
   isAdminVideoOff: boolean;
+  quality: ConnectionQuality;
 }
+
+// ─── Quality helpers ──────────────────────────────────────────────────────────
+
+const qualityFromStats = (rtt: number | null, lossRate: number): ConnectionQuality => {
+  if (rtt === null) return "unknown";
+  if (rtt < 0.1 && lossRate < 0.02) return "excellent";
+  if (rtt < 0.3 && lossRate < 0.05) return "good";
+  return "poor";
+};
+
+const QualityBars = ({ quality }: { quality: ConnectionQuality }) => {
+  const bars = [
+    quality !== "unknown",
+    quality === "good" || quality === "excellent",
+    quality === "excellent",
+  ];
+  const color =
+    quality === "excellent" ? "bg-emerald-400" :
+    quality === "good"      ? "bg-yellow-400"  :
+    quality === "poor"      ? "bg-red-400"      : "bg-muted-foreground/40";
+  const heights = ["h-1.5", "h-2.5", "h-3.5"];
+  const label =
+    quality === "excellent" ? "Mükemmel" :
+    quality === "good"      ? "İyi"      :
+    quality === "poor"      ? "Zayıf"    : "";
+
+  return (
+    <div className="flex items-end gap-px" title={label}>
+      {heights.map((h, i) => (
+        <div
+          key={i}
+          className={`w-1 rounded-sm transition-colors ${h} ${bars[i] ? color : "bg-muted-foreground/20"}`}
+        />
+      ))}
+    </div>
+  );
+};
 
 interface ChatMessage {
   id: string;
