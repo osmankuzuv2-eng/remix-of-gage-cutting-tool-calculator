@@ -1,4 +1,4 @@
-import { Settings, LogOut, KeyRound, User, ChevronDown, Mail, Camera } from "lucide-react";
+import { Settings, LogOut, KeyRound, User, ChevronDown, Mail, Camera, MessageCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -75,6 +75,50 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // Unread DM count
+  const [unreadDmCount, setUnreadDmCount] = useState(0);
+  const [showDmBalloon, setShowDmBalloon] = useState(false);
+  const lastSeenRef = useRef<string>(new Date().toISOString());
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Load unread DMs since last seen
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("direct_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", user.id)
+        .eq("deleted_by_receiver", false)
+        .gt("created_at", lastSeenRef.current);
+      setUnreadDmCount(count ?? 0);
+      if ((count ?? 0) > 0) setShowDmBalloon(true);
+    };
+
+    loadUnread();
+
+    // Realtime subscription for new DMs
+    const channel = supabase
+      .channel("header-dm-notify")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "direct_messages",
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setUnreadDmCount((prev) => prev + 1);
+          setShowDmBalloon(true);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  // Load profile
   useEffect(() => {
     if (!user) return;
     supabase
@@ -215,36 +259,72 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
                 )}
 
                 {/* User Menu Dropdown */}
-                <DropdownMenu>
+                <DropdownMenu onOpenChange={(open) => { if (open) { setShowDmBalloon(false); setUnreadDmCount(0); lastSeenRef.current = new Date().toISOString(); } }}>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors">
-                      <div className="w-7 h-7 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center overflow-hidden">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    <div className="relative">
+                      <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors">
+                        {/* Avatar with unread badge */}
+                        <div className="relative">
+                          <div className="w-7 h-7 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center overflow-hidden">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-4 h-4 text-accent-foreground" />
+                            )}
+                          </div>
+                          {unreadDmCount > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive border-2 border-background flex items-center justify-center text-[9px] font-bold text-destructive-foreground px-0.5 animate-bounce">
+                              {unreadDmCount > 9 ? "9+" : unreadDmCount}
+                            </span>
+                          )}
+                        </div>
+                        <div className="hidden sm:flex flex-col items-start">
+                          <span className="text-xs font-medium text-foreground leading-tight truncate max-w-[120px]">
+                            {user.user_metadata?.display_name || user.email?.split("@")[0]}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground leading-tight">{user.email}</span>
+                        </div>
+                        {customTitle ? (
+                          <Badge
+                            className="text-[10px] px-1.5 py-0"
+                            style={titleColor ? { backgroundColor: titleColor, color: '#fff' } : undefined}
+                          >
+                            {customTitle}
+                          </Badge>
+                        ) : isAdmin ? (
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 animate-pulse">Admin</Badge>
                         ) : (
-                          <User className="w-4 h-4 text-accent-foreground" />
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Personel</Badge>
                         )}
-                      </div>
-                      <div className="hidden sm:flex flex-col items-start">
-                        <span className="text-xs font-medium text-foreground leading-tight truncate max-w-[120px]">
-                          {user.user_metadata?.display_name || user.email?.split("@")[0]}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground leading-tight">{user.email}</span>
-                      </div>
-                      {customTitle ? (
-                        <Badge
-                          className="text-[10px] px-1.5 py-0"
-                          style={titleColor ? { backgroundColor: titleColor, color: '#fff' } : undefined}
-                        >
-                          {customTitle}
-                        </Badge>
-                      ) : isAdmin ? (
-                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 animate-pulse">Admin</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Personel</Badge>
+                        <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                      </button>
+
+                      {/* DM Notification balloon */}
+                      {showDmBalloon && unreadDmCount > 0 && (
+                        <div className="absolute bottom-full right-0 mb-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                          <div className="relative bg-popover border border-primary/40 rounded-xl shadow-xl px-3 py-2 flex items-center gap-2 max-w-[220px] whitespace-nowrap">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <MessageCircle className="w-3.5 h-3.5 text-primary" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-foreground leading-tight">
+                                {unreadDmCount} yeni mesajınız var
+                              </span>
+                              <span className="text-[10px] text-muted-foreground leading-tight">Sohbet bölümünden okuyun</span>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setShowDmBalloon(false); }}
+                              className="ml-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                            >
+                              ×
+                            </button>
+                            {/* Balloon tail */}
+                            <div className="absolute top-full right-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-border" />
+                            <div className="absolute top-full right-6 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-popover -mt-[1px]" />
+                          </div>
+                        </div>
                       )}
-                      <ChevronDown className="w-3 h-3 text-muted-foreground" />
-                    </button>
+                    </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64 bg-popover border border-border z-50">
                     <DropdownMenuLabel className="px-3 py-2">
