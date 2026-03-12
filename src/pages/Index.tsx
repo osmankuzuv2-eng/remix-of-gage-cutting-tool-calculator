@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
@@ -91,6 +91,8 @@ const Index = () => {
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [showMeetingLeaveConfirm, setShowMeetingLeaveConfirm] = useState(false);
   const [pendingTabId, setPendingTabId] = useState<TabId | null>(null);
+  const [isInActiveMeeting, setIsInActiveMeeting] = useState(false);
+  const meetingLeaveCallbackRef = useRef<(() => void) | null>(null);
 
   // No category open by default — only on hover
 
@@ -220,18 +222,22 @@ const Index = () => {
   }, [visibleTab, permissions, isAdmin, toast, user, getModuleName, userDisplayName]);
 
   const handleTabClick = useCallback((tabId: TabId) => {
-    // Warn if leaving active meeting
-    if (visibleTab === "canli-toplanti" && tabId !== "canli-toplanti") {
-      setPendingTabId(tabId);
+    // Warn if leaving active meeting (only if user is actually inside a room)
+    if (isInActiveMeeting && tabId !== "canli-toplanti") {
+      meetingLeaveCallbackRef.current = () => doNavigate(tabId);
       setShowMeetingLeaveConfirm(true);
       return;
     }
     doNavigate(tabId);
-  }, [visibleTab, doNavigate]);
+  }, [isInActiveMeeting, doNavigate]);
 
   const handleAdminClick = useCallback(() => {
-    if (visibleTab === "canli-toplanti") {
-      setPendingTabId("admin");
+    if (isInActiveMeeting) {
+      meetingLeaveCallbackRef.current = () => {
+        setActiveTab("admin");
+        setIsTransitioning(true);
+        setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
+      };
       setShowMeetingLeaveConfirm(true);
       return;
     }
@@ -239,7 +245,7 @@ const Index = () => {
     setActiveTab("admin");
     setIsTransitioning(true);
     setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
-  }, [visibleTab]);
+  }, [isInActiveMeeting, visibleTab]);
 
   const toggleCategory = (catId: string) => {
     setOpenCategory(openCategory === catId ? null : catId);
@@ -408,7 +414,9 @@ const Index = () => {
             {visibleTab === "catpart-quote" && hasAccess("catpart-quote") && <CatpartQuoteModule />}
             {visibleTab === "post-processor" && hasAccess("post-processor") && <PostProcessor />}
             {visibleTab === "sohbet" && hasAccess("sohbet") && <ChatModule />}
-            {visibleTab === "canli-toplanti" && hasAccess("canli-toplanti") && <LiveMeetingModule />}
+            {visibleTab === "canli-toplanti" && hasAccess("canli-toplanti") && (
+              <LiveMeetingModule onActiveRoomChange={(inRoom) => setIsInActiveMeeting(inRoom)} />
+            )}
 
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
@@ -446,7 +454,11 @@ const Index = () => {
             <div className="flex gap-2">
               <button
                 className="flex-1 px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
-                onClick={() => { setShowMeetingLeaveConfirm(false); setPendingTabId(null); }}
+                onClick={() => {
+                  setShowMeetingLeaveConfirm(false);
+                  setPendingTabId(null);
+                  meetingLeaveCallbackRef.current = null;
+                }}
               >
                 İptal
               </button>
@@ -454,16 +466,11 @@ const Index = () => {
                 className="flex-1 px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity"
                 onClick={() => {
                   setShowMeetingLeaveConfirm(false);
-                  if (pendingTabId) {
-                    if (pendingTabId === "admin") {
-                      setActiveTab("admin");
-                      setIsTransitioning(true);
-                      setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
-                    } else {
-                      doNavigate(pendingTabId);
-                    }
-                    setPendingTabId(null);
-                  }
+                  setPendingTabId(null);
+                  // Execute the pending navigation after a tick so LiveMeetingModule can cleanup
+                  const cb = meetingLeaveCallbackRef.current;
+                  meetingLeaveCallbackRef.current = null;
+                  cb?.();
                 }}
               >
                 Toplantıdan Çık ve Devam Et

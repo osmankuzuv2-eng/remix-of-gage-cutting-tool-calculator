@@ -223,7 +223,7 @@ const RoomCard = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const LiveMeetingModule = () => {
+const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoom: boolean) => void }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -411,6 +411,7 @@ const LiveMeetingModule = () => {
     isOwnerRef.current = amOwner;
     setActiveRoom(finalRoom);
     activeRoomRef.current = finalRoom;
+    onActiveRoomChange?.(true);
 
     heartbeatRef.current = setInterval(async () => {
       if (participantIdRef.current) {
@@ -765,6 +766,7 @@ const LiveMeetingModule = () => {
     setUnreadChat(0);
     setShowChat(true);
     isLeavingRef.current = false;
+    onActiveRoomChange?.(false);
     loadRooms();
   }, [user, loadRooms]);
 
@@ -958,7 +960,33 @@ const LiveMeetingModule = () => {
 
   useEffect(() => {
     return () => {
-      if (activeRoomRef.current) performLeave(true);
+      // Stop all local media tracks immediately
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+      // Close all peer connections
+      peersRef.current.forEach(p => { try { p.pc.close(); } catch {} });
+      // Remove realtime channels
+      if (signalChannelRef.current) supabase.removeChannel(signalChannelRef.current);
+      if (chatChannelRef.current) supabase.removeChannel(chatChannelRef.current);
+      if (participantChannelRef.current) supabase.removeChannel(participantChannelRef.current);
+      // Clear timers
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      if (cleanupRef.current) clearInterval(cleanupRef.current);
+      // Fire-and-forget: remove participant row and update room count
+      if (activeRoomRef.current && participantIdRef.current) {
+        const roomId = activeRoomRef.current.id;
+        const partId = participantIdRef.current;
+        supabase.from("meeting_participants" as any).delete().eq("id", partId).then(() => {
+          supabase.from("meeting_participants" as any)
+            .select("*", { count: "exact", head: true })
+            .eq("room_id", roomId)
+            .then(({ count }) => {
+              supabase.from("meeting_rooms" as any)
+                .update({ participant_count: count ?? 0 })
+                .eq("id", roomId);
+            });
+        });
+        onActiveRoomChange?.(false);
+      }
     };
   }, []); // eslint-disable-line
 
