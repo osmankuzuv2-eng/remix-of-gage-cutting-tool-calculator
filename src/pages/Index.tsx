@@ -124,9 +124,10 @@ const Index = () => {
   useEffect(() => {
     if (!user) return;
     const loadPermissions = async () => {
-      const [rolesRes, permsRes] = await Promise.all([
+      const [rolesRes, permsRes, profileRes] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
         supabase.from("user_module_permissions").select("module_key, granted").eq("user_id", user.id),
+        supabase.from("profiles").select("display_name").eq("user_id", user.id).single(),
       ]);
       const roles = rolesRes.data?.map((r) => r.role) || [];
       setIsAdmin(roles.includes("admin"));
@@ -134,6 +135,9 @@ const Index = () => {
       permsRes.data?.forEach((p) => { perms[p.module_key] = p.granted; });
       setPermissions(perms);
       setPermissionsLoaded(true);
+      // Set display name from profile
+      const name = profileRes.data?.display_name || user.email?.split("@")[0] || "Kullanıcı";
+      setUserDisplayName(name);
     };
     loadPermissions();
   }, [user]);
