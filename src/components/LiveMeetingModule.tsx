@@ -506,7 +506,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     // Clear ICE buffer for this peer
     iceCandidateBufferRef.current.set(targetUserId, []);
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const pc = new RTCPeerConnection(iceConfigRef.current);
 
     // Add all local tracks to the peer connection
     if (stream) {
