@@ -463,8 +463,8 @@ const PostProcessor = () => {
 
         {/* RIGHT — G-Code Output */}
         <div className="flex flex-col">
-          <div className="bg-[#0d1117] rounded-lg border border-border overflow-hidden flex-1 flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-border">
+        <div className="bg-card rounded-lg border border-border overflow-hidden flex-1 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2 bg-secondary/30 border-b border-border">
               <div className="flex items-center gap-2">
                 <FileCode className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-mono">
