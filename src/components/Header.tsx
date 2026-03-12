@@ -75,20 +75,47 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // Unread DM count
+  const [unreadDmCount, setUnreadDmCount] = useState(0);
+  const [showDmBalloon, setShowDmBalloon] = useState(false);
+  const lastSeenRef = useRef<string>(new Date().toISOString());
+
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("custom_title, title_color, avatar_url")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setCustomTitle(data.custom_title);
-          setTitleColor(data.title_color);
-          setAvatarUrl(data.avatar_url);
+
+    // Load unread DMs since last seen
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("direct_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", user.id)
+        .eq("deleted_by_receiver", false)
+        .gt("created_at", lastSeenRef.current);
+      setUnreadDmCount(count ?? 0);
+      if ((count ?? 0) > 0) setShowDmBalloon(true);
+    };
+
+    loadUnread();
+
+    // Realtime subscription for new DMs
+    const channel = supabase
+      .channel("header-dm-notify")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "direct_messages",
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setUnreadDmCount((prev) => prev + 1);
+          setShowDmBalloon(true);
         }
-      });
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
