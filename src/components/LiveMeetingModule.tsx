@@ -979,7 +979,7 @@ const LiveMeetingModule = () => {
                 isLocal={false} isMuted={peer.isAudioMuted} isVideoOff={peer.isVideoOff}
                 isAdminMuted={peer.isAdminMuted} isAdminVideoOff={peer.isAdminVideoOff}
                 isOwner={activeRoom.owner_id === peer.userId}
-                onKick={isOwner && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
+                onKick={canControl && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
               />
             ))}
           </div>
