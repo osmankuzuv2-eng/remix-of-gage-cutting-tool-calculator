@@ -59,28 +59,25 @@ interface ChatMessage {
 
 // ─── ICE ──────────────────────────────────────────────────────────────────────
 
-const ICE_SERVERS = {
+// Fallback used while dynamic credentials are loading or if fetch fails
+const STUN_FALLBACK: RTCConfiguration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun.relay.metered.ca:80" },
-    {
-      urls: "turn:global.relay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:global.relay.metered.ca:443",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:global.relay.metered.ca:443?transport=tcp",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
   ],
+};
+
+const fetchIceServers = async (): Promise<RTCConfiguration> => {
+  try {
+    const { data } = await supabase.functions.invoke("get-turn-credentials");
+    if (data?.iceServers && Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+      return { iceServers: data.iceServers };
+    }
+  } catch (e) {
+    console.warn("[ICE] Failed to fetch TURN credentials, using STUN fallback:", e);
+  }
+  return STUN_FALLBACK;
 };
 
 // ─── VideoTile ────────────────────────────────────────────────────────────────
