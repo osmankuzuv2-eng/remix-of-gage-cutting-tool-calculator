@@ -86,7 +86,7 @@ const ICE_SERVERS = {
 // ─── VideoTile ────────────────────────────────────────────────────────────────
 
 const VideoTile = ({
-  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick,
+  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick, isScreenSharing,
 }: {
   stream: MediaStream | null;
   name: string;
@@ -98,6 +98,7 @@ const VideoTile = ({
   isAdminVideoOff?: boolean;
   isOwner?: boolean;
   onKick?: () => void;
+  isScreenSharing?: boolean;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -133,6 +134,13 @@ const VideoTile = ({
             </div>
           )}
           <span className="text-xs text-muted-foreground">Kamera kapalı</span>
+        </div>
+      )}
+
+      {/* Screen sharing badge */}
+      {isScreenSharing && (
+        <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+          <Monitor className="w-3 h-3" />Ekran
         </div>
       )}
 
