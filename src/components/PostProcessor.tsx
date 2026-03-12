@@ -332,12 +332,12 @@ const PostProcessor = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
+  const handleDownload = (ext?: string) => {
     const blob = new Blob([output], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${programName}.${selectedCtrl.ext}`;
+    a.download = `${programName}.${ext ?? selectedCtrl.ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
