@@ -1072,6 +1072,10 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     // 5. If admin is inside this room, clean up locally too
     if (activeRoom?.id === roomId) {
+      // Stop screen share if active
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+      setIsScreenSharing(false);
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
       streamRef.current = null;
