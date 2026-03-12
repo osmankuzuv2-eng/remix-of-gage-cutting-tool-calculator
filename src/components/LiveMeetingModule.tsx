@@ -389,6 +389,12 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     }
 
     setMediaError(null);
+
+    // Fetch fresh TURN credentials before any peer connections are created
+    console.log("[ICE] Fetching TURN credentials…");
+    iceConfigRef.current = await fetchIceServers();
+    console.log("[ICE] ICE config ready:", iceConfigRef.current.iceServers?.length, "servers");
+
     let stream: MediaStream | null = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
