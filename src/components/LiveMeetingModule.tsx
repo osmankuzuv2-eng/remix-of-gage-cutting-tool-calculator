@@ -59,28 +59,25 @@ interface ChatMessage {
 
 // ─── ICE ──────────────────────────────────────────────────────────────────────
 
-const ICE_SERVERS = {
+// Fallback used while dynamic credentials are loading or if fetch fails
+const STUN_FALLBACK: RTCConfiguration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun.relay.metered.ca:80" },
-    {
-      urls: "turn:global.relay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:global.relay.metered.ca:443",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:global.relay.metered.ca:443?transport=tcp",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
   ],
+};
+
+const fetchIceServers = async (): Promise<RTCConfiguration> => {
+  try {
+    const { data } = await supabase.functions.invoke("get-turn-credentials");
+    if (data?.iceServers && Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+      return { iceServers: data.iceServers };
+    }
+  } catch (e) {
+    console.warn("[ICE] Failed to fetch TURN credentials, using STUN fallback:", e);
+  }
+  return STUN_FALLBACK;
 };
 
 // ─── VideoTile ────────────────────────────────────────────────────────────────
@@ -289,6 +286,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const isLeavingRef = useRef(false);
   const currentRoomIdRef = useRef<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const iceConfigRef = useRef<RTCConfiguration>(STUN_FALLBACK);
   // Buffer for ICE candidates received before remote description is set
   const iceCandidateBufferRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   // Track which connections are currently making an offer to prevent glare
@@ -391,6 +389,12 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     }
 
     setMediaError(null);
+
+    // Fetch fresh TURN credentials before any peer connections are created
+    console.log("[ICE] Fetching TURN credentials…");
+    iceConfigRef.current = await fetchIceServers();
+    console.log("[ICE] ICE config ready:", iceConfigRef.current.iceServers?.length, "servers");
+
     let stream: MediaStream | null = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -508,7 +512,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     // Clear ICE buffer for this peer
     iceCandidateBufferRef.current.set(targetUserId, []);
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const pc = new RTCPeerConnection(iceConfigRef.current);
 
     // Add all local tracks to the peer connection
     if (stream) {
