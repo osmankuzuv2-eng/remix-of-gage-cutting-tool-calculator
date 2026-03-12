@@ -87,6 +87,7 @@ const Index = () => {
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  const [userDisplayName, setUserDisplayName] = useState<string>("");
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
   // No category open by default — only on hover
