@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { safeGetItem, safeSetItem, isValidArray } from "@/lib/safeStorage";
 import gageLogo from "@/assets/gage-logo-white.png";
 import { useMaterialSettings } from "@/hooks/useMaterialSettings";
