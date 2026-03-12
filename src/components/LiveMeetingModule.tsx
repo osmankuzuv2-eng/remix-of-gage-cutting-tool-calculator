@@ -140,15 +140,27 @@ const VideoTile = ({
 
 // ─── Room Card ────────────────────────────────────────────────────────────────
 
-const RoomCard = ({ room, onJoin, currentUserId }: { room: Room; onJoin: (r: Room) => void; currentUserId: string }) => {
+const RoomCard = ({
+  room, onJoin, currentUserId, isGlobalAdmin, onReset,
+}: {
+  room: Room; onJoin: (r: Room) => void; currentUserId: string;
+  isGlobalAdmin?: boolean; onReset?: (room: Room) => void;
+}) => {
   const isFull = room.participant_count >= room.max_participants;
   const isEmpty = room.participant_count === 0;
 
   return (
-    <div className={`bg-card border rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 hover:border-primary/40 hover:shadow-lg ${isFull ? "opacity-60" : ""}`}>
+    <div className={`bg-card border rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 hover:border-primary/40 hover:shadow-lg ${isFull && !isGlobalAdmin ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">{room.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-foreground">{room.name}</h3>
+            {isGlobalAdmin && (
+              <span className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <ShieldAlert className="w-2.5 h-2.5" />ADM
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-1.5 mt-1">
             {room.owner_id ? (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -175,15 +187,27 @@ const RoomCard = ({ room, onJoin, currentUserId }: { room: Room; onJoin: (r: Roo
 
       <div className="w-full bg-muted rounded-full h-1.5">
         <div
-          className={`h-1.5 rounded-full transition-all ${isFull ? "bg-red-500" : room.participant_count > 0 ? "bg-emerald-500" : "bg-muted-foreground/20"}`}
+          className={`h-1.5 rounded-full transition-all ${isFull ? "bg-destructive" : room.participant_count > 0 ? "bg-emerald-500" : "bg-muted-foreground/20"}`}
           style={{ width: `${Math.min((room.participant_count / room.max_participants) * 100, 100)}%` }}
         />
       </div>
 
-      <Button size="sm" disabled={isFull} onClick={() => onJoin(room)} className="w-full" variant={isEmpty ? "default" : "outline"}>
-        <LogIn className="w-4 h-4 mr-2" />
-        {isFull ? "Oda Dolu" : room.owner_id === currentUserId ? "Odana Geri Dön" : isEmpty ? "Oda Aç" : "Katıl"}
-      </Button>
+      <div className="flex gap-2">
+        <Button size="sm" disabled={isFull && !isGlobalAdmin} onClick={() => onJoin(room)} className="flex-1" variant={isEmpty ? "default" : "outline"}>
+          <LogIn className="w-4 h-4 mr-2" />
+          {isFull && !isGlobalAdmin ? "Oda Dolu" : room.owner_id === currentUserId ? "Geri Dön" : isEmpty ? "Oda Aç" : "Katıl"}
+        </Button>
+        {isGlobalAdmin && room.participant_count > 0 && onReset && (
+          <Button
+            size="sm" variant="outline"
+            className="h-8 w-8 p-0 flex-shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+            title="Odayı Sıfırla"
+            onClick={() => onReset(room)}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
