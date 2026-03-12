@@ -1406,6 +1406,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
                 isAdminMuted={peer.isAdminMuted} isAdminVideoOff={peer.isAdminVideoOff}
                 isOwner={activeRoom.owner_id === peer.userId}
                 onKick={canControl && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
+                quality={peer.quality}
               />
             ))}
           </div>
