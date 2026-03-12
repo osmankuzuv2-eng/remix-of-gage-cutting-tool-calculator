@@ -118,6 +118,23 @@ const Header = ({ isAdmin, onAdminClick, adminActive }: HeaderProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Load profile
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("custom_title, title_color, avatar_url")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setCustomTitle(data.custom_title);
+          setTitleColor(data.title_color);
+          setAvatarUrl(data.avatar_url);
+        }
+      });
+  }, [user]);
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
