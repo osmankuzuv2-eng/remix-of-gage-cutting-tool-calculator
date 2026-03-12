@@ -1,4 +1,4 @@
-import { Settings, LogOut, KeyRound, User, ChevronDown, Mail, Camera } from "lucide-react";
+import { Settings, LogOut, KeyRound, User, ChevronDown, Mail, Camera, MessageCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
