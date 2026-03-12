@@ -706,9 +706,11 @@ const LiveMeetingModule = () => {
   }, [isVideoOff]);
 
   // ── Admin controls ────────────────────────────────────────────────────────────
+  // isOwner = room owner, isGlobalAdmin = system admin (full authority in all rooms)
+  const canControl = isOwner || isGlobalAdmin;
 
   const adminMute = async (targetUserId: string, currentlyMuted: boolean) => {
-    if (!isOwner || !activeRoom || !user) return;
+    if (!canControl || !activeRoom || !user) return;
     const newMuted = !currentlyMuted;
     await supabase.from("meeting_signals" as any).insert({
       room_id: activeRoom.id, from_user_id: user.id, to_user_id: targetUserId,
@@ -718,7 +720,7 @@ const LiveMeetingModule = () => {
   };
 
   const adminVideoOff = async (targetUserId: string, currentlyOff: boolean) => {
-    if (!isOwner || !activeRoom || !user) return;
+    if (!canControl || !activeRoom || !user) return;
     const newOff = !currentlyOff;
     await supabase.from("meeting_signals" as any).insert({
       room_id: activeRoom.id, from_user_id: user.id, to_user_id: targetUserId,
@@ -728,18 +730,17 @@ const LiveMeetingModule = () => {
   };
 
   const adminKick = async (targetUserId: string) => {
-    if (!isOwner || !activeRoom || !user) return;
+    if (!canControl || !activeRoom || !user) return;
     await supabase.from("meeting_signals" as any).insert({
       room_id: activeRoom.id, from_user_id: user.id, to_user_id: targetUserId,
       signal_type: "admin_control", payload: { kick: true, target_user_id: targetUserId },
     });
-    // Remove from participants
     await supabase.from("meeting_participants" as any).delete().eq("user_id", targetUserId).eq("room_id", activeRoom.id);
     toast({ title: "Kullanıcı odadan çıkarıldı" });
   };
 
   const lockRoom = async () => {
-    if (!isOwner || !activeRoom) return;
+    if (!canControl || !activeRoom) return;
     if (activeRoom.is_locked) {
       await supabase.from("meeting_rooms" as any).update({ is_locked: false, password: null }).eq("id", activeRoom.id);
       setActiveRoom({ ...activeRoom, is_locked: false });
@@ -756,6 +757,48 @@ const LiveMeetingModule = () => {
     setActiveRoom({ ...activeRoom, is_locked: true });
     setShowLockDialog(false);
     toast({ title: "Oda şifrelendi" });
+  };
+
+  // ── Reset room (admin only — from room list or inside room) ───────────────────
+
+  const resetRoom = async (roomId: string, roomName: string) => {
+    if (!isGlobalAdmin || !user) return;
+    // Kick all participants via signal
+    const { data: allParts } = await supabase.from("meeting_participants" as any).select("user_id").eq("room_id", roomId);
+    if (allParts) {
+      for (const p of allParts as any[]) {
+        if (p.user_id === user.id) continue;
+        await supabase.from("meeting_signals" as any).insert({
+          room_id: roomId, from_user_id: user.id, to_user_id: p.user_id,
+          signal_type: "admin_control", payload: { owner_left: true },
+        });
+      }
+    }
+    // Clear all participants and reset room state
+    await supabase.from("meeting_participants" as any).delete().eq("room_id", roomId);
+    await supabase.from("meeting_rooms" as any).update({
+      owner_id: null, owner_name: null, is_locked: false, password: null, participant_count: 0,
+    }).eq("id", roomId);
+    // If we're inside this room, leave
+    if (activeRoom?.id === roomId) {
+      setActiveRoom(null);
+      activeRoomRef.current = null;
+      setIsOwner(false);
+      isOwnerRef.current = false;
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+      setLocalStream(null);
+      peersRef.current.forEach(p => p.pc.close());
+      setPeers(new Map());
+      setParticipants([]);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      if (cleanupRef.current) clearInterval(cleanupRef.current);
+      if (signalChannelRef.current) supabase.removeChannel(signalChannelRef.current);
+      if (chatChannelRef.current) supabase.removeChannel(chatChannelRef.current);
+      if (participantChannelRef.current) supabase.removeChannel(participantChannelRef.current);
+    }
+    toast({ title: `"${roomName}" sıfırlandı`, description: "Tüm katılımcılar odadan çıkarıldı." });
+    loadRooms();
   };
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────────
