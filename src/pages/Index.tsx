@@ -233,8 +233,12 @@ const Index = () => {
   }, [isInActiveMeeting, doNavigate]);
 
   const handleAdminClick = useCallback(() => {
-    if (visibleTab === "canli-toplanti") {
-      setPendingTabId("admin");
+    if (isInActiveMeeting) {
+      meetingLeaveCallbackRef.current = () => {
+        setActiveTab("admin");
+        setIsTransitioning(true);
+        setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
+      };
       setShowMeetingLeaveConfirm(true);
       return;
     }
@@ -242,7 +246,7 @@ const Index = () => {
     setActiveTab("admin");
     setIsTransitioning(true);
     setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
-  }, [visibleTab]);
+  }, [isInActiveMeeting, visibleTab]);
 
   const toggleCategory = (catId: string) => {
     setOpenCategory(openCategory === catId ? null : catId);
