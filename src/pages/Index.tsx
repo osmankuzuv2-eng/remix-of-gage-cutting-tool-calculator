@@ -415,7 +415,9 @@ const Index = () => {
             {visibleTab === "catpart-quote" && hasAccess("catpart-quote") && <CatpartQuoteModule />}
             {visibleTab === "post-processor" && hasAccess("post-processor") && <PostProcessor />}
             {visibleTab === "sohbet" && hasAccess("sohbet") && <ChatModule />}
-            {visibleTab === "canli-toplanti" && hasAccess("canli-toplanti") && <LiveMeetingModule />}
+            {visibleTab === "canli-toplanti" && hasAccess("canli-toplanti") && (
+              <LiveMeetingModule onActiveRoomChange={(inRoom) => setIsInActiveMeeting(inRoom)} />
+            )}
 
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
