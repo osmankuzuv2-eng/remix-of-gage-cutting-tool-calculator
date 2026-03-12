@@ -5,6 +5,7 @@ import {
   Video, VideoOff, Mic, MicOff, PhoneOff, Users, Lock, Unlock,
   LogIn, Crown, VolumeX, Volume2, Eye, EyeOff, RefreshCw,
   AlertCircle, X, Send, MessageSquare, RotateCcw, ShieldAlert,
+  Monitor, MonitorOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,7 +86,7 @@ const ICE_SERVERS = {
 // ─── VideoTile ────────────────────────────────────────────────────────────────
 
 const VideoTile = ({
-  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick,
+  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick, isScreenSharing,
 }: {
   stream: MediaStream | null;
   name: string;
@@ -97,6 +98,7 @@ const VideoTile = ({
   isAdminVideoOff?: boolean;
   isOwner?: boolean;
   onKick?: () => void;
+  isScreenSharing?: boolean;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -132,6 +134,13 @@ const VideoTile = ({
             </div>
           )}
           <span className="text-xs text-muted-foreground">Kamera kapalı</span>
+        </div>
+      )}
+
+      {/* Screen sharing badge */}
+      {isScreenSharing && (
+        <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+          <Monitor className="w-3 h-3" />Ekran
         </div>
       )}
 
@@ -251,7 +260,9 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const [passwordInput, setPasswordInput] = useState("");
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newRoomPassword, setNewRoomPassword] = useState("");
@@ -780,6 +791,66 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     participantChannelRef.current = participantCh;
   }, [user, createPeerConnection]);
 
+  // ── Screen sharing ────────────────────────────────────────────────────────────
+
+  const toggleScreenShare = useCallback(async () => {
+    if (isScreenSharing) {
+      // Stop screen share, restore camera
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+
+      const camStream = localStreamRef.current;
+      if (camStream) {
+        const camVideoTrack = camStream.getVideoTracks()[0];
+        if (camVideoTrack) {
+          camVideoTrack.enabled = !isVideoOff;
+          peersRef.current.forEach(peer => {
+            const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
+            if (sender) sender.replaceTrack(camVideoTrack).catch(() => {});
+          });
+        }
+      }
+      setIsScreenSharing(false);
+      toast({ title: "Ekran paylaşımı durduruldu" });
+    } else {
+      try {
+        const screenStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: { cursor: "always" },
+          audio: false,
+        });
+        screenStreamRef.current = screenStream;
+        const screenTrack = screenStream.getVideoTracks()[0];
+
+        // Replace video track in all peer connections
+        peersRef.current.forEach(peer => {
+          const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
+          if (sender) sender.replaceTrack(screenTrack).catch(() => {});
+        });
+
+        // Update local stream preview
+        const camStream = localStreamRef.current;
+        if (camStream) {
+          camStream.getVideoTracks().forEach(t => camStream.removeTrack(t));
+          camStream.addTrack(screenTrack);
+          setLocalStream(new MediaStream(camStream.getTracks()));
+        }
+
+        setIsScreenSharing(true);
+        setIsVideoOff(false);
+        toast({ title: "Ekran paylaşımı başladı", description: "Paylaşımı durdurmak için butona tekrar tıklayın." });
+
+        // Auto-stop when user ends share via browser UI
+        screenTrack.onended = () => {
+          toggleScreenShare();
+        };
+      } catch (err: any) {
+        if (err?.name !== "NotAllowedError") {
+          toast({ title: "Ekran paylaşımı başlatılamadı", variant: "destructive" });
+        }
+      }
+    }
+  }, [isScreenSharing, isVideoOff, toast]);
+
   // ── Leave room ────────────────────────────────────────────────────────────────
 
   const performLeave = useCallback(async (isInitiator = true) => {
@@ -788,6 +859,11 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     const room = activeRoomRef.current;
     const amOwner = isOwnerRef.current;
+
+    // Stop screen share if active
+    screenStreamRef.current?.getTracks().forEach(t => t.stop());
+    screenStreamRef.current = null;
+    setIsScreenSharing(false);
 
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     localStreamRef.current = null;
@@ -1004,6 +1080,10 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     // 5. If admin is inside this room, clean up locally too
     if (activeRoom?.id === roomId) {
+      // Stop screen share if active
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+      setIsScreenSharing(false);
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
       streamRef.current = null;
@@ -1034,6 +1114,8 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
   useEffect(() => {
     return () => {
+      // Stop screen share if active
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
       // Stop all local media tracks immediately
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       // Close all peer connections
@@ -1208,6 +1290,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
             <VideoTile
               stream={localStream} name={displayName} avatarUrl={myProfile.avatar_url}
               isLocal={true} isMuted={isAudioMuted} isVideoOff={isVideoOff} isOwner={isOwner}
+              isScreenSharing={isScreenSharing}
             />
             {allPeers.map(peer => (
               <VideoTile
@@ -1234,6 +1317,15 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
               onClick={toggleVideo} title={isVideoOff ? "Kamerayı Aç" : "Kamerayı Kapat"}
             >
               {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+            </Button>
+            <Button
+              size="icon"
+              variant={isScreenSharing ? "default" : "outline"}
+              className={`w-11 h-11 rounded-full ${isScreenSharing ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-500" : ""}`}
+              onClick={toggleScreenShare}
+              title={isScreenSharing ? "Ekran Paylaşımını Durdur" : "Ekran Paylaş"}
+            >
+              {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
             </Button>
             <Button
               size="icon" variant="destructive" className="w-12 h-12 rounded-full"
