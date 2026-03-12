@@ -746,10 +746,10 @@ const PostProcessor = () => {
   const { t } = useLanguage();
   const { machines } = useMachines();
 
-  const [clsInput, setClsInput] = useState(SAMPLE_CLS);
+  const [clsInput, setClsInput] = useState("");
   const [controller, setController] = useState<ControllerType>("fanuc");
   const [selectedMachineId, setSelectedMachineId] = useState<string>("");
-  const [programName, setProgramName] = useState("DELIKLER");
+  const [programName, setProgramName] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
