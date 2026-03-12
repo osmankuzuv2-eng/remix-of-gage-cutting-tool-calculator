@@ -434,6 +434,42 @@ const Index = () => {
       {showMaterialForm && (
         <MaterialForm onAddMaterial={handleAddMaterial} onClose={() => setShowMaterialForm(false)} />
       )}
+
+      {/* Meeting leave confirmation */}
+      {showMeetingLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="font-semibold text-foreground mb-2">Canlı Toplantıdan Çık?</h3>
+            <p className="text-sm text-muted-foreground mb-4">Başka bir modüle geçmek için önce canlı toplantıdan ayrılmanız gerekiyor.</p>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
+                onClick={() => { setShowMeetingLeaveConfirm(false); setPendingTabId(null); }}
+              >
+                İptal
+              </button>
+              <button
+                className="flex-1 px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                onClick={() => {
+                  setShowMeetingLeaveConfirm(false);
+                  if (pendingTabId) {
+                    if (pendingTabId === "admin") {
+                      setActiveTab("admin");
+                      setIsTransitioning(true);
+                      setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
+                    } else {
+                      doNavigate(pendingTabId);
+                    }
+                    setPendingTabId(null);
+                  }
+                }}
+              >
+                Toplantıdan Çık ve Devam Et
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
