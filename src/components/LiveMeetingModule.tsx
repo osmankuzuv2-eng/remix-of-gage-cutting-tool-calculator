@@ -5,6 +5,7 @@ import {
   Video, VideoOff, Mic, MicOff, PhoneOff, Users, Lock, Unlock,
   LogIn, Crown, VolumeX, Volume2, Eye, EyeOff, RefreshCw,
   AlertCircle, X, Send, MessageSquare, RotateCcw, ShieldAlert,
+  Monitor, MonitorOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
