@@ -900,31 +900,44 @@ const LiveMeetingModule = () => {
 
   const resetRoom = async (roomId: string, roomName: string) => {
     if (!isGlobalAdmin || !user) return;
-    // Notify all participants with room_reset signal
+
+    // 1. Fetch all participants before deleting them
     const { data: allParts } = await supabase.from("meeting_participants" as any).select("user_id").eq("room_id", roomId);
+
+    // 2. Send room_reset signal to ALL other participants so they disconnect
     if (allParts) {
-      for (const p of allParts as any[]) {
-        if (p.user_id === user.id) continue;
-        await supabase.from("meeting_signals" as any).insert({
-          room_id: roomId, from_user_id: user.id, to_user_id: p.user_id,
-          signal_type: "room_reset", payload: { room_name: roomName },
-        });
-      }
+      const signalPromises = (allParts as any[])
+        .filter(p => p.user_id !== user.id)
+        .map(p =>
+          supabase.from("meeting_signals" as any).insert({
+            room_id: roomId, from_user_id: user.id, to_user_id: p.user_id,
+            signal_type: "room_reset", payload: { room_name: roomName },
+          })
+        );
+      await Promise.all(signalPromises);
     }
+
+    // 3. Small delay to let signals propagate before wiping DB rows
+    await new Promise(r => setTimeout(r, 300));
+
+    // 4. Clear DB
     await supabase.from("meeting_participants" as any).delete().eq("room_id", roomId);
     await supabase.from("meeting_rooms" as any).update({
       owner_id: null, owner_name: null, is_locked: false, password: null, participant_count: 0,
     }).eq("id", roomId);
-    // If we're inside this room, leave cleanly
+
+    // 5. If admin is inside this room, clean up locally too
     if (activeRoom?.id === roomId) {
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
+      streamRef.current = null;
       setLocalStream(null);
-      peersRef.current.forEach(p => p.pc.close());
+      peersRef.current.forEach(p => { try { p.pc.close(); } catch {} });
       setPeers(new Map());
       setParticipants([]);
       setActiveRoom(null);
       activeRoomRef.current = null;
+      currentRoomIdRef.current = null;
       setIsOwner(false);
       isOwnerRef.current = false;
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
@@ -934,8 +947,10 @@ const LiveMeetingModule = () => {
       if (participantChannelRef.current) supabase.removeChannel(participantChannelRef.current);
       setChatMessages([]);
       setShowChat(true);
+      isLeavingRef.current = false;
     }
-    toast({ title: `"${roomName}" sıfırlandı`, description: "Tüm katılımcılar bilgilendirildi ve odadan çıkarıldı." });
+
+    toast({ title: `"${roomName}" sıfırlandı`, description: "Tüm katılımcılar odadan çıkarıldı." });
     loadRooms();
   };
 
