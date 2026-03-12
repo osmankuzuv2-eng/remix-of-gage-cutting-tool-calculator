@@ -190,14 +190,22 @@ const Index = () => {
   );
 
   const handleTabClick = useCallback((tabId: TabId) => {
-    if (!hasAccess(tabId) || tabId === visibleTab) return;
+    if (!hasAccess(tabId)) {
+      toast({
+        title: "Erişim Engellendi",
+        description: "Bu alana giriş yetkiniz bulunmuyor.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (tabId === visibleTab) return;
     setActiveTab(tabId);
     setIsTransitioning(true);
     setTimeout(() => {
       setVisibleTab(tabId);
       setIsTransitioning(false);
     }, 1000);
-  }, [visibleTab, permissions, isAdmin]);
+  }, [visibleTab, permissions, isAdmin, toast]);
 
   const handleAdminClick = useCallback(() => {
     if (visibleTab === "admin") return;
