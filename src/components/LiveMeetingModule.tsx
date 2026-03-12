@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   Video, VideoOff, Mic, MicOff, PhoneOff, Users, Lock, Unlock,
   LogIn, Crown, VolumeX, Volume2, Eye, EyeOff, RefreshCw,
-  AlertCircle, X, Send, MessageSquare, ChevronRight,
+  AlertCircle, X, Send, MessageSquare, RotateCcw, ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,15 +140,27 @@ const VideoTile = ({
 
 // ─── Room Card ────────────────────────────────────────────────────────────────
 
-const RoomCard = ({ room, onJoin, currentUserId }: { room: Room; onJoin: (r: Room) => void; currentUserId: string }) => {
+const RoomCard = ({
+  room, onJoin, currentUserId, isGlobalAdmin, onReset,
+}: {
+  room: Room; onJoin: (r: Room) => void; currentUserId: string;
+  isGlobalAdmin?: boolean; onReset?: (room: Room) => void;
+}) => {
   const isFull = room.participant_count >= room.max_participants;
   const isEmpty = room.participant_count === 0;
 
   return (
-    <div className={`bg-card border rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 hover:border-primary/40 hover:shadow-lg ${isFull ? "opacity-60" : ""}`}>
+    <div className={`bg-card border rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 hover:border-primary/40 hover:shadow-lg ${isFull && !isGlobalAdmin ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">{room.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-foreground">{room.name}</h3>
+            {isGlobalAdmin && (
+              <span className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <ShieldAlert className="w-2.5 h-2.5" />ADM
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-1.5 mt-1">
             {room.owner_id ? (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -175,15 +187,27 @@ const RoomCard = ({ room, onJoin, currentUserId }: { room: Room; onJoin: (r: Roo
 
       <div className="w-full bg-muted rounded-full h-1.5">
         <div
-          className={`h-1.5 rounded-full transition-all ${isFull ? "bg-red-500" : room.participant_count > 0 ? "bg-emerald-500" : "bg-muted-foreground/20"}`}
+          className={`h-1.5 rounded-full transition-all ${isFull ? "bg-destructive" : room.participant_count > 0 ? "bg-emerald-500" : "bg-muted-foreground/20"}`}
           style={{ width: `${Math.min((room.participant_count / room.max_participants) * 100, 100)}%` }}
         />
       </div>
 
-      <Button size="sm" disabled={isFull} onClick={() => onJoin(room)} className="w-full" variant={isEmpty ? "default" : "outline"}>
-        <LogIn className="w-4 h-4 mr-2" />
-        {isFull ? "Oda Dolu" : room.owner_id === currentUserId ? "Odana Geri Dön" : isEmpty ? "Oda Aç" : "Katıl"}
-      </Button>
+      <div className="flex gap-2">
+        <Button size="sm" disabled={isFull && !isGlobalAdmin} onClick={() => onJoin(room)} className="flex-1" variant={isEmpty ? "default" : "outline"}>
+          <LogIn className="w-4 h-4 mr-2" />
+          {isFull && !isGlobalAdmin ? "Oda Dolu" : room.owner_id === currentUserId ? "Geri Dön" : isEmpty ? "Oda Aç" : "Katıl"}
+        </Button>
+        {isGlobalAdmin && room.participant_count > 0 && onReset && (
+          <Button
+            size="sm" variant="outline"
+            className="h-8 w-8 p-0 flex-shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+            title="Odayı Sıfırla"
+            onClick={() => onReset(room)}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
@@ -209,6 +233,7 @@ const LiveMeetingModule = () => {
   const [showLockDialog, setShowLockDialog] = useState(false);
   const [pendingRoom, setPendingRoom] = useState<Room | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -228,10 +253,11 @@ const LiveMeetingModule = () => {
   const isLeavingRef = useRef(false);
   peersRef.current = peers;
 
-  // ── Load profile ─────────────────────────────────────────────────────────────
+  // ── Load profile + check admin ────────────────────────────────────────────────
 
   useEffect(() => {
     if (!user) return;
+    // Load profile
     supabase.from("profiles").select("display_name, avatar_url").eq("user_id", user.id).single().then(({ data }) => {
       if (data) {
         setMyProfile({
@@ -240,6 +266,12 @@ const LiveMeetingModule = () => {
         });
       } else {
         setMyProfile({ display_name: user.email?.split("@")[0] || "Kullanıcı", avatar_url: null });
+      }
+    });
+    // Check global admin role
+    supabase.from("user_roles" as any).select("role").eq("user_id", user.id).then(({ data }) => {
+      if (data && (data as any[]).some((r: any) => r.role === "admin")) {
+        setIsGlobalAdmin(true);
       }
     });
   }, [user]);
@@ -698,9 +730,11 @@ const LiveMeetingModule = () => {
   }, [isVideoOff]);
 
   // ── Admin controls ────────────────────────────────────────────────────────────
+  // isOwner = room owner, isGlobalAdmin = system admin (full authority in all rooms)
+  const canControl = isOwner || isGlobalAdmin;
 
   const adminMute = async (targetUserId: string, currentlyMuted: boolean) => {
-    if (!isOwner || !activeRoom || !user) return;
+    if (!canControl || !activeRoom || !user) return;
     const newMuted = !currentlyMuted;
     await supabase.from("meeting_signals" as any).insert({
       room_id: activeRoom.id, from_user_id: user.id, to_user_id: targetUserId,
@@ -710,7 +744,7 @@ const LiveMeetingModule = () => {
   };
 
   const adminVideoOff = async (targetUserId: string, currentlyOff: boolean) => {
-    if (!isOwner || !activeRoom || !user) return;
+    if (!canControl || !activeRoom || !user) return;
     const newOff = !currentlyOff;
     await supabase.from("meeting_signals" as any).insert({
       room_id: activeRoom.id, from_user_id: user.id, to_user_id: targetUserId,
@@ -720,18 +754,17 @@ const LiveMeetingModule = () => {
   };
 
   const adminKick = async (targetUserId: string) => {
-    if (!isOwner || !activeRoom || !user) return;
+    if (!canControl || !activeRoom || !user) return;
     await supabase.from("meeting_signals" as any).insert({
       room_id: activeRoom.id, from_user_id: user.id, to_user_id: targetUserId,
       signal_type: "admin_control", payload: { kick: true, target_user_id: targetUserId },
     });
-    // Remove from participants
     await supabase.from("meeting_participants" as any).delete().eq("user_id", targetUserId).eq("room_id", activeRoom.id);
     toast({ title: "Kullanıcı odadan çıkarıldı" });
   };
 
   const lockRoom = async () => {
-    if (!isOwner || !activeRoom) return;
+    if (!canControl || !activeRoom) return;
     if (activeRoom.is_locked) {
       await supabase.from("meeting_rooms" as any).update({ is_locked: false, password: null }).eq("id", activeRoom.id);
       setActiveRoom({ ...activeRoom, is_locked: false });
@@ -748,6 +781,48 @@ const LiveMeetingModule = () => {
     setActiveRoom({ ...activeRoom, is_locked: true });
     setShowLockDialog(false);
     toast({ title: "Oda şifrelendi" });
+  };
+
+  // ── Reset room (admin only — from room list or inside room) ───────────────────
+
+  const resetRoom = async (roomId: string, roomName: string) => {
+    if (!isGlobalAdmin || !user) return;
+    // Kick all participants via signal
+    const { data: allParts } = await supabase.from("meeting_participants" as any).select("user_id").eq("room_id", roomId);
+    if (allParts) {
+      for (const p of allParts as any[]) {
+        if (p.user_id === user.id) continue;
+        await supabase.from("meeting_signals" as any).insert({
+          room_id: roomId, from_user_id: user.id, to_user_id: p.user_id,
+          signal_type: "admin_control", payload: { owner_left: true },
+        });
+      }
+    }
+    // Clear all participants and reset room state
+    await supabase.from("meeting_participants" as any).delete().eq("room_id", roomId);
+    await supabase.from("meeting_rooms" as any).update({
+      owner_id: null, owner_name: null, is_locked: false, password: null, participant_count: 0,
+    }).eq("id", roomId);
+    // If we're inside this room, leave
+    if (activeRoom?.id === roomId) {
+      setActiveRoom(null);
+      activeRoomRef.current = null;
+      setIsOwner(false);
+      isOwnerRef.current = false;
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+      setLocalStream(null);
+      peersRef.current.forEach(p => p.pc.close());
+      setPeers(new Map());
+      setParticipants([]);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      if (cleanupRef.current) clearInterval(cleanupRef.current);
+      if (signalChannelRef.current) supabase.removeChannel(signalChannelRef.current);
+      if (chatChannelRef.current) supabase.removeChannel(chatChannelRef.current);
+      if (participantChannelRef.current) supabase.removeChannel(participantChannelRef.current);
+    }
+    toast({ title: `"${roomName}" sıfırlandı`, description: "Tüm katılımcılar odadan çıkarıldı." });
+    loadRooms();
   };
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────────
@@ -792,7 +867,12 @@ const LiveMeetingModule = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {rooms.map(room => <RoomCard key={room.id} room={room} onJoin={handleJoinAttempt} currentUserId={user?.id || ""} />)}
+            {rooms.map(room => (
+              <RoomCard key={room.id} room={room} onJoin={handleJoinAttempt}
+                currentUserId={user?.id || ""} isGlobalAdmin={isGlobalAdmin}
+                onReset={(r) => resetRoom(r.id, r.name)}
+              />
+            ))}
           </div>
         )}
 
@@ -839,15 +919,25 @@ const LiveMeetingModule = () => {
           <Video className="w-4 h-4 text-primary" />
           <span className="font-bold text-foreground">{activeRoom.name}</span>
           {isOwner && <Crown className="w-4 h-4 text-yellow-400" />}
+          {isGlobalAdmin && !isOwner && (
+            <span className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+              <ShieldAlert className="w-2.5 h-2.5" />Admin
+            </span>
+          )}
           {activeRoom.is_locked && <Lock className="w-3 h-3 text-amber-400" />}
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex items-center gap-1">
             <Users className="w-3 h-3" />{totalParticipants}/{activeRoom.max_participants}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {isOwner && (
+          {canControl && (
             <Button size="sm" variant="outline" className={`h-7 px-2.5 text-xs ${activeRoom.is_locked ? "border-amber-500/40 text-amber-400" : ""}`} onClick={lockRoom}>
               {activeRoom.is_locked ? <><Unlock className="w-3 h-3 mr-1" />Kilidi Kaldır</> : <><Lock className="w-3 h-3 mr-1" />Kilitle</>}
+            </Button>
+          )}
+          {isGlobalAdmin && (
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => resetRoom(activeRoom.id, activeRoom.name)} title="Odayı Sıfırla">
+              <RotateCcw className="w-3 h-3 mr-1" />Sıfırla
             </Button>
           )}
           <Button
@@ -889,7 +979,7 @@ const LiveMeetingModule = () => {
                 isLocal={false} isMuted={peer.isAudioMuted} isVideoOff={peer.isVideoOff}
                 isAdminMuted={peer.isAdminMuted} isAdminVideoOff={peer.isAdminVideoOff}
                 isOwner={activeRoom.owner_id === peer.userId}
-                onKick={isOwner && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
+                onKick={canControl && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
               />
             ))}
           </div>
@@ -965,7 +1055,7 @@ const LiveMeetingModule = () => {
                     <div className="flex items-center gap-0.5">
                       {(p.is_audio_muted || p.is_admin_muted || peer?.isAdminMuted) && <MicOff className="w-3 h-3 text-red-400" />}
                       {(p.is_video_off || p.is_admin_video_off || peer?.isAdminVideoOff) && <VideoOff className="w-3 h-3 text-red-400" />}
-                      {isOwner && activeRoom.owner_id !== p.user_id && (
+                      {canControl && activeRoom.owner_id !== p.user_id && (
                         <div className="flex gap-0.5 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button className="w-5 h-5 rounded hover:bg-muted flex items-center justify-center" title={p.is_admin_muted ? "Sesi Aç" : "Sesi Kapat"} onClick={() => adminMute(p.user_id, p.is_admin_muted)}>
                             {p.is_admin_muted ? <Volume2 className="w-3 h-3 text-emerald-400" /> : <VolumeX className="w-3 h-3 text-muted-foreground" />}
