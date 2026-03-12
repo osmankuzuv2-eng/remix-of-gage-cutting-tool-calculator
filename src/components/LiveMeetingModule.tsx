@@ -549,8 +549,14 @@ const LiveMeetingModule = () => {
     return pc;
   }, [user]);
 
+  // Keep a ref to stream so signaling callbacks always use the latest stream
+  const streamRef = useRef<MediaStream | null>(null);
+
   const setupSignaling = useCallback(async (roomId: string, stream: MediaStream | null, _amOwner: boolean) => {
     if (!user) return;
+
+    // Store stream in ref so realtime callbacks always access latest
+    streamRef.current = stream;
 
     const { data: existing } = await supabase
       .from("meeting_participants" as any)
@@ -561,6 +567,7 @@ const LiveMeetingModule = () => {
     const enriched = await enrichParticipantsWithProfiles((existing as unknown as Participant[]) || []);
     setParticipants(enriched);
 
+    // Connect to every existing participant — WE send the offer as the newcomer
     for (const p of enriched) {
       createPeerConnection(p.user_id, p.display_name || "Kullanıcı", p.avatar_url || null, stream, roomId, true);
     }
@@ -575,6 +582,7 @@ const LiveMeetingModule = () => {
         if (signal.room_id !== roomId) return;
 
         const fromId = signal.from_user_id;
+        const currentStream = streamRef.current;
 
         // Handle room_reset signal
         if (signal.signal_type === "room_reset") {
@@ -583,29 +591,43 @@ const LiveMeetingModule = () => {
           return;
         }
 
-        let pc = peersRef.current.get(fromId)?.pc;
+        let peerEntry = peersRef.current.get(fromId);
+        let pc = peerEntry?.pc;
 
-        if (!pc || pc.connectionState === "closed" || pc.connectionState === "failed") {
+        const needsNewPc = !pc ||
+          pc.connectionState === "closed" ||
+          pc.connectionState === "failed" ||
+          (signal.signal_type === "offer" && pc.signalingState !== "stable");
+
+        if (needsNewPc) {
           const { data: pProfile } = await supabase.from("profiles").select("display_name, avatar_url").eq("user_id", fromId).single();
           const name = pProfile?.display_name || "Kullanıcı";
           const avatar = pProfile?.avatar_url || null;
-          pc = createPeerConnection(fromId, name, avatar, stream, roomId, false);
+          pc = createPeerConnection(fromId, name, avatar, currentStream, roomId, false);
         }
 
         if (signal.signal_type === "offer") {
-          if (pc.signalingState !== "stable") return;
-          await pc.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await supabase.from("meeting_signals" as any).insert({
-            room_id: roomId, from_user_id: user.id, to_user_id: fromId,
-            signal_type: "answer", payload: { sdp: answer },
-          });
+          try {
+            if (pc!.signalingState !== "stable") {
+              console.warn("[WebRTC] Skipping offer — not stable:", pc!.signalingState);
+              return;
+            }
+            await pc!.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
+            const answer = await pc!.createAnswer();
+            await pc!.setLocalDescription(answer);
+            console.log(`[WebRTC] Sending answer to ${fromId}`);
+            await supabase.from("meeting_signals" as any).insert({
+              room_id: roomId, from_user_id: user.id, to_user_id: fromId,
+              signal_type: "answer", payload: { sdp: answer },
+            });
+          } catch (e) { console.error("[WebRTC] offer handling error:", e); }
         } else if (signal.signal_type === "answer") {
-          if (pc.signalingState !== "have-local-offer") return;
-          await pc.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
+          try {
+            if (pc!.signalingState !== "have-local-offer") return;
+            await pc!.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
+          } catch (e) { console.error("[WebRTC] answer handling error:", e); }
         } else if (signal.signal_type === "ice") {
-          try { await pc.addIceCandidate(new RTCIceCandidate(signal.payload.candidate)); } catch {}
+          try { await pc!.addIceCandidate(new RTCIceCandidate(signal.payload.candidate)); } catch {}
         } else if (signal.signal_type === "admin_control") {
           const payload_data = signal.payload as any;
           if (payload_data.kick && payload_data.target_user_id === user.id) {
@@ -640,15 +662,44 @@ const LiveMeetingModule = () => {
       })
       .subscribe();
 
+    // Track previously known participant IDs to detect NEW joiners
+    const knownUserIds = new Set(enriched.map(p => p.user_id));
+
     const participantCh = supabase
       .channel(`participants-${roomId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "meeting_participants", filter: `room_id=eq.${roomId}` }, async () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "meeting_participants", filter: `room_id=eq.${roomId}` }, async (payload) => {
         const { data } = await supabase.from("meeting_participants" as any).select("*").eq("room_id", roomId).neq("user_id", user.id);
         const enriched2 = await enrichParticipantsWithProfiles((data as unknown as Participant[]) || []);
         setParticipants(enriched2);
 
         const { count } = await supabase.from("meeting_participants" as any).select("*", { count: "exact", head: true }).eq("room_id", roomId);
         await supabase.from("meeting_rooms" as any).update({ participant_count: count ?? 0 }).eq("id", roomId);
+
+        // If a new participant joined (INSERT event), send them an offer
+        if (payload.eventType === "INSERT") {
+          const newPart = payload.new as any;
+          if (newPart.user_id && newPart.user_id !== user.id && !knownUserIds.has(newPart.user_id)) {
+            knownUserIds.add(newPart.user_id);
+            const profile = enriched2.find(p => p.user_id === newPart.user_id);
+            const name = profile?.display_name || "Kullanıcı";
+            const avatar = (profile as any)?.avatar_url || null;
+            console.log(`[WebRTC] New participant joined: ${name} — sending offer`);
+            // Small delay so their signal channel is subscribed
+            setTimeout(() => {
+              createPeerConnection(newPart.user_id, name, avatar, streamRef.current, roomId, true);
+            }, 500);
+          }
+        } else if (payload.eventType === "DELETE") {
+          const leftUserId = (payload.old as any)?.user_id;
+          if (leftUserId) {
+            knownUserIds.delete(leftUserId);
+            const peerEntry = peersRef.current.get(leftUserId);
+            if (peerEntry) {
+              try { peerEntry.pc.close(); } catch {}
+              setPeers(prev => { const n = new Map(prev); n.delete(leftUserId); return n; });
+            }
+          }
+        }
       })
       .subscribe();
 
