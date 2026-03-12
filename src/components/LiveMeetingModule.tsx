@@ -123,7 +123,7 @@ const fetchIceServers = async (): Promise<RTCConfiguration> => {
 // ─── VideoTile ────────────────────────────────────────────────────────────────
 
 const VideoTile = ({
-  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick, isScreenSharing,
+  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick, isScreenSharing, quality,
 }: {
   stream: MediaStream | null;
   name: string;
@@ -136,6 +136,7 @@ const VideoTile = ({
   isOwner?: boolean;
   onKick?: () => void;
   isScreenSharing?: boolean;
+  quality?: ConnectionQuality;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
