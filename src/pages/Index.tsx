@@ -198,43 +198,45 @@ const Index = () => {
     materialPrices[m.id] !== undefined ? { ...m, pricePerKg: materialPrices[m.id] } : m
   );
 
-  const handleTabClick = useCallback((tabId: TabId) => {
+  const doNavigate = useCallback((tabId: TabId) => {
     if (!hasAccess(tabId)) {
-      toast({
-        title: "Erişim Engellendi",
-        description: "Bu alana giriş yetkiniz bulunmuyor.",
-        variant: "destructive",
-      });
+      toast({ title: "Erişim Engellendi", description: "Bu alana giriş yetkiniz bulunmuyor.", variant: "destructive" });
       return;
     }
     if (tabId === visibleTab) return;
-    // Log activity - using profile display_name fetched at login
     if (user && tabId !== "home" && tabId !== "admin") {
       supabase.from("user_activity_logs").insert({
         user_id: user.id,
         display_name: userDisplayName || user.email?.split("@")[0] || "Kullanıcı",
         module_key: tabId,
         module_name: getModuleName(tabId) || tabId,
-      }).then(({ error }) => {
-        if (error) console.error("Activity log error:", error);
-      });
+      }).then(({ error }) => { if (error) console.error("Activity log error:", error); });
     }
     setActiveTab(tabId);
     setIsTransitioning(true);
-    setTimeout(() => {
-      setVisibleTab(tabId);
-      setIsTransitioning(false);
-    }, 1000);
+    setTimeout(() => { setVisibleTab(tabId); setIsTransitioning(false); }, 1000);
   }, [visibleTab, permissions, isAdmin, toast, user, getModuleName, userDisplayName]);
 
+  const handleTabClick = useCallback((tabId: TabId) => {
+    // Warn if leaving active meeting
+    if (visibleTab === "canli-toplanti" && tabId !== "canli-toplanti") {
+      setPendingTabId(tabId);
+      setShowMeetingLeaveConfirm(true);
+      return;
+    }
+    doNavigate(tabId);
+  }, [visibleTab, doNavigate]);
+
   const handleAdminClick = useCallback(() => {
+    if (visibleTab === "canli-toplanti") {
+      setPendingTabId("admin");
+      setShowMeetingLeaveConfirm(true);
+      return;
+    }
     if (visibleTab === "admin") return;
     setActiveTab("admin");
     setIsTransitioning(true);
-    setTimeout(() => {
-      setVisibleTab("admin");
-      setIsTransitioning(false);
-    }, 1000);
+    setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
   }, [visibleTab]);
 
   const toggleCategory = (catId: string) => {
