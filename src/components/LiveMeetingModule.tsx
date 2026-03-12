@@ -783,6 +783,66 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     participantChannelRef.current = participantCh;
   }, [user, createPeerConnection]);
 
+  // ── Screen sharing ────────────────────────────────────────────────────────────
+
+  const toggleScreenShare = useCallback(async () => {
+    if (isScreenSharing) {
+      // Stop screen share, restore camera
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+
+      const camStream = localStreamRef.current;
+      if (camStream) {
+        const camVideoTrack = camStream.getVideoTracks()[0];
+        if (camVideoTrack) {
+          camVideoTrack.enabled = !isVideoOff;
+          peersRef.current.forEach(peer => {
+            const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
+            if (sender) sender.replaceTrack(camVideoTrack).catch(() => {});
+          });
+        }
+      }
+      setIsScreenSharing(false);
+      toast({ title: "Ekran paylaşımı durduruldu" });
+    } else {
+      try {
+        const screenStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: { cursor: "always" },
+          audio: false,
+        });
+        screenStreamRef.current = screenStream;
+        const screenTrack = screenStream.getVideoTracks()[0];
+
+        // Replace video track in all peer connections
+        peersRef.current.forEach(peer => {
+          const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
+          if (sender) sender.replaceTrack(screenTrack).catch(() => {});
+        });
+
+        // Update local stream preview
+        const camStream = localStreamRef.current;
+        if (camStream) {
+          camStream.getVideoTracks().forEach(t => camStream.removeTrack(t));
+          camStream.addTrack(screenTrack);
+          setLocalStream(new MediaStream(camStream.getTracks()));
+        }
+
+        setIsScreenSharing(true);
+        setIsVideoOff(false);
+        toast({ title: "Ekran paylaşımı başladı", description: "Paylaşımı durdurmak için butona tekrar tıklayın." });
+
+        // Auto-stop when user ends share via browser UI
+        screenTrack.onended = () => {
+          toggleScreenShare();
+        };
+      } catch (err: any) {
+        if (err?.name !== "NotAllowedError") {
+          toast({ title: "Ekran paylaşımı başlatılamadı", variant: "destructive" });
+        }
+      }
+    }
+  }, [isScreenSharing, isVideoOff, toast]);
+
   // ── Leave room ────────────────────────────────────────────────────────────────
 
   const performLeave = useCallback(async (isInitiator = true) => {
@@ -791,6 +851,11 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     const room = activeRoomRef.current;
     const amOwner = isOwnerRef.current;
+
+    // Stop screen share if active
+    screenStreamRef.current?.getTracks().forEach(t => t.stop());
+    screenStreamRef.current = null;
+    setIsScreenSharing(false);
 
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     localStreamRef.current = null;
