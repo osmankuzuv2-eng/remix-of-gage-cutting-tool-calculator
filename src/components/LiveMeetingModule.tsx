@@ -494,20 +494,32 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       try { existing.pc.close(); } catch {}
     }
 
+    // Clear ICE buffer for this peer
+    iceCandidateBufferRef.current.set(targetUserId, []);
+
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
     // Add all local tracks to the peer connection
     if (stream) {
       stream.getTracks().forEach(t => {
-        pc.addTrack(t, stream);
+        try { pc.addTrack(t, stream); } catch {}
       });
     }
+
+    // Helper to flush buffered ICE candidates
+    const flushIceCandidates = async () => {
+      const buffered = iceCandidateBufferRef.current.get(targetUserId) || [];
+      for (const candidate of buffered) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+      }
+      iceCandidateBufferRef.current.set(targetUserId, []);
+    };
 
     // Each remote track gets its own MediaStream slot so we can update it
     const remoteStream = new MediaStream();
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach(track => {
-        // Avoid duplicate tracks
+      const tracks = event.streams?.[0]?.getTracks() ?? [event.track];
+      tracks.forEach(track => {
         if (!remoteStream.getTracks().find(t => t.id === track.id)) {
           remoteStream.addTrack(track);
         }
@@ -527,14 +539,22 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           from_user_id: user.id,
           to_user_id: targetUserId,
           signal_type: "ice",
-          payload: { candidate: e.candidate },
+          payload: { candidate: e.candidate.toJSON() },
         });
       }
     };
 
     pc.onconnectionstatechange = () => {
       console.log(`[WebRTC] ${targetName} connection: ${pc.connectionState}`);
-      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+      if (pc.connectionState === "failed") {
+        // Retry on failure after a short delay
+        console.log(`[WebRTC] Retrying connection to ${targetName}...`);
+        setTimeout(() => {
+          if (peersRef.current.has(targetUserId)) {
+            createPeerConnection(targetUserId, targetName, targetAvatar, streamRef.current, roomId, true);
+          }
+        }, 2000);
+      } else if (pc.connectionState === "closed") {
         setPeers(prev => {
           const next = new Map(prev);
           next.delete(targetUserId);
@@ -545,6 +565,10 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     pc.onsignalingstatechange = () => {
       console.log(`[WebRTC] ${targetName} signaling: ${pc.signalingState}`);
+      // Flush buffered ICE candidates once remote description is set
+      if (pc.signalingState === "stable" && pc.remoteDescription) {
+        flushIceCandidates();
+      }
     };
 
     const peerState: PeerState = {
@@ -555,6 +579,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     setPeers(prev => { const n = new Map(prev); n.set(targetUserId, peerState); return n; });
 
     if (isInitiator) {
+      pendingOffersRef.current.add(targetUserId);
       pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true }).then(offer => {
         return pc.setLocalDescription(offer).then(async () => {
           if (user) {
@@ -565,7 +590,8 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
             });
           }
         });
-      }).catch(e => console.error("[WebRTC] createOffer error:", e));
+      }).catch(e => console.error("[WebRTC] createOffer error:", e))
+        .finally(() => pendingOffersRef.current.delete(targetUserId));
     }
 
     return pc;
