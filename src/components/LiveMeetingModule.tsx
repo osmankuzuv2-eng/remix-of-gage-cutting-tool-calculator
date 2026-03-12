@@ -63,6 +63,22 @@ const ICE_SERVERS = {
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun.relay.metered.ca:80" },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ],
 };
 
@@ -262,6 +278,10 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const isLeavingRef = useRef(false);
   const currentRoomIdRef = useRef<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Buffer for ICE candidates received before remote description is set
+  const iceCandidateBufferRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  // Track which connections are currently making an offer to prevent glare
+  const pendingOffersRef = useRef<Set<string>>(new Set());
   peersRef.current = peers;
 
   // ── Load profile + check admin ────────────────────────────────────────────────
@@ -474,20 +494,32 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       try { existing.pc.close(); } catch {}
     }
 
+    // Clear ICE buffer for this peer
+    iceCandidateBufferRef.current.set(targetUserId, []);
+
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
     // Add all local tracks to the peer connection
     if (stream) {
       stream.getTracks().forEach(t => {
-        pc.addTrack(t, stream);
+        try { pc.addTrack(t, stream); } catch {}
       });
     }
+
+    // Helper to flush buffered ICE candidates
+    const flushIceCandidates = async () => {
+      const buffered = iceCandidateBufferRef.current.get(targetUserId) || [];
+      for (const candidate of buffered) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+      }
+      iceCandidateBufferRef.current.set(targetUserId, []);
+    };
 
     // Each remote track gets its own MediaStream slot so we can update it
     const remoteStream = new MediaStream();
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach(track => {
-        // Avoid duplicate tracks
+      const tracks = event.streams?.[0]?.getTracks() ?? [event.track];
+      tracks.forEach(track => {
         if (!remoteStream.getTracks().find(t => t.id === track.id)) {
           remoteStream.addTrack(track);
         }
@@ -507,14 +539,22 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           from_user_id: user.id,
           to_user_id: targetUserId,
           signal_type: "ice",
-          payload: { candidate: e.candidate },
+          payload: { candidate: e.candidate.toJSON() },
         });
       }
     };
 
     pc.onconnectionstatechange = () => {
       console.log(`[WebRTC] ${targetName} connection: ${pc.connectionState}`);
-      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+      if (pc.connectionState === "failed") {
+        // Retry on failure after a short delay
+        console.log(`[WebRTC] Retrying connection to ${targetName}...`);
+        setTimeout(() => {
+          if (peersRef.current.has(targetUserId)) {
+            createPeerConnection(targetUserId, targetName, targetAvatar, streamRef.current, roomId, true);
+          }
+        }, 2000);
+      } else if (pc.connectionState === "closed") {
         setPeers(prev => {
           const next = new Map(prev);
           next.delete(targetUserId);
@@ -525,6 +565,10 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     pc.onsignalingstatechange = () => {
       console.log(`[WebRTC] ${targetName} signaling: ${pc.signalingState}`);
+      // Flush buffered ICE candidates once remote description is set
+      if (pc.signalingState === "stable" && pc.remoteDescription) {
+        flushIceCandidates();
+      }
     };
 
     const peerState: PeerState = {
@@ -535,6 +579,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     setPeers(prev => { const n = new Map(prev); n.set(targetUserId, peerState); return n; });
 
     if (isInitiator) {
+      pendingOffersRef.current.add(targetUserId);
       pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true }).then(offer => {
         return pc.setLocalDescription(offer).then(async () => {
           if (user) {
@@ -545,7 +590,8 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
             });
           }
         });
-      }).catch(e => console.error("[WebRTC] createOffer error:", e));
+      }).catch(e => console.error("[WebRTC] createOffer error:", e))
+        .finally(() => pendingOffersRef.current.delete(targetUserId));
     }
 
     return pc;
@@ -590,44 +636,8 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           return;
         }
 
-        let peerEntry = peersRef.current.get(fromId);
-        let pc = peerEntry?.pc;
-
-        const needsNewPc = !pc ||
-          pc.connectionState === "closed" ||
-          pc.connectionState === "failed" ||
-          (signal.signal_type === "offer" && pc.signalingState !== "stable");
-
-        if (needsNewPc) {
-          const { data: pProfile } = await supabase.from("profiles").select("display_name, avatar_url").eq("user_id", fromId).single();
-          const name = pProfile?.display_name || "Kullanıcı";
-          const avatar = pProfile?.avatar_url || null;
-          pc = createPeerConnection(fromId, name, avatar, currentStream, roomId, false);
-        }
-
-        if (signal.signal_type === "offer") {
-          try {
-            if (pc!.signalingState !== "stable") {
-              console.warn("[WebRTC] Skipping offer — not stable:", pc!.signalingState);
-              return;
-            }
-            await pc!.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
-            const answer = await pc!.createAnswer();
-            await pc!.setLocalDescription(answer);
-            console.log(`[WebRTC] Sending answer to ${fromId}`);
-            await supabase.from("meeting_signals" as any).insert({
-              room_id: roomId, from_user_id: user.id, to_user_id: fromId,
-              signal_type: "answer", payload: { sdp: answer },
-            });
-          } catch (e) { console.error("[WebRTC] offer handling error:", e); }
-        } else if (signal.signal_type === "answer") {
-          try {
-            if (pc!.signalingState !== "have-local-offer") return;
-            await pc!.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
-          } catch (e) { console.error("[WebRTC] answer handling error:", e); }
-        } else if (signal.signal_type === "ice") {
-          try { await pc!.addIceCandidate(new RTCIceCandidate(signal.payload.candidate)); } catch {}
-        } else if (signal.signal_type === "admin_control") {
+        // Handle admin_control first (doesn't need a peer connection)
+        if (signal.signal_type === "admin_control") {
           const payload_data = signal.payload as any;
           if (payload_data.kick && payload_data.target_user_id === user.id) {
             toast({ title: "Odadan çıkarıldınız", description: "Toplantı yöneticisi sizi odadan çıkardı.", variant: "destructive" });
@@ -657,6 +667,70 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
               await supabase.from("meeting_participants" as any).update({ is_admin_video_off: payload_data.isAdminVideoOff }).eq("id", participantIdRef.current);
             }
           }
+          return;
+        }
+
+        let peerEntry = peersRef.current.get(fromId);
+        let pc = peerEntry?.pc;
+
+        // For ICE candidates, buffer them if remote description is not yet set
+        if (signal.signal_type === "ice") {
+          const candidate = signal.payload.candidate;
+          if (!pc || !pc.remoteDescription) {
+            // Buffer the candidate
+            const buf = iceCandidateBufferRef.current.get(fromId) || [];
+            buf.push(candidate);
+            iceCandidateBufferRef.current.set(fromId, buf);
+          } else {
+            try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+          }
+          return;
+        }
+
+        const needsNewPc = !pc ||
+          pc.connectionState === "closed" ||
+          pc.connectionState === "failed" ||
+          (signal.signal_type === "offer" && pc.signalingState !== "stable");
+
+        if (needsNewPc && signal.signal_type !== "answer") {
+          const { data: pProfile } = await supabase.from("profiles").select("display_name, avatar_url").eq("user_id", fromId).single();
+          const name = pProfile?.display_name || "Kullanıcı";
+          const avatar = pProfile?.avatar_url || null;
+          pc = createPeerConnection(fromId, name, avatar, currentStream, roomId, false);
+        }
+
+        if (signal.signal_type === "offer") {
+          try {
+            if (pc!.signalingState !== "stable") {
+              console.warn("[WebRTC] Skipping offer — not stable:", pc!.signalingState);
+              return;
+            }
+            await pc!.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
+            // Flush any buffered ICE candidates
+            const buffered = iceCandidateBufferRef.current.get(fromId) || [];
+            for (const c of buffered) {
+              try { await pc!.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+            }
+            iceCandidateBufferRef.current.set(fromId, []);
+            const answer = await pc!.createAnswer();
+            await pc!.setLocalDescription(answer);
+            console.log(`[WebRTC] Sending answer to ${fromId}`);
+            await supabase.from("meeting_signals" as any).insert({
+              room_id: roomId, from_user_id: user.id, to_user_id: fromId,
+              signal_type: "answer", payload: { sdp: answer },
+            });
+          } catch (e) { console.error("[WebRTC] offer handling error:", e); }
+        } else if (signal.signal_type === "answer") {
+          try {
+            if (!pc || pc.signalingState !== "have-local-offer") return;
+            await pc.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
+            // Flush any buffered ICE candidates
+            const buffered = iceCandidateBufferRef.current.get(fromId) || [];
+            for (const c of buffered) {
+              try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+            }
+            iceCandidateBufferRef.current.set(fromId, []);
+          } catch (e) { console.error("[WebRTC] answer handling error:", e); }
         }
       })
       .subscribe();
@@ -682,11 +756,11 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
             const profile = enriched2.find(p => p.user_id === newPart.user_id);
             const name = profile?.display_name || "Kullanıcı";
             const avatar = (profile as any)?.avatar_url || null;
-            console.log(`[WebRTC] New participant joined: ${name} — sending offer`);
-            // Small delay so their signal channel is subscribed
+            console.log(`[WebRTC] New participant joined: ${name} — sending offer after delay`);
+            // Delay to ensure their signal channel is subscribed and ready
             setTimeout(() => {
               createPeerConnection(newPart.user_id, name, avatar, streamRef.current, roomId, true);
-            }, 500);
+            }, 1500);
           }
         } else if (payload.eventType === "DELETE") {
           const leftUserId = (payload.old as any)?.user_id;
