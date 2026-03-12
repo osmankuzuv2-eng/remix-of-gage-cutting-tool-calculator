@@ -147,7 +147,9 @@ const Index = () => {
   const hasAccess = (tabId: string): boolean => {
     if (ALWAYS_ACCESSIBLE.includes(tabId)) return true;
     if (isAdmin) return true;
-    return !!permissions[tabId];
+    // Default: accessible unless explicitly denied (granted = false)
+    if (permissions[tabId] === false) return false;
+    return true;
   };
 
   const handleAddMaterial = async (material: Material) => {
