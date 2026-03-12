@@ -1,15 +1,15 @@
+import GlobalChatBox from "@/components/GlobalChatBox";
 import OnlineUsersPanel from "@/components/OnlineUsersPanel";
-import ActivityFeed from "@/components/ActivityFeed";
 
-const HomePage = () => {
+const ChatModule = () => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4 items-start">
-        <ActivityFeed />
+        <GlobalChatBox />
         <OnlineUsersPanel />
       </div>
     </div>
   );
 };
 
-export default HomePage;
+export default ChatModule;

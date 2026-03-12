@@ -35,6 +35,8 @@ import PostProcessor from "@/components/PostProcessor";
 import CatpartQuoteModule from "@/components/CatpartQuoteModule";
 import AdminPanel from "@/components/AdminPanel";
 import HomePage from "@/components/HomePage";
+import ChatModule from "@/components/ChatModule";
+import LiveMeetingModule from "@/components/LiveMeetingModule";
 import { Material, materials as defaultMaterials } from "@/data/materials";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,7 +45,7 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "post-processor" | "slot-machine" | "admin";
+type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "post-processor" | "slot-machine" | "sohbet" | "canli-toplanti" | "admin";
 
 const ALWAYS_ACCESSIBLE = ["home", "ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
@@ -199,13 +201,23 @@ const Index = () => {
       return;
     }
     if (tabId === visibleTab) return;
+    // Log activity
+    if (user && tabId !== "home" && tabId !== "admin") {
+      const uDisplayName = (user as any).user_metadata?.display_name || user.email?.split("@")[0] || "Kullanıcı";
+      supabase.from("user_activity_logs" as any).insert({
+        user_id: user.id,
+        display_name: uDisplayName,
+        module_key: tabId,
+        module_name: getModuleName(tabId),
+      });
+    }
     setActiveTab(tabId);
     setIsTransitioning(true);
     setTimeout(() => {
       setVisibleTab(tabId);
       setIsTransitioning(false);
     }, 1000);
-  }, [visibleTab, permissions, isAdmin, toast]);
+  }, [visibleTab, permissions, isAdmin, toast, user, getModuleName]);
 
   const handleAdminClick = useCallback(() => {
     if (visibleTab === "admin") return;
@@ -383,7 +395,9 @@ const Index = () => {
             {visibleTab === "balloon-drawing" && hasAccess("balloon-drawing") && <BalloonedDrawingModule />}
             {visibleTab === "catpart-quote" && hasAccess("catpart-quote") && <CatpartQuoteModule />}
             {visibleTab === "post-processor" && hasAccess("post-processor") && <PostProcessor />}
-            
+            {visibleTab === "sohbet" && hasAccess("sohbet") && <ChatModule />}
+            {visibleTab === "canli-toplanti" && hasAccess("canli-toplanti") && <LiveMeetingModule />}
+
             {visibleTab === "history" && hasAccess("history") && <CalculationHistory />}
             {visibleTab === "admin" && isAdmin && <AdminPanel onMenuUpdated={reloadMenu} />}
             
