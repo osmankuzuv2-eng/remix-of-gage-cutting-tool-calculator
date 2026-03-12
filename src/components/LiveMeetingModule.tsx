@@ -209,6 +209,7 @@ const LiveMeetingModule = () => {
   const [showLockDialog, setShowLockDialog] = useState(false);
   const [pendingRoom, setPendingRoom] = useState<Room | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
