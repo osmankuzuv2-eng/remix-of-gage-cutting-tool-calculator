@@ -70,14 +70,22 @@ const Auth = () => {
       });
       if (!error && data && data.length > 0) {
         setProfile({ display_name: data[0].display_name, avatar_url: data[0].avatar_url });
+        setStep("password");
       } else {
-        setProfile(null);
+        toast({
+          title: "Kullanıcı Bulunamadı",
+          description: "Bu e-posta adresiyle kayıtlı bir kullanıcı bulunmuyor.",
+          variant: "destructive",
+        });
       }
     } catch {
-      setProfile(null);
+      toast({
+        title: "Hata",
+        description: "Kullanıcı sorgulanırken bir hata oluştu.",
+        variant: "destructive",
+      });
     } finally {
       setIsCheckingEmail(false);
-      setStep("password");
     }
   };
 
