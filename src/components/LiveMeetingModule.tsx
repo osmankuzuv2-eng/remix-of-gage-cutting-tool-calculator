@@ -468,15 +468,28 @@ const LiveMeetingModule = () => {
     stream: MediaStream | null, roomId: string, isInitiator: boolean,
   ) => {
     const existing = peersRef.current.get(targetUserId);
-    if (existing) { existing.pc.close(); }
+    if (existing) {
+      try { existing.pc.close(); } catch {}
+    }
 
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    if (stream) stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    // Add all local tracks to the peer connection
+    if (stream) {
+      stream.getTracks().forEach(t => {
+        pc.addTrack(t, stream);
+      });
+    }
 
+    // Each remote track gets its own MediaStream slot so we can update it
     const remoteStream = new MediaStream();
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+      event.streams[0].getTracks().forEach(track => {
+        // Avoid duplicate tracks
+        if (!remoteStream.getTracks().find(t => t.id === track.id)) {
+          remoteStream.addTrack(track);
+        }
+      });
       setPeers(prev => {
         const next = new Map(prev);
         const p = next.get(targetUserId);
@@ -498,13 +511,18 @@ const LiveMeetingModule = () => {
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+      console.log(`[WebRTC] ${targetName} connection: ${pc.connectionState}`);
+      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
         setPeers(prev => {
           const next = new Map(prev);
           next.delete(targetUserId);
           return next;
         });
       }
+    };
+
+    pc.onsignalingstatechange = () => {
+      console.log(`[WebRTC] ${targetName} signaling: ${pc.signalingState}`);
     };
 
     const peerState: PeerState = {
@@ -516,15 +534,16 @@ const LiveMeetingModule = () => {
 
     if (isInitiator) {
       pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true }).then(offer => {
-        pc.setLocalDescription(offer).then(async () => {
+        return pc.setLocalDescription(offer).then(async () => {
           if (user) {
+            console.log(`[WebRTC] Sending offer to ${targetName}`);
             await supabase.from("meeting_signals" as any).insert({
               room_id: roomId, from_user_id: user.id, to_user_id: targetUserId,
               signal_type: "offer", payload: { sdp: offer },
             });
           }
         });
-      });
+      }).catch(e => console.error("[WebRTC] createOffer error:", e));
     }
 
     return pc;
