@@ -214,7 +214,7 @@ const Auth = () => {
                       <span className="text-2xl font-bold text-primary">{initials}</span>
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-card" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[hsl(142,71%,45%)] rounded-full border-2 border-card" />
                 </div>
                 <div className="text-center">
                   <p className="font-semibold text-foreground">{displayName}</p>
