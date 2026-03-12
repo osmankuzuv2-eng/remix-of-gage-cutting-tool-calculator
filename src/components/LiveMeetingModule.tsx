@@ -411,6 +411,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     isOwnerRef.current = amOwner;
     setActiveRoom(finalRoom);
     activeRoomRef.current = finalRoom;
+    onActiveRoomChange?.(true);
 
     heartbeatRef.current = setInterval(async () => {
       if (participantIdRef.current) {
