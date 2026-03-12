@@ -919,15 +919,25 @@ const LiveMeetingModule = () => {
           <Video className="w-4 h-4 text-primary" />
           <span className="font-bold text-foreground">{activeRoom.name}</span>
           {isOwner && <Crown className="w-4 h-4 text-yellow-400" />}
+          {isGlobalAdmin && !isOwner && (
+            <span className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+              <ShieldAlert className="w-2.5 h-2.5" />Admin
+            </span>
+          )}
           {activeRoom.is_locked && <Lock className="w-3 h-3 text-amber-400" />}
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex items-center gap-1">
             <Users className="w-3 h-3" />{totalParticipants}/{activeRoom.max_participants}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {isOwner && (
+          {canControl && (
             <Button size="sm" variant="outline" className={`h-7 px-2.5 text-xs ${activeRoom.is_locked ? "border-amber-500/40 text-amber-400" : ""}`} onClick={lockRoom}>
               {activeRoom.is_locked ? <><Unlock className="w-3 h-3 mr-1" />Kilidi Kaldır</> : <><Lock className="w-3 h-3 mr-1" />Kilitle</>}
+            </Button>
+          )}
+          {isGlobalAdmin && (
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => resetRoom(activeRoom.id, activeRoom.name)} title="Odayı Sıfırla">
+              <RotateCcw className="w-3 h-3 mr-1" />Sıfırla
             </Button>
           )}
           <Button
