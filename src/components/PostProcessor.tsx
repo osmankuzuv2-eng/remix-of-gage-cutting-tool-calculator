@@ -314,6 +314,65 @@ function convertFanuc(tokens: ClsToken[], programName: string): string {
 }
 
 // ─── Heidenhain Converter ─────────────────────────────────────────────
+// Cycle type enum for Heidenhain
+type HeidCycleType = "none" | "drill" | "pocket";
+
+interface HeidCycleParams {
+  type: HeidCycleType;
+  // CYCL DEF 200 – Drilling
+  step: number;      // Q202 infeed depth (peck)
+  clear: number;     // Q200 set-up clearance
+  fedTo: number;     // absolute Z of drill bottom (from FEDTO)
+  feed: number;      // Q206 plunge feed
+  dwell: number;     // Q211 dwell at bottom
+  // CYCL DEF 251 – Rectangular Pocket
+  sideX: number;     // Q218 first side length
+  sideY: number;     // Q219 second side length
+  wallAllowance: number; // Q368
+  rotation: number;  // Q374
+  millFeed: number;  // Q207
+  finFeed: number;   // Q385
+  overlap: number;   // Q370 (0.5 = 50%)
+  plungeType: number;// Q366 (0=vertical, 1=helix)
+  // defined = CYCL DEF already emitted for this group
+  defined: boolean;
+  refZ: number;      // surface Z (from first GOTO in cycle)
+}
+
+function emitCyclDef200(lines: string[], p: HeidCycleParams, n: () => number, refZ: number, safeZ: number): void {
+  const depth = refZ + p.fedTo; // depth below surface (Q201, negative)
+  lines.push(`N${n()} CYCL DEF 200 DRILLING ~`);
+  lines.push(`  Q200=+${p.clear.toFixed(3)} ;SETUP CLEARANCE`);
+  lines.push(`  Q201=${depth.toFixed(3)} ;DEPTH`);
+  lines.push(`  Q206=+${p.feed.toFixed(0)} ;FEED RATE FOR PLUNGING`);
+  lines.push(`  Q202=+${p.step.toFixed(3)} ;INFEED DEPTH`);
+  lines.push(`  Q210=+0 ;DWELL TIME AT TOP`);
+  lines.push(`  Q203=+${refZ.toFixed(3)} ;SURFACE COORDINATE`);
+  lines.push(`  Q204=+${safeZ.toFixed(3)} ;2ND SETUP CLEARANCE`);
+  lines.push(`  Q211=+${p.dwell.toFixed(3)} ;DWELL TIME AT BOTTOM`);
+}
+
+function emitCyclDef251(lines: string[], p: HeidCycleParams, n: () => number, refZ: number, safeZ: number): void {
+  const depth = p.fedTo; // Q201 total depth (negative)
+  lines.push(`N${n()} CYCL DEF 251 RECTANGULAR POCKET ~`);
+  lines.push(`  Q218=+${p.sideX.toFixed(3)} ;FIRST SIDE LENGTH`);
+  lines.push(`  Q219=+${p.sideY.toFixed(3)} ;SECOND SIDE LENGTH`);
+  lines.push(`  Q368=+${p.wallAllowance.toFixed(3)} ;ALLOWANCE FOR SIDE`);
+  lines.push(`  Q374=+${p.rotation.toFixed(3)} ;ANGLE OF ROTATION`);
+  lines.push(`  Q367=+0 ;POCKET POSITION`);
+  lines.push(`  Q207=+${p.millFeed.toFixed(0)} ;FEED RATE FOR MILLING`);
+  lines.push(`  Q351=+1 ;CLIMB OR UP-CUT`);
+  lines.push(`  Q201=${depth.toFixed(3)} ;DEPTH`);
+  lines.push(`  Q202=+${p.step.toFixed(3)} ;PLUNGING DEPTH`);
+  lines.push(`  Q206=+${p.feed.toFixed(0)} ;FEED RATE FOR PLUNGING`);
+  lines.push(`  Q200=+${p.clear.toFixed(3)} ;SETUP CLEARANCE`);
+  lines.push(`  Q203=+${refZ.toFixed(3)} ;SURFACE COORDINATE`);
+  lines.push(`  Q204=+${safeZ.toFixed(3)} ;2ND SETUP CLEARANCE`);
+  lines.push(`  Q370=+${p.overlap.toFixed(2)} ;TOOL PATH OVERLAP`);
+  lines.push(`  Q366=+${p.plungeType} ;PLUNGING`);
+  lines.push(`  Q385=+${p.finFeed.toFixed(0)} ;FEED RATE FOR FINISH`);
+}
+
 function convertHeidenhain(tokens: ClsToken[], programName: string): string {
   const lines: string[] = [];
   lines.push(`BEGIN PGM ${programName.toUpperCase()} MM`);
@@ -322,106 +381,177 @@ function convertHeidenhain(tokens: ClsToken[], programName: string): string {
   const n = () => { seq += 10; return seq; };
 
   let toolNum = "1";
-  let adjustNum = "1";
   let toolDia = 0, toolLen = 0;
   let spindleRpm = 0;
-  let feedRate = 0;
   let safeZ = 0;
-  let cycleActive = false;
-  let cycleStep = 0, cycleClear = 2, cycleFedTo = 0, cycleFeed = 250;
   let opName = "";
+  let g43Done = false;
+
+  const cyc: HeidCycleParams = {
+    type: "none", step: 5, clear: 2, fedTo: 0, feed: 250, dwell: 0,
+    sideX: 50, sideY: 30, wallAllowance: 0, rotation: 0,
+    millFeed: 500, finFeed: 500, overlap: 0.5, plungeType: 1,
+    defined: false, refZ: 0,
+  };
+
+  const parseCycleArgs = (args: string[]) => {
+    for (let i = 0; i < args.length - 1; i++) {
+      const k = args[i]?.toUpperCase();
+      const v = parseFloat(args[i + 1] ?? "0");
+      if (k === "STEP")    { cyc.step    = v; i++; }
+      if (k === "CLEAR")   { cyc.clear   = v; i++; }
+      if (k === "FEDTO")   { cyc.fedTo   = v; i++; }
+      if (k === "MMPM")    { cyc.feed    = v; i++; }
+      if (k === "DWELL")   { cyc.dwell   = v; i++; }
+      if (k === "WIDTH")   { cyc.sideX   = v; i++; }
+      if (k === "LENGTH")  { cyc.sideY   = v; i++; }
+      if (k === "ALLOWANCE")   { cyc.wallAllowance = v; i++; }
+      if (k === "ANGLE")   { cyc.rotation = v; i++; }
+      if (k === "MILLFEED"){ cyc.millFeed = v; i++; }
+    }
+  };
 
   for (const tok of tokens) {
     switch (tok.type) {
-      case "TOOL PATH":
+
+      case "TOOL PATH": {
         opName = tok.args[0] ?? "";
-        lines.push(`; *** ${opName} ***`);
+        g43Done = false;
+        cyc.type = "none";
+        cyc.defined = false;
+        lines.push(`; *** Operation: ${opName} ***`);
         break;
+      }
+
       case "TLDATA":
         if (tok.args[0]?.toUpperCase() === "MILL") {
           toolDia = parseFloat(tok.args[1] ?? "0");
           toolLen = parseFloat(tok.args[3] ?? "0");
-          lines.push(`; T DIA=${toolDia} LEN=${toolLen}`);
+          lines.push(`; Takim: DIA=${toolDia}mm  LEN=${toolLen}mm`);
         }
         break;
+
       case "LOAD":
         if (tok.args[0]?.toUpperCase() === "TOOL") {
           toolNum = tok.args[1] ?? "1";
-          const ai = tok.args.findIndex(a => a.toUpperCase() === "ADJUST");
-          if (ai !== -1) adjustNum = tok.args[ai + 1] ?? toolNum;
+          // Emit TOOL CALL after spindle is known — defer with placeholder if needed
           lines.push(`N${n()} TOOL CALL ${toolNum} Z S${spindleRpm || 3000}`);
+          lines.push(`N${n()} L Z+${safeZ || 100} FMAX`);
         }
         break;
+
       case "SPINDL": {
         const ri = tok.args.findIndex(a => a.toUpperCase() === "RPM");
-        spindleRpm = parseFloat(ri !== -1 ? (tok.args[ri - 1] ?? tok.args[ri + 1] ?? "3000") : (tok.args[0] ?? "3000"));
+        spindleRpm = parseFloat(
+          ri !== -1 ? (tok.args[ri - 1] ?? tok.args[ri + 1] ?? "3000") : (tok.args[0] ?? "3000")
+        );
         const ccw = tok.args.some(a => a.toUpperCase() === "CCLW");
         lines.push(`N${n()} S${spindleRpm} ${ccw ? "M4" : "M3"}`);
         break;
       }
+
+      case "RAPID":
+        // Mode switch — no output needed in Heidenhain (FMAX handles it)
+        break;
+
       case "GOTO": {
         const x = parseFloat(tok.args[0] ?? "0");
         const y = parseFloat(tok.args[1] ?? "0");
         const z = parseFloat(tok.args[2] ?? "0");
+
         if (tok.args.length >= 6) {
+          // First positioning move with tool axis — safe Z
           safeZ = z;
-          lines.push(`N${n()} L X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} FMAX`);
-        } else if (cycleActive) {
-          const depth = Math.abs(z + cycleFedTo);
-          const clearance = cycleClear;
-          lines.push(`N${n()} CYCL DEF 200 DRILLING`);
-          lines.push(`  Q200=${clearance.toFixed(3)} ;SETUP CLEARANCE`);
-          lines.push(`  Q201=${(-depth).toFixed(3)} ;DEPTH`);
-          lines.push(`  Q206=${cycleFeed}. ;FEED RATE FOR PLUNGING`);
-          lines.push(`  Q202=${cycleStep.toFixed(3)} ;INFEED DEPTH`);
-          lines.push(`  Q211=0.000 ;DWELL AT BOTTOM`);
-          lines.push(`  Q203=${z.toFixed(3)} ;SURFACE COORDINATE`);
-          lines.push(`  Q204=${safeZ.toFixed(3)} ;2ND SETUP CLEARANCE`);
-          lines.push(`N${n()} L X${x.toFixed(3)} Y${y.toFixed(3)} FMAX M99`);
+          if (!g43Done) {
+            lines.push(`N${n()} L X+${x.toFixed(3)} Y+${y.toFixed(3)} R0 FMAX`);
+            lines.push(`N${n()} L Z+${z.toFixed(3)} FMAX`);
+            g43Done = true;
+          } else {
+            lines.push(`N${n()} L X+${x.toFixed(3)} Y+${y.toFixed(3)} Z+${z.toFixed(3)} R0 FMAX`);
+          }
+        } else if (cyc.type !== "none") {
+          // First GOTO in cycle group — emit CYCL DEF here (we now know refZ)
+          if (!cyc.defined) {
+            cyc.refZ = z;
+            if (cyc.type === "drill") {
+              emitCyclDef200(lines, cyc, n, z, safeZ);
+            } else if (cyc.type === "pocket") {
+              emitCyclDef251(lines, cyc, n, z, safeZ);
+            }
+            cyc.defined = true;
+          }
+          // Hole/pocket call
+          lines.push(`N${n()} L X+${x.toFixed(3)} Y+${y.toFixed(3)} R0 FMAX M99`);
         } else {
-          lines.push(`N${n()} L X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} FMAX`);
+          lines.push(`N${n()} L X+${x.toFixed(3)} Y+${y.toFixed(3)} Z+${z.toFixed(3)} R0 FMAX`);
         }
         break;
       }
+
       case "CYCLE": {
         const sub = tok.args[0]?.toUpperCase() ?? "";
+
         if (sub === "DRILL") {
-          cycleActive = true;
-          for (let i = 0; i < tok.args.length - 1; i++) {
-            const k = tok.args[i]?.toUpperCase();
-            if (k === "STEP")  { cycleStep  = parseFloat(tok.args[i+1]); i++; }
-            if (k === "CLEAR") { cycleClear = parseFloat(tok.args[i+1]); i++; }
-            if (k === "FEDTO") { cycleFedTo = parseFloat(tok.args[i+1]); i++; }
-            if (k === "MMPM")  { cycleFeed  = parseFloat(tok.args[i+1]); i++; }
-          }
+          cyc.type = "drill";
+          cyc.defined = false;
+          parseCycleArgs(tok.args);
+        } else if (sub === "MILL") {
+          // CYCLE/MILL → CYCL DEF 251 Rectangular Pocket
+          cyc.type = "pocket";
+          cyc.defined = false;
+          parseCycleArgs(tok.args);
         } else if (sub === "ON") {
-          cycleActive = true;
-          for (let i = 0; i < tok.args.length - 1; i++) {
-            const k = tok.args[i]?.toUpperCase();
-            if (k === "FEDTO") { cycleFedTo = parseFloat(tok.args[i+1]); i++; }
-            if (k === "MMPM")  { cycleFeed  = parseFloat(tok.args[i+1]); i++; }
-          }
+          // Parameter update — re-emit CYCL DEF on next GOTO
+          cyc.defined = false;
+          parseCycleArgs(tok.args);
         } else if (sub === "OFF") {
-          cycleActive = false;
+          cyc.type = "none";
+          cyc.defined = false;
+          lines.push(`; CYCLE OFF`);
         }
         break;
       }
+
       case "COOLNT":
         lines.push(`N${n()} ${tok.args[0]?.toUpperCase() !== "OFF" ? "M08" : "M09"}`);
         break;
+
       case "END-OF-PATH":
-        lines.push(`; *** End ${opName} ***`);
+        if (cyc.type !== "none") {
+          cyc.type = "none";
+          cyc.defined = false;
+        }
+        lines.push(`N${n()} L Z+${safeZ} FMAX`);
+        lines.push(`; *** End: ${opName} ***`);
         break;
-      case "PAINT": case "MSYS": case "SELECT": break;
+
+      case "PAINT": case "MSYS": case "SELECT":
+        break;
+
       default:
         lines.push(`; ${tok.raw}`);
     }
   }
 
+  lines.push(`N${n()} M05`);
+  lines.push(`N${n()} M09`);
   lines.push(`N${n()} M30`);
   lines.push(`END PGM ${programName.toUpperCase()} MM`);
   return lines.join("\n");
 }
+
+// ─── Sample CLS for Heidenhain pocket demo ────────────────────────────
+export const SAMPLE_CLS_POCKET = `TOOL PATH/O2-D20-PARMAK-FREZE,TOOL,D20.00-ENDMILL
+TLDATA/MILL,20.0000,0.0000,80.0000,0.0000,0.0000
+LOAD/TOOL,5,ADJUST,5
+SPINDL/RPM,4000,CLW
+RAPID
+GOTO/0.0000,0.0000,100.0000,0.0000000,0.0000000,1.0000000
+CYCLE/MILL,FEDTO,-15.0000,STEP,5.0000,CLEAR,3.0000,MMPM,800.0000,WIDTH,60.0000,LENGTH,40.0000
+GOTO/50.0000,25.0000,0.0000
+CYCLE/OFF
+END-OF-PATH`;
+
 
 // ─── Siemens Converter ────────────────────────────────────────────────
 function convertSiemens(tokens: ClsToken[], programName: string): string {
@@ -565,6 +695,51 @@ GOTO/-207.5000,-36.1000,70.0000
 GOTO/-145.7000,-104.6000,70.0000
 CYCLE/OFF
 END-OF-PATH`;
+
+// ─── Samples ─────────────────────────────────────────────────────────
+const SAMPLES: { label: string; ctrl: ControllerType; cls: string }[] = [
+  {
+    label: "Fanuc – Delme (G83)",
+    ctrl: "fanuc",
+    cls: SAMPLE_CLS,
+  },
+  {
+    label: "Heidenhain – Delme (CYCL DEF 200)",
+    ctrl: "heidenhain",
+    cls: `TOOL PATH/O1-D13-MATKAP,TOOL,D13.00-MATKAP
+TLDATA/MILL,13.0000,0.0000,75.0000,0.0000,0.0000
+LOAD/TOOL,62,ADJUST,62
+SPINDL/RPM,3600,CLW
+RAPID
+GOTO/0.0000,0.0000,80.0000,0.0000000,0.0000000,1.0000000
+CYCLE/DRILL,DEEP,STEP,20.0000,CLEAR,3.0000,FEDTO,-72.0000,RTRCTO,AUTO,MMPM,250.0000
+GOTO/67.5000,145.9000,70.0000
+GOTO/-21.3440,136.1000,70.0000
+GOTO/-107.5000,147.9000,70.0000
+GOTO/-207.5000,129.9000,70.0000
+CYCLE/ON,FEDTO,-74.5000,RTRCTO,AUTO
+GOTO/-191.4097,47.4583,70.0000
+CYCLE/ON,FEDTO,-72.0000,RTRCTO,AUTO
+GOTO/-207.5000,-36.1000,70.0000
+GOTO/-145.7000,-104.6000,70.0000
+CYCLE/OFF
+END-OF-PATH`,
+  },
+  {
+    label: "Heidenhain – Dikdörtgen Cep (CYCL DEF 251)",
+    ctrl: "heidenhain",
+    cls: `TOOL PATH/O2-D20-PARMAK-FREZE,TOOL,D20.00-ENDMILL
+TLDATA/MILL,20.0000,0.0000,80.0000,0.0000,0.0000
+LOAD/TOOL,5,ADJUST,5
+SPINDL/RPM,4000,CLW
+RAPID
+GOTO/0.0000,0.0000,100.0000,0.0000000,0.0000000,1.0000000
+CYCLE/MILL,FEDTO,-15.0000,STEP,5.0000,CLEAR,3.0000,MMPM,800.0000,WIDTH,60.0000,LENGTH,40.0000
+GOTO/50.0000,25.0000,0.0000
+CYCLE/OFF
+END-OF-PATH`,
+  },
+];
 
 // ─── Component ───────────────────────────────────────────────────────
 const PostProcessor = () => {
@@ -711,6 +886,28 @@ const PostProcessor = () => {
           </div>
 
           {/* CLS Input */}
+          {/* Quick sample loader */}
+          <div>
+            <label className="label-industrial block mb-2">Örnek Yükle</label>
+            <div className="flex flex-wrap gap-1.5">
+              {SAMPLES.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setClsInput(s.cls);
+                    setController(s.ctrl);
+                    setConverted(false);
+                    setOutput("");
+                    setProgramName(s.label.split("–")[1]?.trim().split(" ")[0] ?? "SAMPLE");
+                  }}
+                  className="px-2.5 py-1 rounded-md border border-border bg-card hover:border-primary/50 hover:bg-primary/5 text-xs text-muted-foreground transition-all"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="label-industrial">CLS / APT Girişi</label>
