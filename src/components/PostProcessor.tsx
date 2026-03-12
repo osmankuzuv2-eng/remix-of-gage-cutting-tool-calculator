@@ -881,7 +881,7 @@ const PostProcessor = () => {
               onChange={e => setProgramName(e.target.value.toUpperCase().replace(/\s+/g, "_").slice(0, 20))}
               className="input-industrial w-full font-mono"
               maxLength={20}
-              placeholder="DELIKLER"
+              placeholder="PROGRAM_ADI"
             />
           </div>
 
