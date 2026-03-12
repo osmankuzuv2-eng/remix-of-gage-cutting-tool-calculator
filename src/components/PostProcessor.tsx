@@ -347,8 +347,8 @@ const PostProcessor = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-500/20">
-            <Cpu className="w-5 h-5 text-blue-400" />
+          <div className="p-2 rounded-lg bg-primary/20">
+            <Cpu className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">CLS Post Processor</h2>
