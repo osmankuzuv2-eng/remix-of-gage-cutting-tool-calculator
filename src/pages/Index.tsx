@@ -89,6 +89,8 @@ const Index = () => {
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [userDisplayName, setUserDisplayName] = useState<string>("");
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [showMeetingLeaveConfirm, setShowMeetingLeaveConfirm] = useState(false);
+  const [pendingTabId, setPendingTabId] = useState<TabId | null>(null);
 
   // No category open by default — only on hover
 
