@@ -42,7 +42,7 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 import { getIcon, moduleIcons } from "@/lib/iconMap";
 import { useModuleTranslations } from "@/hooks/useModuleTranslations";
 
-type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "slot-machine" | "admin";
+type TabId = "home" | "ai-learn" | "cutting" | "toollife" | "threading" | "drilling" | "compare" | "materials" | "cost" | "costcalc" | "afkprice" | "currency-tracker" | "coatings" | "maintenance" | "history" | "drawing" | "tolerance" | "quiz" | "time-improvements" | "video-training" | "toolroom-report" | "rfq" | "production-comparison" | "balloon-drawing" | "catpart-quote" | "post-processor" | "slot-machine" | "admin";
 
 const ALWAYS_ACCESSIBLE = ["home", "ai-learn", "admin"];
 const CUSTOM_MATERIALS_KEY = "cnc_custom_materials";
