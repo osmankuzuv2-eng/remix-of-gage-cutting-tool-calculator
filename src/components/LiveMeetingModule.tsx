@@ -261,6 +261,7 @@ const LiveMeetingModule = () => {
   const isOwnerRef = useRef(false);
   const isLeavingRef = useRef(false);
   const currentRoomIdRef = useRef<string | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   peersRef.current = peers;
 
   // ── Load profile + check admin ────────────────────────────────────────────────
