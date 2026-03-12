@@ -1192,6 +1192,62 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     };
   }, []); // eslint-disable-line
 
+  // ── Connection quality polling ────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (statsIntervalRef.current) clearInterval(statsIntervalRef.current);
+
+    statsIntervalRef.current = setInterval(async () => {
+      const updates: { userId: string; quality: ConnectionQuality }[] = [];
+
+      for (const [userId, peerState] of peersRef.current) {
+        const { pc } = peerState;
+        if (pc.connectionState !== "connected") continue;
+
+        try {
+          const stats = await pc.getStats();
+          let rtt: number | null = null;
+          let packetsSent = 0;
+          let packetsLost = 0;
+
+          stats.forEach((report) => {
+            // outbound-rtp gives us packet loss
+            if (report.type === "outbound-rtp" && report.kind === "video") {
+              packetsSent += report.packetsSent ?? 0;
+            }
+            // remote-inbound-rtp gives RTT and fraction lost
+            if (report.type === "remote-inbound-rtp") {
+              if (report.roundTripTime !== undefined) rtt = report.roundTripTime;
+              packetsLost += report.packetsLost ?? 0;
+            }
+          });
+
+          const total = packetsSent + packetsLost;
+          const lossRate = total > 0 ? packetsLost / total : 0;
+          const quality = qualityFromStats(rtt, lossRate);
+          updates.push({ userId, quality });
+        } catch {
+          // ignore — connection may be transitioning
+        }
+      }
+
+      if (updates.length > 0) {
+        setPeers(prev => {
+          const next = new Map(prev);
+          updates.forEach(({ userId, quality }) => {
+            const p = next.get(userId);
+            if (p && p.quality !== quality) next.set(userId, { ...p, quality });
+          });
+          return next;
+        });
+      }
+    }, 3000);
+
+    return () => {
+      if (statsIntervalRef.current) clearInterval(statsIntervalRef.current);
+    };
+  }, []); // eslint-disable-line
+
   // ── Chat scroll ───────────────────────────────────────────────────────────────
 
   const chatEndRef = useRef<HTMLDivElement>(null);
