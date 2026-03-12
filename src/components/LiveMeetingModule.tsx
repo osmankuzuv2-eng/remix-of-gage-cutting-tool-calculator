@@ -550,9 +550,6 @@ const LiveMeetingModule = () => {
     return pc;
   }, [user]);
 
-  // Keep a ref to stream so signaling callbacks always use the latest stream
-  const streamRef = useRef<MediaStream | null>(null);
-
   const setupSignaling = useCallback(async (roomId: string, stream: MediaStream | null, _amOwner: boolean) => {
     if (!user) return;
 
