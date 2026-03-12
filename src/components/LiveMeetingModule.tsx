@@ -756,11 +756,11 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
             const profile = enriched2.find(p => p.user_id === newPart.user_id);
             const name = profile?.display_name || "Kullanıcı";
             const avatar = (profile as any)?.avatar_url || null;
-            console.log(`[WebRTC] New participant joined: ${name} — sending offer`);
-            // Small delay so their signal channel is subscribed
+            console.log(`[WebRTC] New participant joined: ${name} — sending offer after delay`);
+            // Delay to ensure their signal channel is subscribed and ready
             setTimeout(() => {
               createPeerConnection(newPart.user_id, name, avatar, streamRef.current, roomId, true);
-            }, 500);
+            }, 1500);
           }
         } else if (payload.eventType === "DELETE") {
           const leftUserId = (payload.old as any)?.user_id;
