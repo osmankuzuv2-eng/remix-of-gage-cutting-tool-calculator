@@ -332,12 +332,12 @@ const PostProcessor = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
+  const handleDownload = (ext?: string) => {
     const blob = new Blob([output], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${programName}.${selectedCtrl.ext}`;
+    a.download = `${programName}.${ext ?? selectedCtrl.ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -361,9 +361,13 @@ const PostProcessor = () => {
               {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
               {copied ? "Kopyalandı" : "Kopyala"}
             </button>
-            <button onClick={handleDownload} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:brightness-110 transition-all text-sm">
+            <button onClick={() => handleDownload()} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary hover:bg-secondary/80 transition-colors text-sm">
               <Download className="w-4 h-4" />
-              {programName}.{selectedCtrl.ext}
+              .{selectedCtrl.ext}
+            </button>
+            <button onClick={() => handleDownload("tap")} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:brightness-110 transition-all text-sm">
+              <Download className="w-4 h-4" />
+              .TAP
             </button>
           </div>
         )}
