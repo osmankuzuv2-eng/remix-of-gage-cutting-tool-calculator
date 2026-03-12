@@ -87,6 +87,7 @@ const Index = () => {
   const [customMaterials, setCustomMaterials] = useState<Material[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  const [userDisplayName, setUserDisplayName] = useState<string>("");
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
   // No category open by default — only on hover
@@ -123,9 +124,10 @@ const Index = () => {
   useEffect(() => {
     if (!user) return;
     const loadPermissions = async () => {
-      const [rolesRes, permsRes] = await Promise.all([
+      const [rolesRes, permsRes, profileRes] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
         supabase.from("user_module_permissions").select("module_key, granted").eq("user_id", user.id),
+        supabase.from("profiles").select("display_name").eq("user_id", user.id).single(),
       ]);
       const roles = rolesRes.data?.map((r) => r.role) || [];
       setIsAdmin(roles.includes("admin"));
@@ -133,6 +135,9 @@ const Index = () => {
       permsRes.data?.forEach((p) => { perms[p.module_key] = p.granted; });
       setPermissions(perms);
       setPermissionsLoaded(true);
+      // Set display name from profile
+      const name = profileRes.data?.display_name || user.email?.split("@")[0] || "Kullanıcı";
+      setUserDisplayName(name);
     };
     loadPermissions();
   }, [user]);
@@ -201,14 +206,15 @@ const Index = () => {
       return;
     }
     if (tabId === visibleTab) return;
-    // Log activity
+    // Log activity - using profile display_name fetched at login
     if (user && tabId !== "home" && tabId !== "admin") {
-      const uDisplayName = (user as any).user_metadata?.display_name || user.email?.split("@")[0] || "Kullanıcı";
-      supabase.from("user_activity_logs" as any).insert({
+      supabase.from("user_activity_logs").insert({
         user_id: user.id,
-        display_name: uDisplayName,
+        display_name: userDisplayName || user.email?.split("@")[0] || "Kullanıcı",
         module_key: tabId,
-        module_name: getModuleName(tabId),
+        module_name: getModuleName(tabId) || tabId,
+      }).then(({ error }) => {
+        if (error) console.error("Activity log error:", error);
       });
     }
     setActiveTab(tabId);
@@ -217,7 +223,7 @@ const Index = () => {
       setVisibleTab(tabId);
       setIsTransitioning(false);
     }, 1000);
-  }, [visibleTab, permissions, isAdmin, toast, user, getModuleName]);
+  }, [visibleTab, permissions, isAdmin, toast, user, getModuleName, userDisplayName]);
 
   const handleAdminClick = useCallback(() => {
     if (visibleTab === "admin") return;
