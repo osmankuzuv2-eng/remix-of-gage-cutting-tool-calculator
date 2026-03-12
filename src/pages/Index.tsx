@@ -455,7 +455,11 @@ const Index = () => {
             <div className="flex gap-2">
               <button
                 className="flex-1 px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
-                onClick={() => { setShowMeetingLeaveConfirm(false); setPendingTabId(null); }}
+                onClick={() => {
+                  setShowMeetingLeaveConfirm(false);
+                  setPendingTabId(null);
+                  meetingLeaveCallbackRef.current = null;
+                }}
               >
                 İptal
               </button>
@@ -463,16 +467,11 @@ const Index = () => {
                 className="flex-1 px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity"
                 onClick={() => {
                   setShowMeetingLeaveConfirm(false);
-                  if (pendingTabId) {
-                    if (pendingTabId === "admin") {
-                      setActiveTab("admin");
-                      setIsTransitioning(true);
-                      setTimeout(() => { setVisibleTab("admin"); setIsTransitioning(false); }, 1000);
-                    } else {
-                      doNavigate(pendingTabId);
-                    }
-                    setPendingTabId(null);
-                  }
+                  setPendingTabId(null);
+                  // Execute the pending navigation after a tick so LiveMeetingModule can cleanup
+                  const cb = meetingLeaveCallbackRef.current;
+                  meetingLeaveCallbackRef.current = null;
+                  cb?.();
                 }}
               >
                 Toplantıdan Çık ve Devam Et
