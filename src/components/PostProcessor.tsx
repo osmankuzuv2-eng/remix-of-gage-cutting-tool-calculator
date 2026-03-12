@@ -361,9 +361,13 @@ const PostProcessor = () => {
               {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
               {copied ? "Kopyalandı" : "Kopyala"}
             </button>
-            <button onClick={handleDownload} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:brightness-110 transition-all text-sm">
+            <button onClick={handleDownload} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary hover:bg-secondary/80 transition-colors text-sm">
               <Download className="w-4 h-4" />
-              {programName}.{selectedCtrl.ext}
+              .{selectedCtrl.ext}
+            </button>
+            <button onClick={() => handleDownload("tap")} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:brightness-110 transition-all text-sm">
+              <Download className="w-4 h-4" />
+              .TAP
             </button>
           </div>
         )}
