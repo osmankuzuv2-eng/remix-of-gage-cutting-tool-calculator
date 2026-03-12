@@ -319,6 +319,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const participantIdRef = useRef<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const statsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const peersRef = useRef<Map<string, PeerState>>(new Map());
   const activeRoomRef = useRef<Room | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
