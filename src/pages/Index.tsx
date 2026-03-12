@@ -206,14 +206,15 @@ const Index = () => {
       return;
     }
     if (tabId === visibleTab) return;
-    // Log activity
+    // Log activity - using profile display_name fetched at login
     if (user && tabId !== "home" && tabId !== "admin") {
-      const uDisplayName = (user as any).user_metadata?.display_name || user.email?.split("@")[0] || "Kullanıcı";
-      supabase.from("user_activity_logs" as any).insert({
+      supabase.from("user_activity_logs").insert({
         user_id: user.id,
-        display_name: uDisplayName,
+        display_name: userDisplayName || user.email?.split("@")[0] || "Kullanıcı",
         module_key: tabId,
-        module_name: getModuleName(tabId),
+        module_name: getModuleName(tabId) || tabId,
+      }).then(({ error }) => {
+        if (error) console.error("Activity log error:", error);
       });
     }
     setActiveTab(tabId);
@@ -222,7 +223,7 @@ const Index = () => {
       setVisibleTab(tabId);
       setIsTransitioning(false);
     }, 1000);
-  }, [visibleTab, permissions, isAdmin, toast, user, getModuleName]);
+  }, [visibleTab, permissions, isAdmin, toast, user, getModuleName, userDisplayName]);
 
   const handleAdminClick = useCallback(() => {
     if (visibleTab === "admin") return;
