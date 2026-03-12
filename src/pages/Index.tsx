@@ -224,7 +224,6 @@ const Index = () => {
   const handleTabClick = useCallback((tabId: TabId) => {
     // Warn if leaving active meeting (only if user is actually inside a room)
     if (isInActiveMeeting && tabId !== "canli-toplanti") {
-      setPendingTabId(tabId);
       meetingLeaveCallbackRef.current = () => doNavigate(tabId);
       setShowMeetingLeaveConfirm(true);
       return;
