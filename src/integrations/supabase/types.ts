@@ -731,6 +731,128 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_participants: {
+        Row: {
+          display_name: string | null
+          id: string
+          is_admin_muted: boolean
+          is_admin_video_off: boolean
+          is_audio_muted: boolean
+          is_video_off: boolean
+          joined_at: string
+          last_heartbeat: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          display_name?: string | null
+          id?: string
+          is_admin_muted?: boolean
+          is_admin_video_off?: boolean
+          is_audio_muted?: boolean
+          is_video_off?: boolean
+          joined_at?: string
+          last_heartbeat?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string | null
+          id?: string
+          is_admin_muted?: boolean
+          is_admin_video_off?: boolean
+          is_audio_muted?: boolean
+          is_video_off?: boolean
+          joined_at?: string
+          last_heartbeat?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_rooms: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_locked: boolean
+          max_participants: number
+          name: string
+          owner_id: string | null
+          owner_name: string | null
+          participant_count: number
+          password: string | null
+          room_number: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_locked?: boolean
+          max_participants?: number
+          name: string
+          owner_id?: string | null
+          owner_name?: string | null
+          participant_count?: number
+          password?: string | null
+          room_number: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_locked?: boolean
+          max_participants?: number
+          name?: string
+          owner_id?: string | null
+          owner_name?: string | null
+          participant_count?: number
+          password?: string | null
+          room_number?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      meeting_signals: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          payload: Json
+          room_id: string
+          signal_type: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          payload: Json
+          room_id: string
+          signal_type: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          payload?: Json
+          room_id?: string
+          signal_type?: string
+          to_user_id?: string
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           bg_color: string
@@ -1394,6 +1516,33 @@ export type Database = {
           updated_at?: string
           url?: string
           view_count?: number
+        }
+        Relationships: []
+      }
+      user_activity_logs: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          module_key: string
+          module_name: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          module_key: string
+          module_name?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          module_key?: string
+          module_name?: string | null
+          user_id?: string
         }
         Relationships: []
       }

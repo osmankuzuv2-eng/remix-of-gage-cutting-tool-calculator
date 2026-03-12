@@ -3,14 +3,14 @@ import {
   BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
   Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users,
   TrendingUp, Brain, TrendingDown, Video, FileText, ArrowLeftRight, Crosshair, ScanLine,
-  Gamepad2, Dice5,
+  Gamepad2, Dice5, MessageSquare, VideoIcon,
   type LucideIcon,
 } from "lucide-react";
 
 export const iconMap: Record<string, LucideIcon> = {
   Calculator, Clock, Database, DollarSign, History, GitCompare, Wrench, Circle,
   BotMessageSquare, FileImage, Ruler, Cpu, BarChart3, FolderOpen, Flame, Atom,
-  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users, TrendingDown, Video, FileText, ArrowLeftRight, Crosshair, ScanLine, Gamepad2, Dice5,
+  Gem, Zap, Cog, Sparkles, Settings, BookOpen, Search, Target, Layers, Users, TrendingDown, Video, FileText, ArrowLeftRight, Crosshair, ScanLine, Gamepad2, Dice5, MessageSquare, VideoIcon,
 };
 
 export const getIcon = (name: string): LucideIcon => iconMap[name] || Sparkles;
@@ -41,5 +41,6 @@ export const moduleIcons: Record<string, LucideIcon> = {
   "balloon-drawing": Crosshair,
   "catpart-quote": Layers,
   "post-processor": Cpu,
-  
+  "sohbet": MessageSquare,
+  "canli-toplanti": VideoIcon,
 };
