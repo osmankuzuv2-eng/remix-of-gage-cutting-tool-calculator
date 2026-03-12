@@ -5,7 +5,7 @@ import {
   Video, VideoOff, Mic, MicOff, PhoneOff, Users, Lock, Unlock,
   LogIn, Crown, VolumeX, Volume2, Eye, EyeOff, RefreshCw,
   AlertCircle, X, Send, MessageSquare, RotateCcw, ShieldAlert,
-  Monitor, MonitorOff,
+  Monitor, MonitorOff, Maximize, Minimize,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,7 @@ interface PeerState {
   isAdminMuted: boolean;
   isAdminVideoOff: boolean;
   quality: ConnectionQuality;
+  isScreenSharing?: boolean;
 }
 
 // ─── Quality helpers ──────────────────────────────────────────────────────────
@@ -95,11 +96,11 @@ interface ChatMessage {
   display_name: string;
   content: string;
   created_at: string;
+  is_system?: boolean;
 }
 
 // ─── ICE ──────────────────────────────────────────────────────────────────────
 
-// Fallback used while dynamic credentials are loading or if fetch fails
 const STUN_FALLBACK: RTCConfiguration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
@@ -123,7 +124,8 @@ const fetchIceServers = async (): Promise<RTCConfiguration> => {
 // ─── VideoTile ────────────────────────────────────────────────────────────────
 
 const VideoTile = ({
-  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff, isOwner, onKick, isScreenSharing, quality,
+  stream, name, avatarUrl, isLocal, isMuted, isVideoOff, isAdminMuted, isAdminVideoOff,
+  isOwner, onKick, isScreenSharing, quality, isSpotlight = false,
 }: {
   stream: MediaStream | null;
   name: string;
@@ -137,8 +139,11 @@ const VideoTile = ({
   onKick?: () => void;
   isScreenSharing?: boolean;
   quality?: ConnectionQuality;
+  isSpotlight?: boolean;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -150,11 +155,43 @@ const VideoTile = ({
     }
   }, [stream, isVideoOff, isAdminVideoOff]);
 
+  // Keep video playing when new tracks arrive on existing stream
+  useEffect(() => {
+    if (!stream || !videoRef.current) return;
+    const handleTrackAdded = () => {
+      if (videoRef.current && !isVideoOff && !isAdminVideoOff) {
+        videoRef.current.srcObject = stream;
+      }
+    };
+    stream.addEventListener("addtrack", handleTrackAdded);
+    return () => stream.removeEventListener("addtrack", handleTrackAdded);
+  }, [stream, isVideoOff, isAdminVideoOff]);
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
   const videoHidden = isVideoOff || isAdminVideoOff;
   const audioMuted = isMuted || isAdminMuted;
 
   return (
-    <div className="relative rounded-xl overflow-hidden bg-muted/30 border border-border aspect-video flex items-center justify-center group">
+    <div
+      ref={containerRef}
+      className={`relative rounded-xl overflow-hidden bg-muted/30 border border-border flex items-center justify-center group ${isSpotlight ? "aspect-video" : "aspect-video"}`}
+    >
       <video
         ref={videoRef}
         autoPlay
@@ -165,10 +202,10 @@ const VideoTile = ({
       {videoHidden && (
         <div className="flex flex-col items-center gap-2 absolute inset-0 flex items-center justify-center">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={name} className="w-16 h-16 rounded-full object-cover border-2 border-primary/30" />
+            <img src={avatarUrl} alt={name} className={`rounded-full object-cover border-2 border-primary/30 ${isSpotlight ? "w-24 h-24" : "w-16 h-16"}`} />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+            <div className={`rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center ${isSpotlight ? "w-24 h-24" : "w-16 h-16"}`}>
+              <span className={`font-bold text-primary ${isSpotlight ? "text-4xl" : "text-2xl"}`}>{name.charAt(0).toUpperCase()}</span>
             </div>
           )}
           <span className="text-xs text-muted-foreground">Kamera kapalı</span>
@@ -199,7 +236,17 @@ const VideoTile = ({
         </div>
       </div>
 
-      {/* Kick button - top-right on hover */}
+      {/* Fullscreen button — top-right on hover */}
+      <button
+        onClick={toggleFullscreen}
+        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+        title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"}
+        style={{ right: onKick ? "32px" : "8px" }}
+      >
+        {isFullscreen ? <Minimize className="w-3 h-3" /> : <Maximize className="w-3 h-3" />}
+      </button>
+
+      {/* Kick button */}
       {onKick && (
         <button
           onClick={onKick}
@@ -311,7 +358,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const [pendingRoom, setPendingRoom] = useState<Room | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
-  const [showChat, setShowChat] = useState(true); // default open
+  const [showChat, setShowChat] = useState(true);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [unreadChat, setUnreadChat] = useState(0);
@@ -332,9 +379,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const currentRoomIdRef = useRef<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const iceConfigRef = useRef<RTCConfiguration>(STUN_FALLBACK);
-  // Buffer for ICE candidates received before remote description is set
   const iceCandidateBufferRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
-  // Track which connections are currently making an offer to prevent glare
   const pendingOffersRef = useRef<Set<string>>(new Set());
   peersRef.current = peers;
 
@@ -424,6 +469,17 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     });
   };
 
+  // ── System chat message helper ─────────────────────────────────────────────────
+
+  const postSystemMessage = useCallback(async (roomId: string, text: string) => {
+    await supabase.from("chat_messages" as any).insert({
+      user_id: "00000000-0000-0000-0000-000000000000",
+      channel_id: roomId,
+      display_name: "Sistem",
+      content: text,
+    });
+  }, []);
+
   // ── Enter room ────────────────────────────────────────────────────────────────
 
   const enterRoom = useCallback(async (room: Room) => {
@@ -435,7 +491,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     setMediaError(null);
 
-    // Fetch fresh TURN credentials before any peer connections are created
     console.log("[ICE] Fetching TURN credentials…");
     iceConfigRef.current = await fetchIceServers();
     console.log("[ICE] ICE config ready:", iceConfigRef.current.iceServers?.length, "servers");
@@ -461,7 +516,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     currentRoomIdRef.current = room.id;
 
-    // Remove stale participant entry first
     await supabase.from("meeting_participants" as any).delete().eq("room_id", room.id).eq("user_id", user.id);
 
     const amOwner = !room.owner_id || room.owner_id === user.id;
@@ -504,10 +558,13 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       await supabase.from("meeting_participants" as any).delete().eq("room_id", room.id).lt("last_heartbeat", cutoff);
     }, 30000);
 
+    // Post join system message
+    await postSystemMessage(room.id, `🟢 ${displayName} toplantıya katıldı`);
+
     setupSignaling(room.id, stream, amOwner);
     loadChatMessages(room.id);
     setupChatChannel(room.id);
-  }, [user, displayName, toast, isGlobalAdmin]);
+  }, [user, displayName, toast, isGlobalAdmin, postSystemMessage]);
 
   // ── Chat ──────────────────────────────────────────────────────────────────────
 
@@ -527,7 +584,10 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `channel_id=eq.${roomId}` }, (payload) => {
         const msg = payload.new as ChatMessage;
         setChatMessages(prev => [...prev, msg]);
-        setUnreadChat(c => c + 1);
+        // Don't increment unread for system messages
+        if (msg.user_id !== "00000000-0000-0000-0000-000000000000") {
+          setUnreadChat(c => c + 1);
+        }
       })
       .subscribe();
   };
@@ -554,19 +614,16 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       try { existing.pc.close(); } catch {}
     }
 
-    // Clear ICE buffer for this peer
     iceCandidateBufferRef.current.set(targetUserId, []);
 
     const pc = new RTCPeerConnection(iceConfigRef.current);
 
-    // Add all local tracks to the peer connection
     if (stream) {
       stream.getTracks().forEach(t => {
         try { pc.addTrack(t, stream); } catch {}
       });
     }
 
-    // Helper to flush buffered ICE candidates
     const flushIceCandidates = async () => {
       const buffered = iceCandidateBufferRef.current.get(targetUserId) || [];
       for (const candidate of buffered) {
@@ -575,7 +632,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       iceCandidateBufferRef.current.set(targetUserId, []);
     };
 
-    // Each remote track gets its own MediaStream slot so we can update it
     const remoteStream = new MediaStream();
     pc.ontrack = (event) => {
       const tracks = event.streams?.[0]?.getTracks() ?? [event.track];
@@ -607,7 +663,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     pc.onconnectionstatechange = () => {
       console.log(`[WebRTC] ${targetName} connection: ${pc.connectionState}`);
       if (pc.connectionState === "failed") {
-        // Retry on failure after a short delay
         console.log(`[WebRTC] Retrying connection to ${targetName}...`);
         setTimeout(() => {
           if (peersRef.current.has(targetUserId)) {
@@ -625,7 +680,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     pc.onsignalingstatechange = () => {
       console.log(`[WebRTC] ${targetName} signaling: ${pc.signalingState}`);
-      // Flush buffered ICE candidates once remote description is set
       if (pc.signalingState === "stable" && pc.remoteDescription) {
         flushIceCandidates();
       }
@@ -661,7 +715,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const setupSignaling = useCallback(async (roomId: string, stream: MediaStream | null, _amOwner: boolean) => {
     if (!user) return;
 
-    // Store stream in ref so realtime callbacks always access latest
     streamRef.current = stream;
 
     const { data: existing } = await supabase
@@ -673,7 +726,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     const enriched = await enrichParticipantsWithProfiles((existing as unknown as Participant[]) || []);
     setParticipants(enriched);
 
-    // Connect to every existing participant — WE send the offer as the newcomer
     for (const p of enriched) {
       createPeerConnection(p.user_id, p.display_name || "Kullanıcı", p.avatar_url || null, stream, roomId, true);
     }
@@ -690,14 +742,12 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
         const fromId = signal.from_user_id;
         const currentStream = streamRef.current;
 
-        // Handle room_reset signal
         if (signal.signal_type === "room_reset") {
           toast({ title: "🔄 Oda Sıfırlandı", description: `"${signal.payload?.room_name || "Toplantı odası"}" admin tarafından sıfırlandı.`, variant: "destructive" });
           performLeave(false);
           return;
         }
 
-        // Handle admin_control first (doesn't need a peer connection)
         if (signal.signal_type === "admin_control") {
           const payload_data = signal.payload as any;
           if (payload_data.kick && payload_data.target_user_id === user.id) {
@@ -734,11 +784,9 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
         let peerEntry = peersRef.current.get(fromId);
         let pc = peerEntry?.pc;
 
-        // For ICE candidates, buffer them if remote description is not yet set
         if (signal.signal_type === "ice") {
           const candidate = signal.payload.candidate;
           if (!pc || !pc.remoteDescription) {
-            // Buffer the candidate
             const buf = iceCandidateBufferRef.current.get(fromId) || [];
             buf.push(candidate);
             iceCandidateBufferRef.current.set(fromId, buf);
@@ -767,7 +815,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
               return;
             }
             await pc!.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
-            // Flush any buffered ICE candidates
             const buffered = iceCandidateBufferRef.current.get(fromId) || [];
             for (const c of buffered) {
               try { await pc!.addIceCandidate(new RTCIceCandidate(c)); } catch {}
@@ -785,7 +832,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           try {
             if (!pc || pc.signalingState !== "have-local-offer") return;
             await pc.setRemoteDescription(new RTCSessionDescription(signal.payload.sdp));
-            // Flush any buffered ICE candidates
             const buffered = iceCandidateBufferRef.current.get(fromId) || [];
             for (const c of buffered) {
               try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
@@ -796,7 +842,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       })
       .subscribe();
 
-    // Track previously known participant IDs to detect NEW joiners
     const knownUserIds = new Set(enriched.map(p => p.user_id));
 
     const participantCh = supabase
@@ -809,28 +854,34 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
         const { count } = await supabase.from("meeting_participants" as any).select("*", { count: "exact", head: true }).eq("room_id", roomId);
         await supabase.from("meeting_rooms" as any).update({ participant_count: count ?? 0 }).eq("id", roomId);
 
-        // If a new participant joined (INSERT event), send them an offer
         if (payload.eventType === "INSERT") {
           const newPart = payload.new as any;
           if (newPart.user_id && newPart.user_id !== user.id && !knownUserIds.has(newPart.user_id)) {
             knownUserIds.add(newPart.user_id);
             const profile = enriched2.find(p => p.user_id === newPart.user_id);
-            const name = profile?.display_name || "Kullanıcı";
+            const name = profile?.display_name || newPart.display_name || "Kullanıcı";
             const avatar = (profile as any)?.avatar_url || null;
             console.log(`[WebRTC] New participant joined: ${name} — sending offer after delay`);
-            // Delay to ensure their signal channel is subscribed and ready
+            // Post system message for join
+            postSystemMessage(roomId, `🟢 ${name} toplantıya katıldı`);
             setTimeout(() => {
               createPeerConnection(newPart.user_id, name, avatar, streamRef.current, roomId, true);
             }, 1500);
           }
         } else if (payload.eventType === "DELETE") {
           const leftUserId = (payload.old as any)?.user_id;
+          const leftDisplayName = (payload.old as any)?.display_name;
           if (leftUserId) {
             knownUserIds.delete(leftUserId);
+            // FIX #1: Always remove the peer tile immediately on DELETE
             const peerEntry = peersRef.current.get(leftUserId);
             if (peerEntry) {
               try { peerEntry.pc.close(); } catch {}
-              setPeers(prev => { const n = new Map(prev); n.delete(leftUserId); return n; });
+            }
+            setPeers(prev => { const n = new Map(prev); n.delete(leftUserId); return n; });
+            // Post system message for leave
+            if (leftDisplayName) {
+              postSystemMessage(roomId, `🔴 ${leftDisplayName} toplantıdan ayrıldı`);
             }
           }
         }
@@ -839,27 +890,45 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
     signalChannelRef.current = signalCh;
     participantChannelRef.current = participantCh;
-  }, [user, createPeerConnection]);
+  }, [user, createPeerConnection, postSystemMessage]);
 
   // ── Screen sharing ────────────────────────────────────────────────────────────
 
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
-      // Stop screen share, restore camera
+      // Stop screen share
       screenStreamRef.current?.getTracks().forEach(t => t.stop());
       screenStreamRef.current = null;
 
+      // FIX #2: Re-acquire camera track and replace in all senders
       const camStream = localStreamRef.current;
       if (camStream) {
-        const camVideoTrack = camStream.getVideoTracks()[0];
+        // Remove screen track from local stream
+        camStream.getVideoTracks().forEach(t => camStream.removeTrack(t));
+      }
+
+      try {
+        const newCamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const camVideoTrack = newCamStream.getVideoTracks()[0];
         if (camVideoTrack) {
-          camVideoTrack.enabled = !isVideoOff;
+          // Add to local stream
+          if (camStream) camStream.addTrack(camVideoTrack);
+          else localStreamRef.current = newCamStream;
+
+          // Replace in all peer senders
           peersRef.current.forEach(peer => {
             const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
             if (sender) sender.replaceTrack(camVideoTrack).catch(() => {});
           });
+
+          // Refresh local stream reference so VideoTile re-renders
+          setLocalStream(new MediaStream(localStreamRef.current?.getTracks() ?? [camVideoTrack]));
+          if (!isVideoOff) camVideoTrack.enabled = true;
         }
+      } catch {
+        // Camera re-acquire failed — just show avatar
       }
+
       setIsScreenSharing(false);
       toast({ title: "Ekran paylaşımı durduruldu" });
     } else {
@@ -877,7 +946,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           if (sender) sender.replaceTrack(screenTrack).catch(() => {});
         });
 
-        // Update local stream preview
+        // Update local stream preview with screen track
         const camStream = localStreamRef.current;
         if (camStream) {
           camStream.getVideoTracks().forEach(t => camStream.removeTrack(t));
@@ -889,7 +958,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
         setIsVideoOff(false);
         toast({ title: "Ekran paylaşımı başladı", description: "Paylaşımı durdurmak için butona tekrar tıklayın." });
 
-        // Auto-stop when user ends share via browser UI
         screenTrack.onended = () => {
           toggleScreenShare();
         };
@@ -910,7 +978,11 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     const room = activeRoomRef.current;
     const amOwner = isOwnerRef.current;
 
-    // Stop screen share if active
+    // Post leave system message before cleanup
+    if (room) {
+      await postSystemMessage(room.id, `🔴 ${displayName} toplantıdan ayrıldı`);
+    }
+
     screenStreamRef.current?.getTracks().forEach(t => t.stop());
     screenStreamRef.current = null;
     setIsScreenSharing(false);
@@ -968,7 +1040,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     isLeavingRef.current = false;
     onActiveRoomChange?.(false);
     loadRooms();
-  }, [user, loadRooms]);
+  }, [user, displayName, loadRooms, postSystemMessage]);
 
   const leaveRoom = useCallback(() => performLeave(true), [performLeave]);
 
@@ -980,7 +1052,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     const audioTracks = stream.getAudioTracks();
 
     if (isAudioMuted) {
-      // Un-mute: if tracks exist re-enable, otherwise re-acquire
       if (audioTracks.length > 0) {
         audioTracks.forEach(t => { t.enabled = true; });
         setIsAudioMuted(false);
@@ -1014,27 +1085,32 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
     const videoTracks = stream.getVideoTracks();
 
     if (isVideoOff) {
-      // Turn on: if tracks exist, re-enable them
+      // FIX #2: re-enable or re-acquire, then replace track in all senders
       if (videoTracks.length > 0) {
         videoTracks.forEach(t => { t.enabled = true; });
+        // Also replace in senders to ensure remote side gets it
+        peersRef.current.forEach(peer => {
+          const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
+          if (sender && videoTracks[0]) sender.replaceTrack(videoTracks[0]).catch(() => {});
+        });
         setIsVideoOff(false);
       } else {
-        // No video tracks — re-acquire camera
         try {
           const newStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
           newStream.getVideoTracks().forEach(track => {
             stream.addTrack(track);
             peersRef.current.forEach(peer => {
               const sender = peer.pc.getSenders().find(s => s.track?.kind === "video");
-              if (sender) sender.replaceTrack(track);
+              if (sender) sender.replaceTrack(track).catch(() => {});
               else peer.pc.addTrack(track, stream);
             });
           });
+          // Refresh local stream ref
+          setLocalStream(new MediaStream(stream.getTracks()));
           setIsVideoOff(false);
         } catch { return; }
       }
     } else {
-      // Turn off
       videoTracks.forEach(t => { t.enabled = false; });
       setIsVideoOff(true);
     }
@@ -1103,10 +1179,8 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   const resetRoom = async (roomId: string, roomName: string) => {
     if (!isGlobalAdmin || !user) return;
 
-    // 1. Fetch all participants before deleting them
     const { data: allParts } = await supabase.from("meeting_participants" as any).select("user_id").eq("room_id", roomId);
 
-    // 2. Send room_reset signal to ALL other participants so they disconnect
     if (allParts) {
       const signalPromises = (allParts as any[])
         .filter(p => p.user_id !== user.id)
@@ -1119,18 +1193,14 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
       await Promise.all(signalPromises);
     }
 
-    // 3. Small delay to let signals propagate before wiping DB rows
     await new Promise(r => setTimeout(r, 300));
 
-    // 4. Clear DB
     await supabase.from("meeting_participants" as any).delete().eq("room_id", roomId);
     await supabase.from("meeting_rooms" as any).update({
       owner_id: null, owner_name: null, is_locked: false, password: null, participant_count: 0,
     }).eq("id", roomId);
 
-    // 5. If admin is inside this room, clean up locally too
     if (activeRoom?.id === roomId) {
-      // Stop screen share if active
       screenStreamRef.current?.getTracks().forEach(t => t.stop());
       screenStreamRef.current = null;
       setIsScreenSharing(false);
@@ -1164,20 +1234,14 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
   useEffect(() => {
     return () => {
-      // Stop screen share if active
       screenStreamRef.current?.getTracks().forEach(t => t.stop());
-      // Stop all local media tracks immediately
       localStreamRef.current?.getTracks().forEach(t => t.stop());
-      // Close all peer connections
       peersRef.current.forEach(p => { try { p.pc.close(); } catch {} });
-      // Remove realtime channels
       if (signalChannelRef.current) supabase.removeChannel(signalChannelRef.current);
       if (chatChannelRef.current) supabase.removeChannel(chatChannelRef.current);
       if (participantChannelRef.current) supabase.removeChannel(participantChannelRef.current);
-      // Clear timers
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       if (cleanupRef.current) clearInterval(cleanupRef.current);
-      // Fire-and-forget: remove participant row and update room count
       if (activeRoomRef.current && participantIdRef.current) {
         const roomId = activeRoomRef.current.id;
         const partId = participantIdRef.current;
@@ -1215,11 +1279,9 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           let packetsLost = 0;
 
           stats.forEach((report) => {
-            // outbound-rtp gives us packet loss
             if (report.type === "outbound-rtp" && report.kind === "video") {
               packetsSent += report.packetsSent ?? 0;
             }
-            // remote-inbound-rtp gives RTT and fraction lost
             if (report.type === "remote-inbound-rtp") {
               if (report.roundTripTime !== undefined) rtt = report.roundTripTime;
               packetsLost += report.packetsLost ?? 0;
@@ -1231,7 +1293,7 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           const quality = qualityFromStats(rtt, lossRate);
           updates.push({ userId, quality });
         } catch {
-          // ignore — connection may be transitioning
+          // ignore
         }
       }
 
@@ -1295,7 +1357,6 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
           </div>
         )}
 
-        {/* Password dialog */}
         {showPasswordDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
@@ -1324,11 +1385,24 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // RENDER: Active meeting — full height, no scroll
+  // RENDER: Active meeting
   // ─────────────────────────────────────────────────────────────────────────────
 
   const allPeers = Array.from(peers.values());
   const totalParticipants = allPeers.length + 1;
+
+  // FIX #3: Detect if anyone (local or remote) is screen sharing
+  const screenSharingPeer = allPeers.find(p => p.isScreenSharing);
+  const anyoneScreenSharing = isScreenSharing || !!screenSharingPeer;
+
+  // Grid layout: spotlight mode when screen sharing, otherwise normal grid
+  const gridCols = anyoneScreenSharing
+    ? "1fr" // spotlight takes full width; camera thumbnails stacked below
+    : totalParticipants === 1 ? "1fr"
+    : totalParticipants === 2 ? "1fr 1fr"
+    : totalParticipants <= 4 ? "repeat(2,1fr)"
+    : totalParticipants <= 9 ? "repeat(3,1fr)"
+    : "repeat(4,1fr)";
 
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] min-h-0 gap-2">
@@ -1379,37 +1453,82 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
 
         {/* ── Video column ── */}
         <div className="flex flex-col flex-1 min-w-0 min-h-0 gap-2">
-          {/* Video grid — takes remaining height */}
-          <div
-            className="flex-1 min-h-0 overflow-auto"
-            style={{
-              display: "grid",
-              gap: "8px",
-              gridTemplateColumns: totalParticipants === 1 ? "1fr"
-                : totalParticipants === 2 ? "1fr 1fr"
-                : totalParticipants <= 4 ? "repeat(2,1fr)"
-                : totalParticipants <= 9 ? "repeat(3,1fr)"
-                : "repeat(4,1fr)",
-              alignContent: "start",
-            }}
-          >
-            <VideoTile
-              stream={localStream} name={displayName} avatarUrl={myProfile.avatar_url}
-              isLocal={true} isMuted={isAudioMuted} isVideoOff={isVideoOff} isOwner={isOwner}
-              isScreenSharing={isScreenSharing}
-            />
-            {allPeers.map(peer => (
+
+          {/* FIX #3: Screen share spotlight layout */}
+          {anyoneScreenSharing ? (
+            <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
+              {/* Spotlight: screen share */}
+              <div className="flex-1 min-h-0">
+                {isScreenSharing ? (
+                  <VideoTile
+                    stream={localStream} name={displayName} avatarUrl={myProfile.avatar_url}
+                    isLocal={true} isMuted={isAudioMuted} isVideoOff={false}
+                    isOwner={isOwner} isScreenSharing={true} isSpotlight={true}
+                  />
+                ) : screenSharingPeer ? (
+                  <VideoTile
+                    stream={screenSharingPeer.stream} name={screenSharingPeer.displayName} avatarUrl={screenSharingPeer.avatarUrl}
+                    isLocal={false} isMuted={screenSharingPeer.isAudioMuted} isVideoOff={false}
+                    isAdminMuted={screenSharingPeer.isAdminMuted} isAdminVideoOff={screenSharingPeer.isAdminVideoOff}
+                    isOwner={activeRoom.owner_id === screenSharingPeer.userId}
+                    isScreenSharing={true} isSpotlight={true} quality={screenSharingPeer.quality}
+                  />
+                ) : null}
+              </div>
+              {/* Thumbnail strip: camera tiles */}
+              <div className="flex gap-2 flex-shrink-0 overflow-x-auto pb-1" style={{ height: "120px" }}>
+                {/* Local camera (only if not screen sharing ourselves) */}
+                {!isScreenSharing && (
+                  <div className="w-[160px] flex-shrink-0 h-full">
+                    <VideoTile
+                      stream={localStream} name={displayName} avatarUrl={myProfile.avatar_url}
+                      isLocal={true} isMuted={isAudioMuted} isVideoOff={isVideoOff} isOwner={isOwner}
+                    />
+                  </div>
+                )}
+                {allPeers.filter(p => !p.isScreenSharing).map(peer => (
+                  <div key={peer.userId} className="w-[160px] flex-shrink-0 h-full">
+                    <VideoTile
+                      stream={peer.stream} name={peer.displayName} avatarUrl={peer.avatarUrl}
+                      isLocal={false} isMuted={peer.isAudioMuted} isVideoOff={peer.isVideoOff}
+                      isAdminMuted={peer.isAdminMuted} isAdminVideoOff={peer.isAdminVideoOff}
+                      isOwner={activeRoom.owner_id === peer.userId}
+                      onKick={canControl && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
+                      quality={peer.quality}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Normal grid layout */
+            <div
+              className="flex-1 min-h-0 overflow-auto"
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: gridCols,
+                alignContent: "start",
+              }}
+            >
               <VideoTile
-                key={peer.userId}
-                stream={peer.stream} name={peer.displayName} avatarUrl={peer.avatarUrl}
-                isLocal={false} isMuted={peer.isAudioMuted} isVideoOff={peer.isVideoOff}
-                isAdminMuted={peer.isAdminMuted} isAdminVideoOff={peer.isAdminVideoOff}
-                isOwner={activeRoom.owner_id === peer.userId}
-                onKick={canControl && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
-                quality={peer.quality}
+                stream={localStream} name={displayName} avatarUrl={myProfile.avatar_url}
+                isLocal={true} isMuted={isAudioMuted} isVideoOff={isVideoOff} isOwner={isOwner}
+                isScreenSharing={isScreenSharing}
               />
-            ))}
-          </div>
+              {allPeers.map(peer => (
+                <VideoTile
+                  key={peer.userId}
+                  stream={peer.stream} name={peer.displayName} avatarUrl={peer.avatarUrl}
+                  isLocal={false} isMuted={peer.isAudioMuted} isVideoOff={peer.isVideoOff}
+                  isAdminMuted={peer.isAdminMuted} isAdminVideoOff={peer.isAdminVideoOff}
+                  isOwner={activeRoom.owner_id === peer.userId}
+                  onKick={canControl && activeRoom.owner_id !== peer.userId ? () => adminKick(peer.userId) : undefined}
+                  quality={peer.quality}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Controls bar */}
           <div className="flex items-center justify-center gap-3 bg-card border border-border rounded-xl py-2.5 flex-shrink-0">
@@ -1525,14 +1644,26 @@ const LiveMeetingModule = ({ onActiveRoomChange }: { onActiveRoomChange?: (inRoo
               <div className="flex-1 overflow-y-auto p-2 space-y-1.5 text-xs min-h-0">
                 {chatMessages.length === 0 ? (
                   <p className="text-center text-muted-foreground pt-4 text-xs">Henüz mesaj yok</p>
-                ) : chatMessages.map(msg => (
-                  <div key={msg.id} className={`flex flex-col ${msg.user_id === user?.id ? "items-end" : "items-start"}`}>
-                    <span className="text-[10px] text-muted-foreground mb-0.5">{msg.display_name}</span>
-                    <div className={`px-2 py-1 rounded-lg max-w-[95%] break-words text-xs ${msg.user_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
-                      {msg.content}
+                ) : chatMessages.map(msg => {
+                  const isSystem = msg.user_id === "00000000-0000-0000-0000-000000000000";
+                  if (isSystem) {
+                    return (
+                      <div key={msg.id} className="flex items-center justify-center py-0.5">
+                        <span className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full italic">
+                          {msg.content}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={msg.id} className={`flex flex-col ${msg.user_id === user?.id ? "items-end" : "items-start"}`}>
+                      <span className="text-[10px] text-muted-foreground mb-0.5">{msg.display_name}</span>
+                      <div className={`px-2 py-1 rounded-lg max-w-[95%] break-words text-xs ${msg.user_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                        {msg.content}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={chatEndRef} />
               </div>
               <div className="p-2 border-t border-border flex gap-1.5 flex-shrink-0">
